@@ -1,0 +1,1 @@
+this seems to show that bisyncing (with --resync) two directories with completely different files merges the two directories.

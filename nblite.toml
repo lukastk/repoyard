@@ -1,0 +1,32 @@
+export_pipeline = """
+nbs -> pts
+pts -> lib
+nbs_test -> pts_test
+pts_test -> tests
+"""
+
+docs_cl="nbs"
+docs_title="repoyard"
+
+[cl.lib]
+path="repoyard"
+
+[cl.nbs]
+format="ipynb"
+path="nbs/mod"
+
+[cl.pts]
+format="percent"
+path="pts/mod"
+
+[cl.nbs_test]
+path="nbs/tests"
+format="ipynb"
+
+[cl.pts_test]
+path="pts/tests"
+format="percent"
+
+[cl.tests]
+path="tests"
+format="module"
