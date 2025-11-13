@@ -1,8 +1,8 @@
 # %% [markdown]
-# # include_repo
+# # _include_repo
 
 # %%
-#|default_exp _cmds.include_repo
+#|default_exp cmds._include_repo
 #|export_as_func true
 
 # %%
@@ -53,7 +53,7 @@ sync_force = False
 
 # %%
 # Run init
-from repoyard._cmds import init_repoyard, new_repo, sync_repo
+from repoyard.cmds import init_repoyard, new_repo, sync_repo
 init_repoyard(config_path=config_path, data_path=data_path)
 
 # Add a storage location 'my_remote'
@@ -117,7 +117,7 @@ if repo_meta.check_included(config):
 
 # %%
 #|export
-from repoyard._cmds import sync_repo
+from repoyard.cmds import sync_repo
 
 sync_repo(
     config_path=config_path,

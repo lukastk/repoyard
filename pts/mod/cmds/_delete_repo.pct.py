@@ -1,8 +1,8 @@
 # %% [markdown]
-# # exclude_repo
+# # _delete_repo
 
 # %%
-#|default_exp _cmds.exclude_repo
+#|default_exp cmds._delete_repo
 #|export_as_func true
 
 # %%
@@ -20,11 +20,9 @@ from repoyard import const
 
 # %%
 #|set_func_signature
-def exclude_repo(
+def delete_repo(
     config_path: Path|None = None,
     repo_full_name: str|None = None,
-    sync_force: bool = False,
-    skip_sync: bool = False,
 ):
     """
     """
@@ -38,9 +36,9 @@ def exclude_repo(
 # Set up test environment
 import tempfile
 tests_working_dir = const.pkg_path.parent / "tmp_tests"
-test_folder_path = Path(tempfile.mkdtemp(prefix="exclude_repo", dir="/tmp"))
+test_folder_path = Path(tempfile.mkdtemp(prefix="delete_repo", dir="/tmp"))
 test_folder_path.mkdir(parents=True, exist_ok=True)
-symlink_path = tests_working_dir / "_cmds" / "exclude_repo"
+symlink_path = tests_working_dir / "_cmds" / "delete_repo"
 symlink_path.parent.mkdir(parents=True, exist_ok=True)
 if symlink_path.exists() or symlink_path.is_symlink():
     symlink_path.unlink()
@@ -55,7 +53,7 @@ skip_sync = True
 
 # %%
 # Run init
-from repoyard._cmds import init_repoyard, new_repo, sync_repo
+from repoyard.cmds import init_repoyard, new_repo, sync_repo
 init_repoyard(config_path=config_path, data_path=data_path)
 
 # Add a storage location 'my_remote'
@@ -97,7 +95,7 @@ remote = {remote_rclone_path}
 sync_repo(config_path=config_path, repo_full_name=repo_full_name)
 
 # %% [markdown]
-# Ensure that repo is included
+# Ensure that repo exists
 
 # %%
 #|export
@@ -109,32 +107,35 @@ if repo_full_name not in repoyard_meta.by_full_name:
 
 repo_meta = repoyard_meta.by_full_name[repo_full_name]
 
-if not repo_meta.check_included(config):
-    raise ValueError(f"Repo '{repo_full_name}' is already excluded.")
-
-# %% [markdown]
-# Sync any changes before removing locally
+# %%
+assert repo_meta.get_local_path(config).exists()
+assert (remote_rclone_path / repo_meta.get_remote_path(config)).exists()
 
 # %%
 #|export
-from repoyard._cmds import sync_repo
 
-if not skip_sync:
-    sync_repo(
-        config_path=config_path,
-        repo_full_name=repo_full_name,
-        sync_setting=SyncSetting.BISYNC,
-        force=sync_force,
+# Delete local repo
+import shutil
+shutil.rmtree(repo_meta.get_local_path(config))
+
+# Delete remote repo
+from repoyard._utils import rclone_purge
+from repoyard.config import StorageType
+if repo_meta.get_storage_location_config(config).storage_type != StorageType.LOCAL:
+    rclone_purge(
+        config.rclone_config_path,
+        source=repo_meta.storage_location,
+        source_path=repo_meta.get_remote_path(config),
     )
 
+# %%
+assert not repo_meta.get_local_path(config).exists()
+assert not (remote_rclone_path / repo_meta.get_remote_path(config)).exists()
+
 # %% [markdown]
-# Exclude it
+# Refresh the repoyard meta file
 
 # %%
 #|export
-import shutil
-shutil.rmtree(repo_meta.get_local_repodata_path(config))
-
-# %%
-# Should now be included
-assert not repo_meta.check_included(config)
+from repoyard._repos import refresh_repoyard_meta
+refresh_repoyard_meta(config)

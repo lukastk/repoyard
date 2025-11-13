@@ -1,8 +1,8 @@
 # %% [markdown]
-# # init_repoyard
+# # _init_repoyard
 
 # %%
-#|default_exp _cmds.init_repoyard
+#|default_exp cmds._init_repoyard
 #|export_as_func true
 
 # %%

@@ -1,8 +1,8 @@
 # %% [markdown]
-# # modify_repometa
+# # _modify_repometa
 
 # %%
-#|default_exp _cmds.modify_repometa
+#|default_exp cmds._modify_repometa
 #|export_as_func true
 
 # %%
@@ -60,7 +60,7 @@ modifications = {
 
 # %%
 # Run init
-from repoyard._cmds import init_repoyard, new_repo, sync_repo
+from repoyard.cmds import init_repoyard, new_repo, sync_repo
 init_repoyard(config_path=config_path, data_path=data_path)
 
 # Add a storage location 'my_remote'
@@ -140,7 +140,7 @@ refresh_repoyard_meta(config)
 
 # %%
 import toml
-from repoyard._cmds import sync_repometas
+from repoyard.cmds import sync_repometas
 sync_repometas(config_path=config_path)
 repometa_dump = toml.load(remote_rclone_path / "repoyard" / repo_full_name / const.REPO_METAFILE_REL_PATH)
 assert repometa_dump['groups'] == ['group1', 'group2']

@@ -1,8 +1,8 @@
 # %% [markdown]
-# # new_repo
+# # _new_repo
 
 # %%
-#|default_exp _cmds.new_repo
+#|default_exp cmds._new_repo
 #|export_as_func true
 
 # %%
@@ -56,7 +56,7 @@ initialise_git = True
 
 # %%
 # Run init
-from repoyard._cmds import init_repoyard
+from repoyard.cmds import init_repoyard
 init_repoyard(config_path=config_path, data_path=data_path)
 
 # %% [markdown]

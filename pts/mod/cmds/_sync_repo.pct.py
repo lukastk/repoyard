@@ -1,8 +1,8 @@
 # %% [markdown]
-# # sync_repo
+# # _sync_repo
 
 # %%
-#|default_exp _cmds.sync_repo
+#|default_exp cmds._sync_repo
 #|export_as_func true
 
 # %%
@@ -62,8 +62,8 @@ force = False
 
 # %%
 # Run init
-from repoyard._cmds import init_repoyard
-from repoyard._cmds import new_repo
+from repoyard.cmds import init_repoyard
+from repoyard.cmds import new_repo
 init_repoyard(config_path=config_path, data_path=data_path)
 
 # Add a storage location 'my_remote'
