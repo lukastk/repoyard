@@ -92,10 +92,9 @@ config = Config(**{
     'config_path' : config_path,
     **config.model_dump(),
     'storage_locations' : {
-        'local' : {
+        'fake' : {
             'storage_type' : 'rclone',
-            'repometa_path' : "repometa",
-            'repostore_path' : "repostore",
+            'store_path' : data_path / "fake_store",
         }
     }
 })
@@ -107,20 +106,24 @@ config = Config(**{
 #|export
 paths = [
     config.repoyard_data_path,
-    config.included_repostore_path,
-    config.synced_repometa_path,
-    config.local_repometa_path,
-    config.local_repostore_path,
+    config.local_store_path,
 ]
 
 for path in paths:
     if not path.exists():
         print(f"Creating folder: {path}")
         path.mkdir(parents=True, exist_ok=True)
-        
-if (config.synced_repometa_path / "local").exists():
-    (config.synced_repometa_path / "local").unlink()
-(config.synced_repometa_path / "local").symlink_to(config.local_repometa_path)
+
+# %% [markdown]
+# Set up symlinks for every storage location of type `local`
+
+# %%
+#|export
+for storage_location_name, storage_location in config.storage_locations.items():
+    storage_location.store_path.mkdir(parents=True, exist_ok=True)
+    if (config.local_store_path / storage_location_name).exists():
+        (config.local_store_path / storage_location_name).unlink()
+    (config.local_store_path / storage_location_name).symlink_to(storage_location.store_path)
 
 # %% [markdown]
 # Create `repoyard_rclone.conf` if it doesn't exist

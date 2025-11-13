@@ -156,6 +156,8 @@ res = rclone_copy(
     dest="my_remote",
     dest_path="",
     exclude=[],
+    exclude_file=None,
+    filters_file=None,
     dry_run=False,
     verbose=True,
 )
@@ -206,6 +208,8 @@ res = rclone_sync(
     dest="my_remote",
     dest_path="",
     exclude=[],
+    exclude_file=None,
+    filters_file=None,
     dry_run=False,
     verbose=True,
 )
@@ -271,13 +275,15 @@ def rclone_bisync(
 # %%
 _path = setup_test_folder('bisync')
 
-res = rclone_bisync(
+res, stdout, stderr = rclone_bisync(
     _path / "rclone.conf",
     source="",
     source_path=_path / "my_local",
     dest="my_remote",
     dest_path="",
     exclude=[],
+    exclude_file=None,
+    filters_file=None,
     dry_run=False,
     resync=False,
     force=False,
@@ -289,13 +295,15 @@ assert res == BisyncResult.ERROR_NEEDS_RESYNC
 # %%
 _path = setup_test_folder('bisync')
 
-res = rclone_bisync(
+res, stdout, stderr = rclone_bisync(
     _path / "rclone.conf",
     source="",
     source_path=_path / "my_local",
     dest="my_remote",
     dest_path="",
     exclude=[],
+    exclude_file=None,
+    filters_file=None,
     dry_run=False,
     resync=True,
     force=False,
@@ -308,13 +316,15 @@ assert res == BisyncResult.SUCCESS
 # !echo "will cause conflict" > {_path / "my_local" / "file1.txt"}
 # !echo "will cause conflict!" > {_path / "my_remote" / "file1.txt"}
 
-res = rclone_bisync(
+res, stdout, stderr = rclone_bisync(
     _path / "rclone.conf",
     source="",
     source_path=_path / "my_local",
     dest="my_remote",
     dest_path="",
     exclude=[],
+    exclude_file=None,
+    filters_file=None,
     dry_run=False,
     resync=False,
     force=False,
@@ -365,13 +375,15 @@ def rclone_lsjson(
 # %%
 _path = setup_test_folder('lsjson')
 
-res = rclone_bisync(
+res, stdout, stderr = rclone_bisync(
     _path / "rclone.conf",
     source="",
     source_path=_path / "my_local",
     dest="my_remote",
     dest_path="",
     exclude=[],
+    exclude_file=None,
+    filters_file=None,
     dry_run=False,
     resync=True,
     force=False,
@@ -453,12 +465,17 @@ def get_synced_repo_full_name_from_sub_path(
     Get the full name of a synced repo from a path inside of the repo.
     """
     sub_path = Path(sub_path).expanduser()
-    is_in_synced_repostore = sub_path.is_relative_to(config.included_repostore_path)
+    is_in_local_store_path = sub_path.is_relative_to(config.local_store_path)
     
-    if not is_in_synced_repostore:
+    if not is_in_local_store_path:
         return None
     
-    repo_full_name = sub_path.relative_to(config.included_repostore_path).parts[0]
+    rel_path = sub_path.relative_to(config.local_store_path)
+    
+    if len(rel_path.parts) < 2: # The path is not inside a repo
+        return None
+    
+    repo_full_name = rel_path.parts[2]
     return repo_full_name
 
 

@@ -16,6 +16,7 @@ from typing import Literal
 import os
 from pathlib import Path
 import toml, json
+from enum import Enum
 
 from repoyard import const
 
@@ -24,18 +25,19 @@ from repoyard import const
 # # `config.json`
 
 # %%
-
 #|export
+class StorageType(Enum):
+    RCLONE = "rclone"
+    LOCAL = "local"
+
 class StorageConfig(const.StrictModel):
-    storage_type: Literal["rclone", "local"]
-    repometa_path: Path
-    repostore_path: Path
+    storage_type: StorageType
+    store_path: Path
     
     @model_validator(mode='after')
     def validate_config(self):
         # Expand paths
-        self.repometa_path = self.repometa_path.expanduser()
-        self.repostore_path = self.repostore_path.expanduser()
+        self.store_path = self.store_path.expanduser()
         return self
     
 class SyncingConfig(const.StrictModel):
@@ -63,32 +65,16 @@ class Config(const.StrictModel):
         return self.repoyard_data_path / "repoyard.log"
     
     @property
-    def included_repostore_path(self) -> Path:
-        return self.repoyard_data_path / "included_repostore"
-    
-    @property
-    def synced_repometa_path(self) -> Path:
-        return self.repoyard_data_path / "synced_repometa"
+    def local_store_path(self) -> Path:
+        return self.repoyard_data_path / "local_store"
     
     @property
     def repoyard_meta_path(self) -> Path:
         return self.repoyard_data_path / "repoyard_meta.json"
     
     @property
-    def sync_settings_path(self) -> Path:
-        return self.repoyard_data_path / "sync_settings.toml"
-    
-    @property
     def rclone_config_path(self) -> Path:
         return Path(self.config_path).parent / "repoyard_rclone.conf"
-    
-    @property
-    def local_repometa_path(self) -> Path:
-        return self.repoyard_data_path / const.LOCAL_REPOMETA_REL_PATH
-    
-    @property
-    def local_repostore_path(self) -> Path:
-        return self.repoyard_data_path / const.LOCAL_REPOSTORE_REL_PATH
     
     @property
     def default_repoyard_ignore_path(self) -> str:
@@ -137,15 +123,14 @@ def _get_default_config_dict(config_path=None, data_path=None) -> Config:
     
     config_dict = dict(
         config_path=config_path.as_posix(),
-        default_storage_location = "local",
+        default_storage_location = "fake",
         repoyard_data_path = data_path.as_posix(),
         user_repos_path = const.DEFAULT_USER_REPOS_PATH.as_posix(),
         user_repo_groups_path = const.DEFAULT_USER_REPO_GROUPS_PATH.as_posix(),
         storage_locations = {
-            "local": dict(
-                storage_type="local",
-                repometa_path=(data_path / const.LOCAL_REPOMETA_REL_PATH).as_posix(),
-                repostore_path=(data_path / const.LOCAL_REPOSTORE_REL_PATH).as_posix(),
+            "fake": dict(
+                storage_type=StorageType.LOCAL.value,
+                store_path=(data_path / const.DEFAULT_LOCAL_STORE_REL_PATH).as_posix(),
             )
         },
         syncing = {

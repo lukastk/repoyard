@@ -29,8 +29,10 @@ DEFAULT_DATA_PATH = Path("~") / ".repoyard"
 DEFAULT_USER_REPOS_PATH = Path("~") / "repos"
 DEFAULT_USER_REPO_GROUPS_PATH = Path("~") / "repo_groups"
 
-LOCAL_REPOMETA_REL_PATH = "local/repometa"
-LOCAL_REPOSTORE_REL_PATH = "local/repostore"
+REPO_METAFILE_REL_PATH = "repometa.toml"
+REPO_DATA_REL_PATH = "data"
+
+DEFAULT_LOCAL_STORE_REL_PATH = "fake_store"
 
 # %%
 #|export
