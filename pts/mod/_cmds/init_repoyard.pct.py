@@ -13,11 +13,6 @@ import nblite; from nblite import show_doc; nblite.nbl_export()
 #|top_export
 from pathlib import Path
 
-from repoyard._cli import app
-import typer
-from typer import Argument, Option
-from typing_extensions import Annotated
-
 from repoyard import const
 
 
