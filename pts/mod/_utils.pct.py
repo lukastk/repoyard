@@ -63,7 +63,8 @@ def _rclone_cmd_helper(
     dest: str,
     dest_path: str,
     exclude: list[str],
-    exclude_files: list[str],
+    exclude_file: str|None,
+    filters_file: str|None,
     dry_run: bool,
 ) -> list[str]:
     source_spec = f"{source}:{source_path}" if source else source_path
@@ -74,9 +75,12 @@ def _rclone_cmd_helper(
     for f in exclude:
         cmd.append(f"--exclude")
         cmd.append(f)
-    for f in exclude_files:
+    if exclude_file is not None:
         cmd.append(f"--exclude-from")
-        cmd.append(f)
+        cmd.append(exclude_file)
+    if filters_file is not None:
+        cmd.append("--filters-file")
+        cmd.append(filters_file)
     return cmd
 
 
@@ -124,12 +128,13 @@ def rclone_copy(
     dest: str,
     dest_path: str,
     exclude: list[str],
-    exclude_files: list[str],
+    exclude_file: str|None,
+    filters_file: str|None,
     dry_run: bool,
     return_command: bool=False,
     verbose=True,
 ) -> bool:
-    cmd = _rclone_cmd_helper("copy", rclone_config_path, source, source_path, dest, dest_path, exclude, exclude_files, dry_run)
+    cmd = _rclone_cmd_helper("copy", rclone_config_path, source, source_path, dest, dest_path, exclude, exclude_file, filters_file, dry_run)
     if not return_command:
         result = subprocess.run(cmd, capture_output=True, text=True)
         if verbose:
@@ -174,12 +179,13 @@ def rclone_sync(
     dest: str,
     dest_path: str,
     exclude: list[str],
-    exclude_files: list[str],
+    exclude_file: str|None,
+    filters_file: str|None,
     dry_run: bool,
     return_command: bool=False,
     verbose=True,
 ) -> bool:
-    cmd = _rclone_cmd_helper("sync", rclone_config_path, source, source_path, dest, dest_path, exclude, exclude_files, dry_run)
+    cmd = _rclone_cmd_helper("sync", rclone_config_path, source, source_path, dest, dest_path, exclude, exclude_file, filters_file, dry_run)
     if not return_command:
         result = subprocess.run(cmd, capture_output=True, text=True)
         if verbose:
@@ -230,14 +236,15 @@ def rclone_bisync(
     dest: str,
     dest_path: str,
     exclude: list[str],
-    exclude_files: list[str],
+    exclude_file: str|None,
+    filters_file: str|None,
     dry_run: bool,
     resync: bool,
     force: bool,
     return_command: bool=False,
     verbose: bool=False,
 ) -> BisyncResult:
-    cmd = _rclone_cmd_helper("bisync", rclone_config_path, source, source_path, dest, dest_path, exclude, exclude_files, dry_run)
+    cmd = _rclone_cmd_helper("bisync", rclone_config_path, source, source_path, dest, dest_path, exclude, exclude_file, filters_file, dry_run)
     if resync: cmd.append("--resync")
     if force: cmd.append("--force")
         

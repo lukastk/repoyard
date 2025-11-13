@@ -137,7 +137,8 @@ repo_meta = repoyard_meta.by_full_name[repo_name]
 #|export
 from repoyard._utils import rclone_bisync, rclone_sync, BisyncResult, rclone_mkdir, rclone_path_exists
 _repoyard_ignore_path = repo_meta.get_included_repo_path(config) / ".repoyard_ignore"
-_exclude_files = [repo_meta.get_included_repo_path(config) / ".repoyard_ignore"] if _repoyard_ignore_path.exists() else []
+_exclude_file = repo_meta.get_included_repo_path(config) / ".repoyard_ignore" if _repoyard_ignore_path.exists() else None
+_filters_file = repo_meta.get_included_repo_path(config) / ".repoyard_filters" if _repoyard_filters_path.exists() else None
 
 def bisync_helper(dry_run: bool, resync: bool, force: bool, return_command: bool=False) -> BisyncResult:
     # if not dry_run:
@@ -158,7 +159,8 @@ def bisync_helper(dry_run: bool, resync: bool, force: bool, return_command: bool
         dest=repo_meta.storage_location,
         dest_path=repo_meta.get_remote_repo_path(config),
         exclude=[],
-        exclude_files=_exclude_files,
+        exclude_file=_exclude_file,
+        filters_file=_filters_file,
         dry_run=dry_run,
         resync=resync,
         force=force,
