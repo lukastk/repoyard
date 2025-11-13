@@ -25,8 +25,8 @@ from repoyard import const
 # %%
 #|set_func_signature
 def modify_repometa(
-    config_path: Path|None = None,
-    repo_full_name: str|None = None,
+    config_path: Path,
+    repo_full_name: str,
     modifications: dict[str, Any] = {},
 ):
     """
@@ -84,12 +84,7 @@ repo_full_name = new_repo(config_path=config_path, repo_name="test_repo", storag
 
 # %%
 #|export
-if config_path is None:
-    config_path = const.DEFAULT_CONFIG_PATH
 config = get_config(config_path)
-    
-if not repo_full_name:
-    raise ValueError("repo_full_name is required.")
 
 # %%
 # Set up a rclone remote path for testing

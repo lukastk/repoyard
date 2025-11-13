@@ -21,8 +21,8 @@ from repoyard import const
 # %%
 #|set_func_signature
 def delete_repo(
-    config_path: Path|None = None,
-    repo_full_name: str|None = None,
+    config_path: Path,
+    repo_full_name: str,
 ):
     """
     """
@@ -77,12 +77,7 @@ repo_full_name = new_repo(config_path=config_path, repo_name="test_repo", storag
 
 # %%
 #|export
-if config_path is None:
-    config_path = const.DEFAULT_CONFIG_PATH
 config = get_config(config_path)
-
-if repo_full_name is None:
-    raise ValueError("`repo_full_name` must be provided.")
 
 # %%
 # Set up a rclone remote path for testing

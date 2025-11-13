@@ -21,8 +21,8 @@ from repoyard import const
 # %%
 #|set_func_signature
 def sync_repo(
-    config_path: Path|None = None,
-    repo_full_name: str|None = None,
+    config_path: Path,
+    repo_full_name: str,
     sync_setting: SyncSetting = SyncSetting.BISYNC,
     force: bool = False,
 ):
@@ -95,12 +95,7 @@ repo_full_name = list((data_path / "local_store" / "my_remote").glob("*"))[0].na
 
 # %%
 #|export
-if config_path is None:
-    config_path = const.DEFAULT_CONFIG_PATH
 config = get_config(config_path)
-    
-if not repo_full_name:
-    raise ValueError("repo_full_name is required.")
 
 # %%
 # Set up a rclone remote path for testing

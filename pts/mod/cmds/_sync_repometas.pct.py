@@ -21,7 +21,7 @@ from repoyard import const
 # %%
 #|set_func_signature
 def sync_repometas(
-    config_path: Path|None = None,
+    config_path: Path,
     repo_full_names: list[str]|None = None,
     storage_locations: list[str]|None = None,
     sync_setting: SyncSetting = SyncSetting.BISYNC,
@@ -84,8 +84,6 @@ new_repo(config_path=config_path, repo_name="test_repo3", storage_location="my_r
 
 # %%
 #|export
-if config_path is None:
-    config_path = const.DEFAULT_CONFIG_PATH
 config = get_config(config_path)
 
 if repo_full_names is not None and storage_locations is not None:

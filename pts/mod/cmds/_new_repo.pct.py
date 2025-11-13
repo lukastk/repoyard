@@ -21,7 +21,7 @@ from repoyard.config import StorageType
 # %%
 #|set_func_signature
 def new_repo(
-    config_path: Path|None = None,
+    config_path: Path,
     storage_location: str|None = None,
     repo_name: str|None = None,
     from_path: Path|None = None,
@@ -68,8 +68,6 @@ init_repoyard(config_path=config_path, data_path=data_path)
 # %%
 #|export
 from repoyard.config import get_config
-if config_path is None:
-    config_path = const.DEFAULT_CONFIG_PATH
 config = get_config(config_path)
     
 if storage_location is None:
@@ -79,7 +77,7 @@ if storage_location not in config.storage_locations:
     raise ValueError(f"Invalid storage location: {storage_location}. Must be one of: {', '.join(config.storage_locations)}.")
     
 if repo_name is None and from_path is None:
-    raise ValueError("Either --name or --from must be provided.")
+    raise ValueError("Either `repo_name` or `from_path` must be provided.")
 
 if from_path is not None:
     from_path = Path(from_path).expanduser().resolve()
