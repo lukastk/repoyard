@@ -83,6 +83,7 @@ class Config(const.StrictModel):
     @model_validator(mode='after')
     def validate_config(self):
         # Expand all paths
+        self.config_path = Path(self.config_path).expanduser()
         self.repoyard_data_path = Path(self.repoyard_data_path).expanduser()
         self.user_repos_path = Path(self.user_repos_path).expanduser()
         self.user_repo_groups_path = Path(self.user_repo_groups_path).expanduser()
@@ -106,6 +107,7 @@ class Config(const.StrictModel):
 #|export
 def get_config(path: Path|None = None) -> Config:
     if path is None: path = const.DEFAULT_CONFIG_PATH
+    path = Path(path).expanduser()
     return Config(**{
         'config_path' : path,
         **toml.load(path)
@@ -119,7 +121,6 @@ def _get_default_config_dict(config_path=None, data_path=None) -> Config:
     if data_path is None: data_path = const.DEFAULT_DATA_PATH
     config_path = Path(config_path)
     data_path = Path(data_path)
-    
     
     config_dict = dict(
         config_path=config_path.as_posix(),
@@ -139,6 +140,7 @@ def _get_default_config_dict(config_path=None, data_path=None) -> Config:
         repo_groups = [],
     )
     return config_dict
+
 
 # %% [markdown]
 # # `rclone.conf`

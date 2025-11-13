@@ -63,11 +63,12 @@ from repoyard.config import get_config, _get_default_config_dict, Config
 import toml
 if not config_path.exists():
     print("Creating config file at:", config_path)
-    config_path.parent.mkdir(parents=True, exist_ok=True)
+    Path(config_path).expanduser().parent.mkdir(parents=True, exist_ok=True)
     default_config_dict = _get_default_config_dict(config_path=config_path, data_path=data_path)
     del default_config_dict['config_path'] # Don't save the config path to the config file
     config_toml = toml.dumps(default_config_dict)
-    Path(config_path).write_text(config_toml)
+    
+    Path(config_path).expanduser().write_text(config_toml)
 config = get_config(config_path)
 
 # %% [markdown]
