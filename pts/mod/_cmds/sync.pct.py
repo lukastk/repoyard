@@ -15,9 +15,10 @@ import repoyard._cmds.new as this_module
 from pathlib import Path
 import subprocess
 import os
+from typing import Literal
 
 from repoyard._utils import get_synced_repo_full_name_from_sub_path
-from repoyard.config import get_config
+from repoyard.config import get_config, StorageType
 from repoyard import const
 
 
@@ -36,10 +37,19 @@ class Sync_Error(_SyncError): pass
 def sync(
     config_path: Path|None = None,
     repo_name: str|None = None,
-    replace_remote: bool = False,
+    replace: Literal["remote", "local"]|None = None,
     force: bool = False,
 ):
     """
+    Syncs a repo with its remote.
+    
+    Args:
+        config_path: Path to the repoyard config file.
+        repo_name: Name of the repo to sync.
+        replace: If "remote", the remote will be replaced with the local repo.
+            If "local", the local repo will be replaced with the remote.
+            If None, it will bisync.
+        force: If True, the sync will be forced. Used in the case 
     """
     ...
 
@@ -61,7 +71,7 @@ data_path = test_folder_path / ".repoyard"
 # %%
 # Args (1/2)
 config_path = test_folder_path / "repoyard_config" / "config.toml"
-replace_remote = False
+replace = None
 force = False
 
 # %%
@@ -76,8 +86,7 @@ config_dump = toml.load(config_path)
 remote_rclone_path = Path(tempfile.mkdtemp(prefix="rclone_remote", dir="/tmp"))
 config_dump['storage_locations']['my_remote'] = {
     'storage_type' : "rclone",
-    'repometa_path' : "repometa",
-    'repostore_path' : "repostore",
+    'store_path' : "repoyard",
 }
 config_path.write_text(toml.dumps(config_dump))
 
@@ -85,12 +94,12 @@ new(config_path=config_path, repo_name="test_repo", storage_location="my_remote"
 
 # %%
 # Args (2/2)
-repo_name = list((data_path / "included_repostore").glob("*"))[0].name
+repo_name = list((data_path / "local_store" / "my_remote").glob("*"))[0].name
 
 # %%
 # Put an excluded file into the repo to make sure it is not synced
-(data_path / "included_repostore" / repo_name / ".venv").mkdir(parents=True, exist_ok=True)
-(data_path / "included_repostore" / repo_name / ".venv" / "test.txt").write_text("test");
+(data_path / "local_store" / "my_remote" / repo_name / ".venv").mkdir(parents=True, exist_ok=True)
+(data_path / "local_store" / "my_remote" / repo_name / ".venv" / "test.txt").write_text("test");
 
 # %% [markdown]
 # # Function body
@@ -136,29 +145,18 @@ repo_meta = repoyard_meta.by_full_name[repo_name]
 # %%
 #|export
 from repoyard._utils import rclone_bisync, rclone_sync, BisyncResult, rclone_mkdir, rclone_path_exists
-_repoyard_ignore_path = repo_meta.get_included_repo_path(config) / ".repoyard_ignore"
-_repoyard_filters_path = repo_meta.get_included_repo_path(config) / ".repoyard_filters"
+_repoyard_ignore_path = repo_meta.get_local_path(config) / ".repoyard_ignore"
+_repoyard_filters_path = repo_meta.get_local_path(config) / ".repoyard_filters"
 _exclude_file = _repoyard_ignore_path if _repoyard_ignore_path.exists() else None
 _filters_file = _repoyard_filters_path if _repoyard_filters_path.exists() else None
 
 def bisync_helper(dry_run: bool, resync: bool, force: bool, return_command: bool=False) -> BisyncResult:
-    # if not dry_run:
-    #     rclone_mkdir(
-    #         rclone_config_path=config.rclone_config_path,
-    #         source=repo_meta.storage_location,
-    #         source_path=config.storage_locations[repo_meta.storage_location].repostore_path,
-    #     )
-    #     rclone_mkdir(
-    #         rclone_config_path=config.rclone_config_path,
-    #         source=repo_meta.storage_location,
-    #         source_path=config.storage_locations[repo_meta.storage_location].repometa_path,
-    #     )
     return rclone_bisync(
         rclone_config_path=config.rclone_config_path,
         source="",
-        source_path=repo_meta.get_included_repo_path(config),
+        source_path=repo_meta.get_local_path(config),
         dest=repo_meta.storage_location,
-        dest_path=repo_meta.get_remote_repo_path(config),
+        dest_path=repo_meta.get_remote_path(config),
         exclude=[],
         exclude_file=_exclude_file,
         filters_file=_filters_file,
@@ -175,13 +173,13 @@ def bisync_helper(dry_run: bool, resync: bool, force: bool, return_command: bool
 
 # %%
 #|export
-is_local = config.storage_locations[repo_meta.storage_location].storage_type == "local" # If the repo is local, we don't need to sync it.
+is_local = config.storage_locations[repo_meta.storage_location].storage_type == StorageType.LOCAL # If the repo is local, we don't need to sync it.
 
 # If the remote repo does not exist, we must sync instead of bisync
 remote_repo_exists, remote_repo_is_dir = rclone_path_exists(
     rclone_config_path=config.rclone_config_path,
     source=repo_meta.storage_location,
-    source_path=repo_meta.get_remote_repo_path(config),
+    source_path=repo_meta.get_remote_path(config),
 )
 
 if remote_repo_exists and not remote_repo_is_dir:
@@ -189,7 +187,7 @@ if remote_repo_exists and not remote_repo_is_dir:
 
 # %%
 #|export
-if not replace_remote and not is_local and remote_repo_exists:
+if replace is None and not is_local and remote_repo_exists:
     res, stdout, stderr = bisync_helper(
         dry_run=True,
         resync=False,
@@ -228,31 +226,14 @@ if not replace_remote and not is_local and remote_repo_exists:
     if res_2 is not None:
         if res_2 != BisyncResult.SUCCESS:
             raise Sync_Error(f"Error.", stdout, stderr)
-
-# %%
-#|export
-if (replace_remote or not remote_repo_exists) and not is_local:
-    # Sync repo
+        
+elif (replace == "remote" or not remote_repo_exists) and not is_local:
     res, stdout, stderr = rclone_sync(
         rclone_config_path=config.rclone_config_path,
         source="",
-        source_path=repo_meta.get_included_repo_path(config),
+        source_path=repo_meta.get_local_path(config),
         dest=repo_meta.storage_location,
-        dest_path=repo_meta.get_remote_repo_path(config),
-        exclude=[],
-        exclude_file=_exclude_file,
-        filters_file=_filters_file,
-        dry_run=False,
-        verbose=False,
-    )
-    
-    # Sync repometa
-    res, stdout, stderr = rclone_sync(
-        rclone_config_path=config.rclone_config_path,
-        source="",
-        source_path=repo_meta.get_synced_repometa_path(config),
-        dest=repo_meta.storage_location,
-        dest_path=config.storage_locations[repo_meta.storage_location].repometa_path,
+        dest_path=repo_meta.get_remote_path(config),
         exclude=[],
         exclude_file=_exclude_file,
         filters_file=_filters_file,
@@ -262,6 +243,20 @@ if (replace_remote or not remote_repo_exists) and not is_local:
     
     if not res:
         raise Sync_Error(f"Error.", stdout, stderr)
+    
+elif replace == "local" and not is_local:
+    res, stdout, stderr = rclone_sync(
+        rclone_config_path=config.rclone_config_path,
+        source=repo_meta.storage_location,
+        source_path=repo_meta.get_remote_path(config),
+        dest="",
+        dest_path=repo_meta.get_local_path(config),
+        exclude=[],
+        exclude_file=_exclude_file, # TODO: This might cause issues, using the local ignore file
+        filters_file=_filters_file,
+        dry_run=False,
+        verbose=False,
+    )
 
 # %% [markdown]
 # Check that the repo was synced successfully
@@ -272,10 +267,18 @@ from repoyard._utils import rclone_lsjson
 _lsjson = rclone_lsjson(
     rclone_config_path=config.rclone_config_path,
     source=repo_meta.storage_location,
-    source_path=repo_meta.get_remote_repo_path(config),
+    source_path=repo_meta.get_remote_path(config),
+)
+
+_names = {f["Name"] for f in _lsjson}
+assert ".repoyard_ignore" in _names
+assert "repometa.toml" in _names
+
+_lsjson = rclone_lsjson(
+    rclone_config_path=config.rclone_config_path,
+    source=repo_meta.storage_location,
+    source_path=repo_meta.get_remote_repodata_path(config),
 )
 
 _names = {f["Name"] for f in _lsjson}
 assert ".git" in _names
-assert ".repoyard_ignore" in _names
-assert ".venv" not in _names

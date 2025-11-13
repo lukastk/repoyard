@@ -35,30 +35,35 @@ class RepoMeta(const.StrictModel):
     def full_name(self) -> str:
         return f"{str(self.ulid)}__{self.name}"
 
+    def get_remote_path(self, config: repoyard.config.Config) -> Path:
+        return config.storage_locations[self.storage_location].store_path / self.full_name
+    
+    def get_remote_repometa_path(self, config: repoyard.config.Config) -> Path:
+        return self.get_remote_path(config) / const.REPO_METAFILE_REL_PATH
+    
+    def get_remote_repodata_path(self, config: repoyard.config.Config) -> Path:
+        return self.get_remote_path(config) / const.REPO_DATA_REL_PATH
+    
+    def get_local_path(self, config: repoyard.config.Config) -> Path:
+        return config.local_store_path / self.storage_location / self.full_name
+    
+    def get_local_repodata_path(self, config: repoyard.config.Config) -> Path:
+        return self.get_local_path(config) / const.REPO_DATA_REL_PATH
+    
+    def get_local_repometa_path(self, config: repoyard.config.Config) -> Path:
+        return self.get_local_path(config) / const.REPO_METAFILE_REL_PATH
+
     def check_included(self, config: repoyard.config.Config) -> bool:
-        included_repo_path = (config.included_repostore_path / self.full_name)
-        is_included = included_repo_path.is_dir() and included_repo_path.exists()
-        return is_included
+        included_repo_path = self.get_local_repodata_path(config)
+        return included_repo_path.is_dir() and included_repo_path.exists()
     
     def save(self, config: repoyard.config.Config):
-        path = self.get_synced_repometa_path(config)
-        path.parent.mkdir(parents=True, exist_ok=True)
+        save_path = self.get_local_repometa_path(config)
+        save_path.parent.mkdir(parents=True, exist_ok=True)
         model_dump = self.model_dump()
         del model_dump['ulid']
         del model_dump['name']
-        path.write_text(toml.dumps(model_dump))
-        
-    def get_included_repo_path(self, config: repoyard.config.Config) -> Path:
-        return config.included_repostore_path / self.full_name
-    
-    def get_remote_repo_path(self, config: repoyard.config.Config) -> Path:
-        return config.storage_locations[self.storage_location].repostore_path / self.full_name
-    
-    def get_synced_repometa_path(self, config: repoyard.config.Config) -> Path:
-        return config.synced_repometa_path / self.storage_location / f"{self.full_name}.toml"
-    
-    def get_remote_repometa_path(self, config: repoyard.config.Config) -> Path:
-        return config.storage_locations[self.storage_location].repometa_path / f"{self.full_name}.toml"
+        save_path.write_text(toml.dumps(model_dump))
 
 
 # %%
@@ -77,12 +82,21 @@ def create_repoyard_meta(
     by_full_name = {}
     by_ulid = {}
     for storage_location_name in config.storage_locations:
-        path = config.synced_repometa_path / storage_location_name
-        for repo_meta_path in path.glob('*.toml'):
-            full_name = repo_meta_path.stem
+        local_storage_location_path = config.local_store_path / storage_location_name
+        
+        for repo_path in local_storage_location_path.glob('*'):
+            if not repo_path.is_dir():
+                raise ValueError(f"Repo path {repo_path} is not a directory.")
+            
+            full_name = repo_path.stem
             ulid, name = full_name.split('__', 1)
+            
+            repometa_path = repo_path / const.REPO_METAFILE_REL_PATH
+            if not repometa_path.exists():
+                raise ValueError(f"Repo meta file {repometa_path} does not exist.")
+            
             repo_meta = RepoMeta(**{
-                **toml.loads(repo_meta_path.read_text()),
+                **toml.loads(repometa_path.read_text()),
                 'ulid': ulid,
                 'name': name,
                 'storage_location': storage_location_name,

@@ -16,6 +16,7 @@ from pathlib import Path
 import subprocess
 
 from repoyard import const
+from repoyard.config import StorageType
 
 
 # %%
@@ -26,7 +27,6 @@ def new(
     repo_name: str|None = None,
     from_path: Path|None = None,
     creator_hostname: str|None = None,
-    add_repoyard_ignore: bool = True,
     initialise_git: bool = True,
 ):
     """
@@ -111,31 +111,21 @@ repo_meta.save(config)
 
 # %%
 #|export
-repo_path = config.included_repostore_path / repo_meta.full_name
+repo_path = repo_meta.get_local_path(config)
+repo_data_path = repo_meta.get_local_repodata_path(config)
+repo_path.mkdir(parents=True, exist_ok=True)
 
-if config.storage_locations[storage_location].storage_type != "local":
-    if from_path is not None:
-        from_path.rename(repo_path)
-    else:
-        repo_path.mkdir(parents=True, exist_ok=True)
+if from_path is not None:
+    from_path.rename(repo_data_path)
 else:
-    storage_location_repo_path = config.local_repostore_path / repo_meta.full_name
-    if from_path is not None:
-        from_path.rename(storage_location_repo_path)
-    else:
-        storage_location_repo_path.mkdir(parents=True, exist_ok=True)
-    repo_path.symlink_to(storage_location_repo_path)
-    
-if not any(repo_path.iterdir()):
-    (repo_path / ".repoyard_ignore").touch()
+    repo_data_path.mkdir(parents=True, exist_ok=True)
 
 # %% [markdown]
 # Add `.repoyard_ignore`
 
 # %%
 #|export
-if add_repoyard_ignore:
-    (repo_path / ".repoyard_ignore").write_text(const.DEFAULT_REPOYARD_IGNORE)
+(repo_path / ".repoyard_ignore").write_text(const.DEFAULT_REPOYARD_IGNORE);
 
 # %% [markdown]
 # Run `git init`
@@ -143,4 +133,4 @@ if add_repoyard_ignore:
 # %%
 #|export
 if initialise_git:
-    subprocess.run(["git", "init"], check=True, cwd=repo_path)
+    subprocess.run(["git", "init"], check=True, cwd=repo_data_path)
