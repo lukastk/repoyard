@@ -25,6 +25,7 @@ dev = [
     "jupyterlab>=4.4.0",
     "nblite>=0.6.8",
     "pytest>=9.0.0",
+    "twine>=6.2.0",
 ]
 
 [project.scripts]
