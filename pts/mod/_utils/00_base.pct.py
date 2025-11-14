@@ -33,7 +33,7 @@ def get_repo_full_name_from_sub_path(
     """
     Get the full name of a synced repo from a path inside of the repo.
     """
-    sub_path = Path(sub_path).expanduser()
+    sub_path = Path(sub_path).expanduser().resolve() # Need to resolve to replace symlinks
     is_in_local_store_path = sub_path.is_relative_to(config.local_store_path)
     
     if not is_in_local_store_path:
