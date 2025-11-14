@@ -51,7 +51,7 @@ data_path = test_folder_path / "repoyard_data"
 config_path = config_path or const.DEFAULT_CONFIG_PATH
 data_path = data_path or const.DEFAULT_DATA_PATH
 
-if config_path.as_posix() != const.DEFAULT_CONFIG_PATH.as_posix():
+if config_path.expanduser().as_posix() != const.DEFAULT_CONFIG_PATH.expanduser().as_posix():
     print(f"Using a non-default config path. Please set the environment variable {const.ENV_VAR_REPOYARD_CONFIG_PATH} to the given config path for repoyard to use it. ")
 
 # %% [markdown]
@@ -61,7 +61,7 @@ if config_path.as_posix() != const.DEFAULT_CONFIG_PATH.as_posix():
 #|export
 from repoyard.config import get_config, _get_default_config_dict, Config
 import toml
-if not config_path.exists():
+if not config_path.expanduser().exists():
     print("Creating config file at:", config_path)
     Path(config_path).expanduser().parent.mkdir(parents=True, exist_ok=True)
     default_config_dict = _get_default_config_dict(config_path=config_path, data_path=data_path)
