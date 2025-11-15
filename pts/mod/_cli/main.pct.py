@@ -260,6 +260,7 @@ def cli_sync_meta(
     sync_all: bool = Option(False, "--all", "-a", help="Sync all repositories."),
     sync_setting: SyncSetting = Option(SyncSetting.CAREFUL, "--sync-setting", help="The sync setting to use."),
     sync_direction: SyncDirection|None = Option(None, "--sync-direction", "-d", help="The direction of the sync. If not provided, the appropriate direction will be automatically determined based on the sync status. This mode is only available for the 'CAREFUL' sync setting."),
+    max_concurrent_rclone_ops: int|None = Option(None, "--max-concurrent", "-m", help="The maximum number of concurrent rclone operations. If not provided, the default specified in the config will be used."),
 ):
     """
     Syncs the metadata of a repository.
@@ -285,6 +286,7 @@ def cli_sync_meta(
         sync_setting=sync_setting,
         sync_direction=sync_direction,
         verbose=True,
+        max_concurrent_rclone_ops=max_concurrent_rclone_ops,
     ))
 
 
