@@ -304,12 +304,12 @@ class SyncRecord(const.StrictModel):
             creator_hostname=creator_hostname or get_hostname(),
         )
 
-    def rclone_save(self, rclone_config_path: str, dest: str, dest_path: str) -> None:
+    async def rclone_save(self, rclone_config_path: str, dest: str, dest_path: str) -> None:
         from repoyard._utils import rclone_copyto
         import tempfile
         temp_path = Path(tempfile.mkstemp(suffix='.json')[1])
         temp_path.write_text(self.model_dump_json())
-        rclone_copyto(
+        await rclone_copyto(
             rclone_config_path=rclone_config_path,
             source="",
             source_path=temp_path.as_posix(),
@@ -319,9 +319,9 @@ class SyncRecord(const.StrictModel):
         )
 
     @classmethod
-    def rclone_read(cls, rclone_config_path: str, source: str, sync_record_path: str) -> str:
+    async def rclone_read(cls, rclone_config_path: str, source: str, sync_record_path: str) -> str:
         from repoyard._utils import rclone_cat
-        sync_record_exists, sync_record = rclone_cat(
+        sync_record_exists, sync_record = await rclone_cat(
             rclone_config_path=rclone_config_path,
             source=source,
             source_path=sync_record_path,
@@ -357,7 +357,7 @@ class SyncStatus(NamedTuple):
     remote_sync_record: SyncRecord
     is_dir: bool
 
-def get_sync_status(
+async def get_sync_status(
     rclone_config_path: str,
     local_path: str,
     local_sync_record_path: str,
@@ -368,13 +368,13 @@ def get_sync_status(
     from repoyard._utils import check_last_time_modified
     from repoyard._utils import rclone_path_exists
 
-    local_path_exists, local_path_is_dir = rclone_path_exists(
+    local_path_exists, local_path_is_dir = await rclone_path_exists(
         rclone_config_path=rclone_config_path,
         source="",
         source_path=local_path,
     )
 
-    remote_path_exists, remote_path_is_dir = rclone_path_exists(
+    remote_path_exists, remote_path_is_dir = await rclone_path_exists(
         rclone_config_path=rclone_config_path,
         source=remote,
         source_path=remote_path,
@@ -390,13 +390,13 @@ def get_sync_status(
     
     is_dir = local_path_is_dir or remote_path_is_dir
 
-    local_sync_record = SyncRecord.rclone_read(
+    local_sync_record = await SyncRecord.rclone_read(
         rclone_config_path=rclone_config_path,
         source="",
         sync_record_path=local_sync_record_path,
     )
 
-    remote_sync_record = SyncRecord.rclone_read(
+    remote_sync_record = await SyncRecord.rclone_read(
         rclone_config_path=rclone_config_path,
         source=remote,
         sync_record_path=remote_sync_record_path,

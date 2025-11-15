@@ -59,6 +59,8 @@ class Config(const.StrictModel):
     repo_subid_character_set: str
     repo_subid_length: int
 
+    max_concurrent_rclone_ops: int
+
     @property
     def local_store_path(self) -> Path:
         return self.repoyard_data_path / "local_store"
@@ -132,6 +134,7 @@ def _get_default_config_dict(config_path=None, data_path=None) -> Config:
         repo_groups = [],
         repo_subid_character_set = const.DEFAULT_REPO_SUBID_CHARACTER_SET,
         repo_subid_length = const.DEFAULT_REPO_SUBID_LENGTH,
+        max_concurrent_rclone_ops = const.DEFAULT_MAX_CONCURRENT_RCLONE_OPS,
     )
     return config_dict
 

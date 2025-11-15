@@ -54,6 +54,8 @@ REPO_TIMESTAMP_FORMAT = "%Y%m%d_%H%M%S"
 DEFAULT_REPO_SUBID_CHARACTER_SET = string.ascii_lowercase + string.ascii_uppercase + string.digits
 DEFAULT_REPO_SUBID_LENGTH = 5
 
+DEFAULT_MAX_CONCURRENT_RCLONE_OPS = 10
+
 # %% [markdown]
 # Environment variables
 
