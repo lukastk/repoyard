@@ -7,3 +7,4 @@ from ._modify_repometa import modify_repometa
 from ._include_repo import include_repo
 from ._exclude_repo import exclude_repo
 from ._delete_repo import delete_repo
+from ._create_user_symlinks import create_user_symlinks
