@@ -2,7 +2,7 @@
 
 # %% auto 0
 __all__ = ['entrypoint', 'cli_init', 'cli_new', 'cli_sync', 'cli_sync_meta', 'cli_add_to_group', 'cli_remove_from_group',
-           'cli_include', 'cli_exclude', 'cli_delete']
+           'cli_include', 'cli_exclude', 'cli_delete', 'cli_repo_status', 'cli_path']
 
 # %% ../../../pts/mod/_cli/main.pct.py 3
 import os
@@ -10,8 +10,9 @@ import typer
 from typer import Argument, Option
 from typing_extensions import Annotated
 from types import FunctionType
-from typing import Callable, Union, List
+from typing import Callable, Union, List, Literal
 from pathlib import Path
+from enum import Enum
 
 import repoyard as proj
 from .. import const
@@ -31,13 +32,35 @@ def entrypoint(
     typer.echo(ctx.get_help())
 
 # %% ../../../pts/mod/_cli/main.pct.py 8
+def _is_subsequence_match(term: str, name: str) -> bool:
+    j = 0
+    m = len(term)
+
+    for ch in name:
+        if j < m and ch == term[j]:
+            j += 1
+            if j == m:
+                return True
+    return j == m
+
+# %% ../../../pts/mod/_cli/main.pct.py 10
+class NameMatchMode(Enum):
+    EXACT = "exact"
+    CONTAINS = "contains"
+    SUBSEQUENCE = "subsequence"
+
 def _get_full_repo_name(
-    repo_name: str|None = None,
-    repo_id: str|None = None,
-    repo_full_name: str|None = None,
+    repo_name: str|None,
+    repo_id: str|None,
+    repo_full_name: str|None,
+    name_match_mode: NameMatchMode|None,
+    name_match_case: bool,
 ) -> str:
     if sum(1 for x in [repo_name, repo_full_name, repo_id] if x is not None) > 1:
         raise typer.Exit("Cannot provide more than one of `repo-name`, `repo-full-name` or `repo-id`.")
+
+    if name_match_mode is not None and repo_name is None:
+        raise typer.Exit("`repo-name` must be provided if `name-match-mode` is provided.")
     
     if repo_id is not None or repo_name is not None:
         from repoyard._models import get_repoyard_meta
@@ -49,7 +72,18 @@ def _get_full_repo_name(
                 raise typer.Exit(f"Repository with id `{repo_id}` not found.")
             repo_full_name = repoyard_meta.by_ulid[repo_id].full_name
         else:
-            repos_with_name = [x for x in repoyard_meta.by_full_name.values() if x.name == repo_name]
+            if name_match_mode is None: name_match_mode = NameMatchMode.SUBSEQUENCE
+            if name_match_mode == NameMatchMode.EXACT:
+                cmp = lambda x: x.name == repo_name if not name_match_case else x.name.lower() == repo_name.lower()
+                repos_with_name = [x for x in repoyard_meta.by_full_name.values() if cmp(x)]
+            elif name_match_mode == NameMatchMode.CONTAINS:
+                cmp = lambda x: repo_name in x.name if not name_match_case else repo_name.lower() in x.name.lower()
+                repos_with_name = [x for x in repoyard_meta.by_full_name.values() if cmp(x)]
+            elif name_match_mode == NameMatchMode.SUBSEQUENCE:
+                cmp = lambda x: _is_subsequence_match(repo_name, x.name) if not name_match_case else _is_subsequence_match(repo_name.lower(), x.name.lower())
+                repos_with_name = [x for x in repoyard_meta.by_full_name.values() if cmp(x)]
+            repos_with_name = sorted(repos_with_name, key=lambda x: x.full_name)
+                
             if len(repos_with_name) == 0:
                 raise typer.Exit(f"Repository with name `{repo_name}` not found.")
             elif len(repos_with_name) == 1:
@@ -71,7 +105,7 @@ def _get_full_repo_name(
         
     return repo_full_name
 
-# %% ../../../pts/mod/_cli/main.pct.py 10
+# %% ../../../pts/mod/_cli/main.pct.py 12
 @app.command(name='init')
 def cli_init(
     config_path: Path|None = Option(None, "--config-path", help=f"The path to the config file. Will be {const.DEFAULT_CONFIG_PATH} if not provided."),
@@ -87,14 +121,15 @@ def cli_init(
         verbose=True,
     )
 
-# %% ../../../pts/mod/_cli/main.pct.py 12
+# %% ../../../pts/mod/_cli/main.pct.py 14
 @app.command(name='new')
 def cli_new(
     storage_location: str|None = None,
     repo_name: str|None = Option(None, "--repo", "-r", help="The full name of the repository, the id or the path of the repo."),
     from_path: Path|None = Option(None, "--from", "-f", help="Path to a local directory to move into repoyard as a new repository."),
     copy_from_path: bool = Option(False, "--copy", "-c", help="Copy the contents of the from_path into the new repository."),
-    creator_hostname: str|None = Option(None, "--creator-hostname", "-c", help="Used to explicitly set the creator hostname of the new repository."),
+    creator_hostname: str|None = Option(None, "--creator-hostname", help="Used to explicitly set the creator hostname of the new repository."),
+    groups: list[str]|None = Option(None, "--groups", "-g", help="The groups to add the new repository to."),
     initialise_git: bool = Option(True, help="Initialise a git repository in the new repository."),
 ):
     """
@@ -108,7 +143,7 @@ def cli_new(
     if repo_name is None:
         raise typer.Exit("No repository name provided.", code=1)
     
-    new_repo(
+    repo_full_name = new_repo(
         config_path=app_state['config_path'],
         storage_location=storage_location,
         repo_name=repo_name,
@@ -116,18 +151,31 @@ def cli_new(
         copy_from_path=copy_from_path,
         creator_hostname=creator_hostname,
         initialise_git=initialise_git,
-        verbose=True,
+        verbose=False,
     )
+    typer.echo(repo_full_name)
 
-# %% ../../../pts/mod/_cli/main.pct.py 14
+    if groups:
+        from repoyard.cmds import modify_repometa
+        modify_repometa(
+            config_path=app_state['config_path'],
+            repo_full_name=repo_full_name,
+            modifications={
+                'groups': groups,
+            }
+        )
+
+# %% ../../../pts/mod/_cli/main.pct.py 16
 @app.command(name='sync')
 def cli_sync(
     repo_full_name: str|None = Option(None, "--repo", "-r", help="The full name of the repository, in the form '{ULID}__{REPO_NAME}'."),
     repo_id: str|None = Option(None, "--repo-id", "-i", help="The id of the repository to sync."),
     repo_name: str|None = Option(None, "--repo-name", "-n", help="The name of the repository to sync."),
+    name_match_mode: NameMatchMode|None = Option(None, "--name-match-mode", "-m", help="The mode to use for matching the repository name."),
+    name_match_case: bool = Option(False, "--name-match-case", "-c", help="Whether to match the repository name case-sensitively."),
     sync_direction: SyncDirection|None = Option(None, "--sync-direction", "-d", help="The direction of the sync. If not provided, the appropriate direction will be automatically determined based on the sync status. This mode is only available for the 'CAREFUL' sync setting."),
     sync_setting: SyncSetting = Option(SyncSetting.CAREFUL, "--sync-setting", "-s", help="The sync setting to use."),
-    sync_choices: list[RepoPart] = Option(None, "--sync-choices", "-c", help="The parts of the repository to sync. If not provided, all parts will be synced. By default, all parts are synced."),
+    sync_choices: list[RepoPart]|None = Option(None, "--sync-choices", "-c", help="The parts of the repository to sync. If not provided, all parts will be synced. By default, all parts are synced."),
     show_rclone_progress: bool = Option(False, "--progress", "-p", help="Show the progress of the sync in rclone."),
 ):
     """
@@ -139,18 +187,24 @@ def cli_sync(
         repo_name=repo_name,
         repo_id=repo_id,
         repo_full_name=repo_full_name,
+        name_match_mode=name_match_mode,
+        name_match_case=name_match_case,
     )
+
+    if sync_choices is None:
+        sync_choices = [repo_part for repo_part in RepoPart]
     
     sync_repo(
         config_path=app_state['config_path'],
         repo_full_name=repo_full_name,
+        sync_direction=sync_direction,
         sync_setting=sync_setting,
-        force=sync_force,
+        sync_choices=sync_choices,
         verbose=True,
         show_rclone_progress=show_rclone_progress,
     )
 
-# %% ../../../pts/mod/_cli/main.pct.py 16
+# %% ../../../pts/mod/_cli/main.pct.py 18
 @app.command(name='sync-meta')
 def cli_sync_meta(
     repo_full_names: list[str]|None = Option(None, "--repo", "-r", help="The full name of the repository, in the form '{ULID}__{REPO_NAME}'."),
@@ -185,12 +239,14 @@ def cli_sync_meta(
         verbose=True,
     )
 
-# %% ../../../pts/mod/_cli/main.pct.py 18
+# %% ../../../pts/mod/_cli/main.pct.py 20
 @app.command(name='add-to-group')
 def cli_add_to_group(
     repo_full_name: str|None = Option(None, "--repo", "-r", help="The full name of the repository, in the form '{ULID}__{REPO_NAME}'."),
     repo_id: str|None = Option(None, "--repo-id", "-i", help="The id of the repository to sync."),
     repo_name: str|None = Option(None, "--repo-name", "-n", help="The name of the repository to sync."),
+    name_match_mode: NameMatchMode|None = Option(None, "--name-match-mode", "-m", help="The mode to use for matching the repository name."),
+    name_match_case: bool = Option(False, "--name-match-case", "-c", help="Whether to match the repository name case-sensitively."),
     group_name: str = Option(..., "--group-name", "-g", help="The name of the group to add the repository to."),
     sync_after: bool = Option(True, "--sync-after", "-s", help="Sync the repository after adding it to the group."),
     sync_setting: SyncSetting = Option(SyncSetting.CAREFUL, "--sync-setting", help="The sync setting to use."),
@@ -205,6 +261,8 @@ def cli_add_to_group(
         repo_name=repo_name,
         repo_id=repo_id,
         repo_full_name=repo_full_name,
+        name_match_mode=name_match_mode,
+        name_match_case=name_match_case,
     )
     
     repoyard_meta = get_repoyard_meta(get_config(app_state['config_path']))
@@ -232,12 +290,14 @@ def cli_add_to_group(
                 verbose=True,
             )
 
-# %% ../../../pts/mod/_cli/main.pct.py 20
+# %% ../../../pts/mod/_cli/main.pct.py 22
 @app.command(name='remove-from-group')
 def cli_remove_from_group(
     repo_full_name: str|None = Option(None, "--repo", "-r", help="The full name of the repository, in the form '{ULID}__{REPO_NAME}'."),
     repo_id: str|None = Option(None, "--repo-id", "-i", help="The id of the repository to sync."),
     repo_name: str|None = Option(None, "--repo-name", "-n", help="The name of the repository to sync."),
+    name_match_mode: NameMatchMode|None = Option(None, "--name-match-mode", "-m", help="The mode to use for matching the repository name."),
+    name_match_case: bool = Option(False, "--name-match-case", "-c", help="Whether to match the repository name case-sensitively."),
     group_name: str = Option(..., "--group-name", "-g", help="The name of the group to add the repository to."),
     sync_after: bool = Option(True, "--sync-after", "-s", help="Sync the repository after adding it to the group."),
     sync_setting: SyncSetting = Option(SyncSetting.CAREFUL, "--sync-setting", help="The sync setting to use."),
@@ -252,6 +312,8 @@ def cli_remove_from_group(
         repo_name=repo_name,
         repo_id=repo_id,
         repo_full_name=repo_full_name,
+        name_match_mode=name_match_mode,
+        name_match_case=name_match_case,
     )
     
     repoyard_meta = get_repoyard_meta(get_config(app_state['config_path']))
@@ -279,12 +341,14 @@ def cli_remove_from_group(
                 verbose=True,
             )
 
-# %% ../../../pts/mod/_cli/main.pct.py 22
+# %% ../../../pts/mod/_cli/main.pct.py 24
 @app.command(name='include')
 def cli_include(
     repo_full_name: str|None = Option(None, "--repo", "-r", help="The full name of the repository, in the form '{ULID}__{REPO_NAME}'."),
     repo_id: str|None = Option(None, "--repo-id", "-i", help="The id of the repository to sync."),
     repo_name: str|None = Option(None, "--repo-name", "-n", help="The name of the repository to sync."),
+    name_match_mode: NameMatchMode|None = Option(None, "--name-match-mode", "-m", help="The mode to use for matching the repository name."),
+    name_match_case: bool = Option(False, "--name-match-case", "-c", help="Whether to match the repository name case-sensitively."),
 ):
     """
     Include a repository in the local store.
@@ -296,6 +360,8 @@ def cli_include(
         repo_name=repo_name,
         repo_id=repo_id,
         repo_full_name=repo_full_name,
+        name_match_mode=name_match_mode,
+        name_match_case=name_match_case,
     )
     
     repoyard_meta = get_repoyard_meta(get_config(app_state['config_path']))
@@ -307,12 +373,14 @@ def cli_include(
         repo_full_name=repo_full_name,
     )
 
-# %% ../../../pts/mod/_cli/main.pct.py 24
+# %% ../../../pts/mod/_cli/main.pct.py 26
 @app.command(name='exclude')
 def cli_exclude(
     repo_full_name: str|None = Option(None, "--repo", "-r", help="The full name of the repository, in the form '{ULID}__{REPO_NAME}'."),
     repo_id: str|None = Option(None, "--repo-id", "-i", help="The id of the repository to sync."),
     repo_name: str|None = Option(None, "--repo-name", "-n", help="The name of the repository to sync."),
+    name_match_mode: NameMatchMode|None = Option(None, "--name-match-mode", "-m", help="The mode to use for matching the repository name."),
+    name_match_case: bool = Option(False, "--name-match-case", "-c", help="Whether to match the repository name case-sensitively."),
     skip_sync: bool = Option(False, "--skip-sync", "-s", help="Skip the sync before excluding the repository."),
 ):
     """
@@ -325,6 +393,8 @@ def cli_exclude(
         repo_name=repo_name,
         repo_id=repo_id,
         repo_full_name=repo_full_name,
+        name_match_mode=name_match_mode,
+        name_match_case=name_match_case,
     )
     
     repoyard_meta = get_repoyard_meta(get_config(app_state['config_path']))
@@ -337,12 +407,14 @@ def cli_exclude(
         skip_sync=skip_sync,
     )
 
-# %% ../../../pts/mod/_cli/main.pct.py 26
+# %% ../../../pts/mod/_cli/main.pct.py 28
 @app.command(name='delete')
 def cli_delete(
     repo_full_name: str|None = Option(None, "--repo", "-r", help="The full name of the repository, in the form '{ULID}__{REPO_NAME}'."),
     repo_id: str|None = Option(None, "--repo-id", "-i", help="The id of the repository to sync."),
     repo_name: str|None = Option(None, "--repo-name", "-n", help="The name of the repository to sync."),
+    name_match_mode: NameMatchMode|None = Option(None, "--name-match-mode", "-m", help="The mode to use for matching the repository name."),
+    name_match_case: bool = Option(False, "--name-match-case", "-c", help="Whether to match the repository name case-sensitively."),
 ):
     """
     Delete a repository.
@@ -354,6 +426,8 @@ def cli_delete(
         repo_name=repo_name,
         repo_id=repo_id,
         repo_full_name=repo_full_name,
+        name_match_mode=name_match_mode,
+        name_match_case=name_match_case,
     )
     
     repoyard_meta = get_repoyard_meta(get_config(app_state['config_path']))
@@ -364,3 +438,126 @@ def cli_delete(
         config_path=app_state['config_path'],
         repo_full_name=repo_full_name,
     )
+
+# %% ../../../pts/mod/_cli/main.pct.py 30
+def _dict_to_hierarchical_text(data: dict, indents: int=0, lines: list[str]=[]) -> list[str]:
+    for k, v in data.items():
+        if isinstance(v, dict):
+            _dict_to_hierarchical_text(v, indents+1, lines)
+        else:
+            lines.append(f"{' ' *4*indents}{k}: {v}")
+    return lines
+
+# %% ../../../pts/mod/_cli/main.pct.py 31
+@app.command(name='repo-status')
+def cli_repo_status(
+    repo_full_name: str|None = Option(None, "--repo", "-r", help="The full name of the repository, in the form '{ULID}__{REPO_NAME}'."),
+    repo_id: str|None = Option(None, "--repo-id", "-i", help="The id of the repository to sync."),
+    repo_name: str|None = Option(None, "--repo-name", "-n", help="The name of the repository to sync."),
+    name_match_mode: NameMatchMode|None = Option(None, "--name-match-mode", "-m", help="The mode to use for matching the repository name."),
+    name_match_case: bool = Option(False, "--name-match-case", "-c", help="Whether to match the repository name case-sensitively."),
+    output_format: Literal['text', 'json'] = Option('text', "--output-format", "-o", help="The format of the output."),
+):
+    """
+    Get the sync status of a repository.
+    """
+    from repoyard.cmds import get_repo_sync_status
+    from repoyard._models import get_repoyard_meta
+    from pydantic import BaseModel
+    import json
+    
+    repo_full_name = _get_full_repo_name(
+        repo_name=repo_name,
+        repo_id=repo_id,
+        repo_full_name=repo_full_name,
+        name_match_mode=name_match_mode,
+        name_match_case=name_match_case,
+    )
+    
+    repoyard_meta = get_repoyard_meta(get_config(app_state['config_path']))
+    if repo_full_name not in repoyard_meta.by_full_name:
+        raise typer.Exit(f"Repository with full name `{repo_full_name}` not found.", code=1)
+    
+    sync_status = get_repo_sync_status(
+        config_path=app_state['config_path'],
+        repo_full_name=repo_full_name,
+    )
+
+    data = {}
+    for repo_part, part_sync_status in sync_status.items():
+        part_sync_status_dump = part_sync_status._asdict()
+        for k, v in part_sync_status_dump.items():
+            if isinstance(v, BaseModel):
+                part_sync_status_dump[k] = v.model_dump()
+            if isinstance(v, Enum):
+                part_sync_status_dump[k] = v.value
+        data[repo_part.value] = part_sync_status_dump
+
+    if output_format == 'json':
+        typer.echo(json.dumps(data, indent=2))
+    else:
+       typer.echo("\n".join(_dict_to_hierarchical_text(data)))
+
+
+
+# %% ../../../pts/mod/_cli/main.pct.py 34
+@app.command(name='path')
+def cli_path(
+    repo_full_name: str|None = Option(None, "--repo", "-r", help="The full name of the repository, in the form '{ULID}__{REPO_NAME}'."),
+    repo_id: str|None = Option(None, "--repo-id", "-i", help="The id of the repository to sync."),
+    repo_name: str|None = Option(None, "--repo-name", "-n", help="What repo path to show."),
+    name_match_mode: NameMatchMode|None = Option(None, "--name-match-mode", "-m", help="The mode to use for matching the repository name."),
+    name_match_case: bool = Option(False, "--name-match-case", "-c", help="Whether to match the repository name case-sensitively."),
+    path_option: Literal[
+            'data-user',
+            'data',
+            'meta',
+            'conf',
+            'root',
+            'sync-record-data',
+            'sync-record-meta',
+            'sync-record-conf',
+
+        ] = Option('data', "--path-option", "-p", help="The part of the repository to get the path of."),
+):
+    """
+    Get the path of a repository.
+    """
+    from repoyard.cmds import get_repo_sync_status
+    from repoyard._models import get_repoyard_meta
+    from pydantic import BaseModel
+    import json
+    
+    repo_full_name = _get_full_repo_name(
+        repo_name=repo_name,
+        repo_id=repo_id,
+        repo_full_name=repo_full_name,
+        name_match_mode=name_match_mode,
+        name_match_case=name_match_case,
+    )
+    
+    repoyard_meta = get_repoyard_meta(get_config(app_state['config_path']))
+    if repo_full_name not in repoyard_meta.by_full_name:
+        raise typer.Exit(f"Repository with full name `{repo_full_name}` not found.", code=1)
+    repo_meta = repoyard_meta.by_full_name[repo_full_name]  
+
+    config = get_config(app_state['config_path'])
+
+    if path_option == 'data-user':
+        typer.echo(repo_meta.get_user_path(config).as_posix())
+    elif path_option == 'data':
+        typer.echo(repo_meta.get_local_repodata_path(config).as_posix())
+    elif path_option == 'meta':
+        typer.echo(repo_meta.get_local_repometa_path(config).as_posix())
+    elif path_option == 'conf':
+        typer.echo(repo_meta.get_local_repoconf_path(config).as_posix())
+    elif path_option == 'root':
+        typer.echo(config.get_local_path(config).as_posix())
+    elif path_option == 'sync-record-data':
+        typer.echo(repo_meta.get_local_sync_record_path(config, RepoPart.DATA).as_posix())
+    elif path_option == 'sync-record-meta':
+        typer.echo(repo_meta.get_local_sync_record_path(config, RepoPart.META).as_posix())
+    elif path_option == 'sync-record-conf':
+        typer.echo(repo_meta.get_local_sync_record_path(config, RepoPart.CONF).as_posix())
+    else:
+        raise typer.Exit(f"Invalid path option: {path_option}", code=1)
