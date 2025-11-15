@@ -40,10 +40,13 @@ class StorageConfig(const.StrictModel):
         self.store_path = self.store_path.expanduser()
         return self
     
+class RepoGroupTitleMode(Enum):
+    FULL_NAME = "full_name"
+    DATETIME_AND_NAME = "datetime_and_name"
+    NAME = "name"
+
 class RepoGroupConfig(const.StrictModel):
-    group_name: str
-    is_virtual: bool = False
-    repo_title_mode: Literal["full_name", "datetime", "name"] = "datetime"
+    repo_title_mode: RepoGroupTitleMode = RepoGroupTitleMode.FULL_NAME
     unique_repo_names: bool = False
 
 class Config(const.StrictModel):
@@ -54,7 +57,7 @@ class Config(const.StrictModel):
     user_repos_path : Path
     user_repo_groups_path : Path
     storage_locations : dict[str, StorageConfig]
-    repo_groups : list[RepoGroupConfig]
+    repo_groups : dict[str, RepoGroupConfig]
 
     repo_subid_character_set: str
     repo_subid_length: int
@@ -131,7 +134,7 @@ def _get_default_config_dict(config_path=None, data_path=None) -> Config:
                 store_path=(data_path / const.DEFAULT_FAKE_STORE_REL_PATH).as_posix(),
             )
         },
-        repo_groups = [],
+        repo_groups = {},
         repo_subid_character_set = const.DEFAULT_REPO_SUBID_CHARACTER_SET,
         repo_subid_length = const.DEFAULT_REPO_SUBID_LENGTH,
         max_concurrent_rclone_ops = const.DEFAULT_MAX_CONCURRENT_RCLONE_OPS,

@@ -93,7 +93,7 @@ remote = {remote_rclone_path}
 """);
 
 # Sync to remote
-await sync_repo(config_path=config_path, repo_full_name=repo_full_name)
+await sync_repo(config_path=config_path, repo_full_name=repo_full_name);
 
 # %% [markdown]
 # Find the repo meta
@@ -109,7 +109,7 @@ if repo_full_name not in repoyard_meta.by_full_name:
 repo_meta = repoyard_meta.by_full_name[repo_full_name]
 
 # %% [markdown]
-# Modify repo meta
+# Create modified repo meta
 
 # %%
 #|export
@@ -118,6 +118,34 @@ modified_repo_meta = RepoMeta(**{
     **modifications
 })
 
+# %% [markdown]
+# If the repo is in a group that requires unique names, check for conflicts
+
+# %%
+#|export
+#TESTREF: test_modify_repometa_unique_names
+from repoyard._models import get_repo_group_configs
+repo_group_configs = get_repo_group_configs(config, repoyard_meta.repo_metas)
+for g in repo_meta.groups:
+    repo_group_config = repo_group_configs[g]
+    repo_metas_in_group = [repo_meta for repo_meta in repoyard_meta.repo_metas if g in repo_meta.groups]
+
+    if repo_group_config.unique_repo_names:
+        name_counts = {repo_meta.name: 0 for repo_meta in repo_metas_in_group}
+        for repo_meta in repo_metas_in_group:
+            name_counts[repo_meta.name] += 1
+        duplicate_names = [(name, count) for name, count in name_counts.items() if count > 1]
+        if duplicate_names:
+            names_str = ", ".join(f"'{name}' (count: {count})" for name, count in duplicate_names)
+            raise ValueError(f"Error modifying repo meta for '{repo_full_name}':\n"
+                             f"Repo is in group '{g}' which requires unique names. After the modification, the following name(s) appear multiple times in this group: {names_str}.")
+
+
+# %% [markdown]
+# Save the modified repo meta
+
+# %%
+#|export
 modified_repo_meta.save(config)
 
 # %%

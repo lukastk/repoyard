@@ -2,8 +2,8 @@
 
 # %% auto 0
 __all__ = ['RepoPart', 'RepoMeta', 'RepoyardMeta', 'create_repoyard_meta', 'refresh_repoyard_meta', 'get_repoyard_meta',
-           'get_virtual_repo_group_filters', 'get_repo_group_configs', 'create_user_repos_symlinks',
-           'create_user_repo_group_symlinks', 'SyncRecord', 'SyncCondition', 'SyncStatus', 'get_sync_status']
+           'create_user_repos_symlinks', 'get_repo_group_configs', 'create_user_repo_group_symlinks', 'SyncRecord',
+           'SyncCondition', 'SyncStatus', 'get_sync_status']
 
 # %% ../../pts/mod/_models.pct.py 3
 from typing import Callable, Literal
@@ -216,25 +216,6 @@ def get_repoyard_meta(
     return RepoyardMeta.model_validate_json(config.repoyard_meta_path.read_text())
 
 # %% ../../pts/mod/_models.pct.py 14
-def get_virtual_repo_group_filters(
-    config: repoyard.config.Config,
-) -> dict[str, Callable[[RepoMeta], bool]]:
-    return {}
-
-# %% ../../pts/mod/_models.pct.py 15
-def get_repo_group_configs(
-    config: repoyard.config.Config,
-    repo_metas: list[RepoMeta],
-) -> dict[str, RepoGroupConfig]:
-    repo_group_configs = {rgc.group_name for rgc in config.repo_groups}
-    for repo_meta in repo_metas.values():
-        if not repo_meta.is_included: continue
-        for group_name in repo_meta.groups:
-            if group_name not in repo_group_configs:
-                repo_group_configs[group_name] = RepoGroupConfig(group_name=group_name)
-    return repo_group_configs
-
-# %% ../../pts/mod/_models.pct.py 16
 def create_user_repos_symlinks(
     config: repoyard.config.Config,
     repo_metas: list[RepoMeta],
@@ -242,56 +223,66 @@ def create_user_repos_symlinks(
     for path in config.user_repos_path.glob('*'):
         if path.is_symlink(): path.unlink()
     
-    for repo_meta in repo_metas.values():
-        if not repo_meta.is_included: continue
-        source_path = config.included_repostore_path / repo_meta.full_name
-        symlink_path = config.user_repos_path / repo_meta.full_name
+    for repo_meta in repo_metas:
+        source_path = repo_meta.get_local_repodata_path(config)
+        symlink_path = repo_meta.get_user_path(config)
         if symlink_path.is_symlink(): 
             if symlink_path.resolve() != source_path.resolve():
                 symlink_path.unlink()
             else: continue # already correct
+        symlink_path.parent.mkdir(parents=True, exist_ok=True)
         symlink_path.symlink_to(source_path, target_is_directory=True)
 
-# %% ../../pts/mod/_models.pct.py 17
-def create_user_repo_group_symlinks(
+# %% ../../pts/mod/_models.pct.py 15
+def get_repo_group_configs(
     config: repoyard.config.Config,
     repo_metas: list[RepoMeta],
+) -> dict[str, RepoGroupConfig]:
+    repo_group_configs = config.repo_groups.copy()
+    for repo_meta in repo_metas:
+        for group_name in repo_meta.groups:
+            if group_name not in repo_group_configs:
+                repo_group_configs[group_name] = RepoGroupConfig()
+    return repo_group_configs
+
+# %% ../../pts/mod/_models.pct.py 16
+def create_user_repo_group_symlinks(
+    config: repoyard.config.Config,
 ):
-    virtual_repo_groups = get_virtual_repo_group_filters(config)
+    from repoyard.config import RepoGroupTitleMode
+    repo_metas = [repo_meta for repo_meta in get_repoyard_meta(config).repo_metas if repo_meta.check_included(config)]
     groups = get_repo_group_configs(config, repo_metas)
-    
     symlink_paths = []
-    
-    for group_name, group_config in groups.items():
-        for repo_meta in repo_metas.values():
-            if not repo_meta.is_included: continue
-            is_in_group = False
-            if group_config.is_virtual:
-                is_in_group = virtual_repo_groups[group_name](repo_meta)
-            else:
-                is_in_group = group_name in repo_meta.groups
-            if is_in_group:
-                source_path = config.included_repostore_path / repo_meta.full_name
-                symlink_path = config.user_repo_groups_path / group_name / repo_meta.full_name
-                symlink_path.parent.mkdir(parents=True, exist_ok=True)
-                symlink_paths.append(symlink_path.resolve().as_posix())
-                if symlink_path.is_symlink():
-                    if symlink_path.resolve() != source_path.resolve():
-                        symlink_path.unlink()
-                    else: continue # already correct
-                symlink_path.symlink_to(source_path, target_is_directory=True)
-    
-    # Remove any symlinks that are not in the symlink_paths list
+
+    # Remove all existing symlinks
     for group_folder_path in config.user_repo_groups_path.glob('*'):
         for symlink_path in group_folder_path.glob('*'):
-            if not symlink_path.is_symlink(): continue
-            if symlink_path.resolve().as_posix() not in symlink_paths:
+            if symlink_path.is_symlink():
                 symlink_path.unlink()
-        # Remove the group folder if it is empty after removing symlinks
-        if not any(group_folder_path.iterdir()):
-            group_folder_path.rmdir()
+            elif symlink_path.exists():
+                raise Exception(f"'{symlink_path}' is in the user repo group path '{config.user_repo_groups_path}' but is not a symlink!")
+    
+    # Create all symlinks
+    for group_name, group_config in groups.items():
+        for repo_meta in repo_metas:
+            if not repo_meta.check_included(config): continue
+            if group_name not in repo_meta.groups: continue
+            source_path = repo_meta.get_local_repodata_path(config)
+            if group_config.repo_title_mode == RepoGroupTitleMode.FULL_NAME:
+                title = repo_meta.full_name
+            elif group_config.repo_title_mode == RepoGroupTitleMode.DATETIME_AND_NAME:
+                title = f"{repo_meta.creation_timestamp_utc}__{repo_meta.name}"
+            elif group_config.repo_title_mode == RepoGroupTitleMode.NAME:
+                title = repo_meta.name
+            symlink_path = config.user_repo_groups_path / group_name / title        
+            symlink_path.parent.mkdir(parents=True, exist_ok=True)
+            i = 0
+            while symlink_path.exists():
+                symlink_path = symlink_path.with_name(f"{symlink_path.stem} CONFLICT ({i})")
+                i += 1
+            symlink_path.symlink_to(source_path, target_is_directory=True)
 
-# %% ../../pts/mod/_models.pct.py 19
+# %% ../../pts/mod/_models.pct.py 18
 class SyncRecord(const.StrictModel):
     ulid: ULID = Field(default_factory=ULID)
     timestamp: datetime|None = None # Is set after validation
@@ -340,7 +331,7 @@ class SyncRecord(const.StrictModel):
             raise ValueError("`timestamp` should be set to the ULID's datetime.")
         return self
 
-# %% ../../pts/mod/_models.pct.py 20
+# %% ../../pts/mod/_models.pct.py 19
 from typing import NamedTuple
 
 class SyncCondition(Enum):
