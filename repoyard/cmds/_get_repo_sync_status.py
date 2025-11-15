@@ -5,20 +5,13 @@ from pathlib import Path
 from enum import Enum
 
 from repoyard.config import get_config, StorageType
-from repoyard._models import SyncStatus
+from repoyard._models import SyncStatus, RepoPart
 from repoyard import const
-
-# %% top_export
-from typing import NamedTuple
-class RepoSyncStatus(NamedTuple):
-    meta: SyncStatus
-    conf: SyncStatus
-    data: SyncStatus
 
 def get_repo_sync_status(
     config_path: Path,
     repo_full_name: str,
-) -> dict[str, SyncStatus]:
+) -> dict[RepoPart, SyncStatus]:
     """
     """
     
@@ -27,10 +20,10 @@ def get_repo_sync_status(
     # %% auto 0
     __all__ = ['config', 'repoyard_meta', 'repo_meta', 'repo_sync_status']
     
-    # %% ../../../../../../../../../Users/lukastk/dev/2025-11-09_00__repoyard/pts/mod/cmds/02_get_repo_sync_status.pct.py 13
+    # %% ../../../../../../../../../Users/lukastk/dev/2025-11-09_00__repoyard/pts/mod/cmds/02_get_repo_sync_status.pct.py 12
     config = get_config(config_path)
     
-    # %% ../../../../../../../../../Users/lukastk/dev/2025-11-09_00__repoyard/pts/mod/cmds/02_get_repo_sync_status.pct.py 16
+    # %% ../../../../../../../../../Users/lukastk/dev/2025-11-09_00__repoyard/pts/mod/cmds/02_get_repo_sync_status.pct.py 15
     from .._models import get_repoyard_meta
     repoyard_meta = get_repoyard_meta(config)
     
@@ -39,35 +32,17 @@ def get_repo_sync_status(
     
     repo_meta = repoyard_meta.by_full_name[repo_full_name]
     
-    # %% ../../../../../../../../../Users/lukastk/dev/2025-11-09_00__repoyard/pts/mod/cmds/02_get_repo_sync_status.pct.py 17
+    # %% ../../../../../../../../../Users/lukastk/dev/2025-11-09_00__repoyard/pts/mod/cmds/02_get_repo_sync_status.pct.py 16
     from .._models import get_sync_status, RepoPart
     
-    repo_sync_status = RepoSyncStatus(
-        meta=get_sync_status(
+    repo_sync_status = {}
+    for repo_part in RepoPart:
+        repo_sync_status[repo_part] = get_sync_status(
             rclone_config_path=config.rclone_config_path,
             local_path=repo_meta.get_local_repometa_path(config),
-            local_sync_record_path=repo_meta.get_local_sync_record_path(config, RepoPart.META),
+            local_sync_record_path=repo_meta.get_local_sync_record_path(config, repo_part),
             remote=repo_meta.storage_location,
             remote_path=repo_meta.get_remote_repometa_path(config),
-            remote_sync_record_path=repo_meta.get_remote_sync_record_path(config, RepoPart.META),
-        ),
-    
-        conf=get_sync_status(
-            rclone_config_path=config.rclone_config_path,
-            local_path=repo_meta.get_local_repoconf_path(config),
-            local_sync_record_path=repo_meta.get_local_sync_record_path(config, RepoPart.CONF),
-            remote=repo_meta.storage_location,
-            remote_path=repo_meta.get_remote_repoconf_path(config),
-            remote_sync_record_path=repo_meta.get_remote_sync_record_path(config, RepoPart.CONF),
-        ),
-    
-        data=get_sync_status(
-            rclone_config_path=config.rclone_config_path,
-            local_path=repo_meta.get_local_repodata_path(config),
-            local_sync_record_path=repo_meta.get_local_sync_record_path(config, RepoPart.DATA),
-            remote=repo_meta.storage_location,
-            remote_path=repo_meta.get_remote_repodata_path(config),
-            remote_sync_record_path=repo_meta.get_remote_sync_record_path(config, RepoPart.DATA),
-        ),
-    )
+            remote_sync_record_path=repo_meta.get_remote_sync_record_path(config, repo_part),
+        )
     return repo_sync_status;
