@@ -3,7 +3,7 @@
 # %% auto 0
 __all__ = ['entrypoint', 'cli_init', 'cli_new', 'cli_sync', 'cli_multi_sync', 'cli_sync_meta', 'cli_add_to_group',
            'cli_remove_from_group', 'cli_include', 'cli_exclude', 'cli_delete', 'cli_repo_status', 'cli_yard_status',
-           'cli_list', 'cli_path']
+           'cli_list', 'cli_path', 'cli_create_user_symlinks']
 
 # %% ../../../pts/mod/_cli/main.pct.py 3
 import os
@@ -717,3 +717,19 @@ def cli_path(
     else:
         typer.echo(f"Invalid path option: {path_option}")
         raise typer.Exit(code=1)
+
+# %% ../../../pts/mod/_cli/main.pct.py 43
+@app.command(name='create-user-symlinks')
+def cli_create_user_symlinks(
+    user_repos_path: Path|None = Option(None, "--user-repos-path", "-u", help="The path to the user repositories. If not provided, the default specified in the config will be used."),
+    user_repo_groups_path: Path|None = Option(None, "--user-repo-groups-path", "-g", help="The path to the user repository groups. If not provided, the default specified in the config will be used."),
+):
+    """
+    Create symlinks to the user repositories in the user repositories path.
+    """
+    from repoyard.cmds import create_user_symlinks
+    create_user_symlinks(
+        config_path=app_state['config_path'],
+        user_repos_path=user_repos_path,
+        user_repo_groups_path=user_repo_groups_path,
+    )
