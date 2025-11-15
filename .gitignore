@@ -1,5 +1,8 @@
 tmp_tests/
 
+tests/*
+!tests/__init__.py
+
 envname
 _proc/
 _docs/
