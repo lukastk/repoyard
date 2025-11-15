@@ -67,7 +67,7 @@ except CmdFailed:
 
 # %%
 #|export
-repo_full_name1 = run_cmd("repoyard new -r test-repo-1 -g repoyard-unit-tests").strip()
+repo_full_name1 = run_cmd(f"repoyard new -r test-repo-1 -g repoyard-unit-tests -s {sl_name}").strip()
 run_cmd(f"repoyard sync -r {repo_full_name1}", capture_output=True);
 
 # %% [markdown]
@@ -75,8 +75,8 @@ run_cmd(f"repoyard sync -r {repo_full_name1}", capture_output=True);
 
 # %%
 #|export
-repo_full_name2 = run_cmd("repoyard new -r test-repo-2 -g repoyard-unit-tests").strip()
-repo_full_name3 = run_cmd("repoyard new -r test-repo-3 -g repoyard-unit-tests").strip()
+repo_full_name2 = run_cmd(f"repoyard new -r test-repo-2 -g repoyard-unit-tests -s {sl_name}").strip()
+repo_full_name3 = run_cmd(f"repoyard new -r test-repo-3 -g repoyard-unit-tests -s {sl_name}").strip()
 
 p1 = run_cmd_in_background(f"repoyard sync -r {repo_full_name2}", print_output=False)
 p2 = run_cmd_in_background(f"repoyard sync -r {repo_full_name3}", print_output=False)

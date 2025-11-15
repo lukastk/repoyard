@@ -95,9 +95,9 @@ def _get_full_repo_name(
         repoyard_meta = get_repoyard_meta(config)
         
         if repo_id is not None:
-            if not repo_id in repoyard_meta.by_ulid:
+            if not repo_id in repoyard_meta.by_id:
                 raise typer.Exit(f"Repository with id `{repo_id}` not found.")
-            repo_full_name = repoyard_meta.by_ulid[repo_id].full_name
+            repo_full_name = repoyard_meta.by_id[repo_id].full_name
         else:
             if name_match_mode is None: name_match_mode = NameMatchMode.SUBSEQUENCE
             if name_match_mode == NameMatchMode.EXACT:
@@ -119,7 +119,7 @@ def _get_full_repo_name(
                 from repoyard._utils import run_fzf
                 _, repo_full_name = run_fzf(
                     terms=[r.full_name for r in repos_with_name],
-                    disp_terms=[f"{r.name} ({r.ulid})" for r in repos_with_name],
+                    disp_terms=[f"{r.name} ({r.repo_id})" for r in repos_with_name],
                 )
         
     if repo_full_name is None:
@@ -161,7 +161,7 @@ def cli_init(
 #|export
 @app.command(name='new')
 def cli_new(
-    storage_location: str|None = None,
+    storage_location: str|None = Option(None, "--storage-location", "-s", help="The storage location to create the new repository in."),
     repo_name: str|None = Option(None, "--repo", "-r", help="The full name of the repository, the id or the path of the repo."),
     from_path: Path|None = Option(None, "--from", "-f", help="Path to a local directory to move into repoyard as a new repository."),
     copy_from_path: bool = Option(False, "--copy", "-c", help="Copy the contents of the from_path into the new repository."),

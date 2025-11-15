@@ -56,6 +56,9 @@ class Config(const.StrictModel):
     storage_locations : dict[str, StorageConfig]
     repo_groups : list[RepoGroupConfig]
 
+    repo_subid_character_set: str
+    repo_subid_length: int
+
     @property
     def local_store_path(self) -> Path:
         return self.repoyard_data_path / "local_store"
@@ -126,10 +129,9 @@ def _get_default_config_dict(config_path=None, data_path=None) -> Config:
                 store_path=(data_path / const.DEFAULT_FAKE_STORE_REL_PATH).as_posix(),
             )
         },
-        syncing = {
-            "bisync_wait_time": 10,
-        },
         repo_groups = [],
+        repo_subid_character_set = const.DEFAULT_REPO_SUBID_CHARACTER_SET,
+        repo_subid_length = const.DEFAULT_REPO_SUBID_LENGTH,
     )
     return config_dict
 
