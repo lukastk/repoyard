@@ -66,3 +66,27 @@ def create_repoyards(remote_name="my_remote", num_repoyards=1):
         return remote_name, remote_rclone_path, config, config_path, data_path
     else:
         return remote_name, remote_rclone_path, repoyards
+
+
+# %%
+#|export
+class CmdFailed(Exception): pass
+
+def run_cmd(cmd: str, capture_output: bool = True):
+    if not capture_output:
+        res = subprocess.run(cmd, shell=True)
+    else:
+        res = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+    if res.returncode != 0:
+        raise CmdFailed(f"Command '{cmd}' failed with return code {res.returncode}. Stdout:\n{res.stdout}\n\nStderr:\n{res.stderr}")
+    if capture_output:
+        return res.stdout
+
+
+# %%
+#|export
+def run_cmd_in_background(cmd: str, print_output: bool = False):
+    if print_output:
+        return subprocess.Popen(cmd, shell=True)
+    else:
+        return subprocess.Popen(cmd, shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
