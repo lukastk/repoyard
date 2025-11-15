@@ -360,12 +360,19 @@ def get_sync_status(
         else:
             sync_condition = SyncCondition.SYNCED
     else:
-        if local_path_exists and not remote_path_exists:
-            sync_condition = SyncCondition.NEEDS_PUSH
-        elif not local_path_exists and remote_path_exists:
-            sync_condition = SyncCondition.NEEDS_PULL
+        if local_path_exists:
+            if not remote_path_exists:
+                sync_condition = SyncCondition.NEEDS_PUSH
+            else:
+                if local_last_modified > local_sync_record.datetime:
+                    sync_condition = SyncCondition.CONFLICT
+                else:
+                    sync_condition = SyncCondition.NEEDS_PULL
         else:
-            sync_condition = SyncCondition.CONFLICT
+            if remote_path_exists:
+                sync_condition = SyncCondition.NEEDS_PULL
+            else:
+                raise Exception(f"Something went wrong here.")
 
     return SyncStatus(
         sync_condition=sync_condition,
