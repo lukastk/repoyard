@@ -25,6 +25,7 @@ def new_repo(
     storage_location: str|None = None,
     repo_name: str|None = None,
     from_path: Path|None = None,
+    copy_from_path: bool = False,
     creator_hostname: str|None = None,
     initialise_git: bool = True,
     verbose: bool = False,
@@ -51,6 +52,7 @@ config_path = test_folder_path / "repoyard_config" / "config.toml"
 storage_location = None
 repo_name = "test_repo"
 from_path = None
+copy_from_path = False
 creator_hostname = None
 add_repoyard_exclude = True
 initialise_git = True
@@ -87,6 +89,9 @@ if from_path is not None:
 if from_path is not None and repo_name is None:
     repo_name = from_path.name
     
+if from_path is None and copy_from_path:
+    raise ValueError("`from_path` must be provided if `copy_from_path` is True.")
+
 from repoyard._utils import get_hostname
 if creator_hostname is None:
     creator_hostname = get_hostname()
@@ -117,7 +122,11 @@ repo_path.mkdir(parents=True, exist_ok=True)
 repo_conf_path.mkdir(parents=True, exist_ok=True)
 
 if from_path is not None:
-    from_path.rename(repo_data_path)
+    if copy_from_path:
+        import shutil
+        shutil.copytree(from_path, repo_data_path) #TESTREF: test_new_repo_copy_from_path
+    else:
+        from_path.rename(repo_data_path)
 else:
     repo_data_path.mkdir(parents=True, exist_ok=True)
 
