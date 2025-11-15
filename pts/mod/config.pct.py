@@ -40,9 +40,6 @@ class StorageConfig(const.StrictModel):
         self.store_path = self.store_path.expanduser()
         return self
     
-class SyncingConfig(const.StrictModel):
-    bisync_wait_time: int
-    
 class RepoGroupConfig(const.StrictModel):
     group_name: str
     is_virtual: bool = False
@@ -57,7 +54,6 @@ class Config(const.StrictModel):
     user_repos_path : Path
     user_repo_groups_path : Path
     storage_locations : dict[str, StorageConfig]
-    syncing : SyncingConfig
     repo_groups : list[RepoGroupConfig]
 
     @property
