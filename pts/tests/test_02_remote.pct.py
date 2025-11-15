@@ -17,6 +17,7 @@ from pathlib import Path
 import shutil
 import toml
 import pytest
+import asyncio
 
 from repoyard import const
 from repoyard.cmds import *
@@ -29,8 +30,14 @@ from dotenv import load_dotenv
 
 
 # %%
+#|top_export
+def test_02_remote():
+    asyncio.run(_test_02_remote())
+
+
+# %%
 #|set_func_signature
-def test_02_remote(): ...
+async def _test_02_remote(): ...
 
 
 # %% [markdown]
@@ -111,14 +118,17 @@ for repo_meta in [repo_meta1, repo_meta2, repo_meta3]:
 for repo_meta in [repo_meta1, repo_meta2, repo_meta3]:
     run_cmd(f"repoyard exclude -r {repo_meta.full_name}")
 
+
 # %%
 #|export
-for repo_meta in [repo_meta1, repo_meta2, repo_meta3]:
-    assert rclone_lsjson(
+async def _task(repo_meta):
+    assert await rclone_lsjson(
         config.rclone_config_path,
         source="",
         source_path=repo_meta.get_local_repodata_path(config),
     ) is None
+
+await asyncio.gather(*[_task(repo_meta) for repo_meta in [repo_meta1, repo_meta2, repo_meta3]]);
 
 # %% [markdown]
 # Re-include repos
@@ -128,14 +138,17 @@ for repo_meta in [repo_meta1, repo_meta2, repo_meta3]:
 for repo_meta in [repo_meta1, repo_meta2, repo_meta3]:
     run_cmd(f"repoyard include -r {repo_meta.full_name}")
 
+
 # %%
 #|export
-for repo_meta in [repo_meta1, repo_meta2, repo_meta3]:
-    assert rclone_lsjson(
+async def _task(repo_meta):
+    assert await rclone_lsjson(
         config.rclone_config_path,
         source="",
         source_path=repo_meta.get_local_repodata_path(config),
     ) is not None
+
+await asyncio.gather(*[_task(repo_meta) for repo_meta in [repo_meta1, repo_meta2, repo_meta3]]);
 
 # %% [markdown]
 # Delete repos
@@ -145,11 +158,14 @@ for repo_meta in [repo_meta1, repo_meta2, repo_meta3]:
 for repo_meta in [repo_meta1, repo_meta2, repo_meta3]:
     run_cmd(f"repoyard delete -r {repo_meta.full_name}")
 
+
 # %%
 #|export
-for repo_meta in [repo_meta1, repo_meta2, repo_meta3]:
-    assert rclone_lsjson(
+async def _task(repo_meta):
+    assert await rclone_lsjson(
         config.rclone_config_path,
         source=sl_name,
         source_path=repo_meta.get_remote_path(config),
     ) is None
+
+await asyncio.gather(*[_task(repo_meta) for repo_meta in [repo_meta1, repo_meta2, repo_meta3]]);
