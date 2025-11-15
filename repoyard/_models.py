@@ -66,9 +66,9 @@ class RepoMeta(const.StrictModel):
     def get_local_sync_record_path(self, config: repoyard.config.Config, repo_part: RepoPart) -> Path:
         return config.repoyard_data_path / const.SYNC_RECORDS_REL_PATH / self.full_name / f"{repo_part.value}.rec"
 
-    def get_remote_sync_record_path(self, config: repoyard.config.Config, name: str) -> Path:
+    def get_remote_sync_record_path(self, config: repoyard.config.Config, repo_part: RepoPart) -> Path:
         sl_conf = self.get_storage_location_config(config)
-        return sl_conf.store_path / const.SYNC_RECORDS_REL_PATH / self.full_name / f"{name}.rec"
+        return sl_conf.store_path / const.SYNC_RECORDS_REL_PATH / self.full_name / f"{repo_part.value}.rec"
     
     def check_included(self, config: repoyard.config.Config) -> bool:
         included_repo_path = self.get_local_repodata_path(config)
@@ -88,18 +88,49 @@ class RepoMeta(const.StrictModel):
             raise ValueError("Groups must be unique.")
         return self
 
-# %% ../../pts/mod/_models.pct.py 7
-class RepoyardMeta(BaseModel):
-    by_full_name: dict[str, RepoMeta]
-    by_ulid: dict[str, RepoMeta]
-
 # %% ../../pts/mod/_models.pct.py 8
+class RepoyardMeta(const.StrictModel):
+    repo_metas: list[RepoMeta]
+
+    @property
+    def by_storage_location(self) -> dict[str, dict[str, RepoMeta]]:
+        if not hasattr(self, '__by_storage_location'):
+            self.__by_storage_location = {
+                sl_name: {
+                    repo_meta.full_name: repo_meta
+                    for repo_meta in self.repo_metas
+                    if repo_meta.storage_location == sl_name
+            }
+            for sl_name in self.by_storage_location
+        }
+        return self.__by_storage_location
+
+    @property
+    def by_ulid(self) -> dict[str, RepoMeta]:
+        if not hasattr(self, '__by_ulid'):
+            self.__by_ulid = {
+                repo_meta.ulid: repo_meta
+                for repo_meta in self.repo_metas
+            }
+        return self.__by_ulid
+
+    @property
+    def by_full_name(self) -> dict[str, RepoMeta]:
+        if not hasattr(self, '__by_full_name'):
+            self.__by_full_name = {
+                repo_meta.full_name: repo_meta
+                for repo_meta in self.repo_metas
+            }
+        return self.__by_full_name
+
+
+
+# %% ../../pts/mod/_models.pct.py 9
 def create_repoyard_meta(
     config: repoyard.config.Config
 ) -> RepoyardMeta:
     """Create a dict of all repo metas. To be saved in `config.repoyard_meta_path`."""
-    by_full_name = {}
-    by_ulid = {}
+    repo_metas = []
     for storage_location_name in config.storage_locations:
         local_storage_location_path = config.local_store_path / storage_location_name
         
@@ -114,26 +145,22 @@ def create_repoyard_meta(
             if not repometa_path.exists():
                 raise ValueError(f"Repo meta file {repometa_path} does not exist.")
             
-            repo_meta = RepoMeta(**{
+            repo_metas.append(RepoMeta(**{
                 **toml.loads(repometa_path.read_text()),
                 'ulid': ulid,
                 'name': name,
                 'storage_location': storage_location_name,
-            })
-            by_full_name[full_name] = repo_meta
-            by_ulid[str(repo_meta.ulid)] = repo_meta
-    return RepoyardMeta(by_full_name=by_full_name, by_ulid=by_ulid)
+            }))
+    return RepoyardMeta(repo_metas=repo_metas)
 
-
-
-# %% ../../pts/mod/_models.pct.py 9
+# %% ../../pts/mod/_models.pct.py 10
 def refresh_repoyard_meta(
     config: repoyard.config.Config,
 ) -> RepoyardMeta:
     repoyard_meta = create_repoyard_meta(config)
     config.repoyard_meta_path.write_text(repoyard_meta.model_dump_json())
 
-# %% ../../pts/mod/_models.pct.py 10
+# %% ../../pts/mod/_models.pct.py 11
 def get_repoyard_meta(
     config: repoyard.config.Config,
     force_create: bool=False,
@@ -142,13 +169,13 @@ def get_repoyard_meta(
         refresh_repoyard_meta(config)
     return RepoyardMeta.model_validate_json(config.repoyard_meta_path.read_text())
 
-# %% ../../pts/mod/_models.pct.py 11
+# %% ../../pts/mod/_models.pct.py 12
 def get_virtual_repo_group_filters(
     config: repoyard.config.Config,
 ) -> dict[str, Callable[[RepoMeta], bool]]:
     return {}
 
-# %% ../../pts/mod/_models.pct.py 12
+# %% ../../pts/mod/_models.pct.py 13
 def get_repo_group_configs(
     config: repoyard.config.Config,
     repo_metas: list[RepoMeta],
@@ -161,7 +188,7 @@ def get_repo_group_configs(
                 repo_group_configs[group_name] = RepoGroupConfig(group_name=group_name)
     return repo_group_configs
 
-# %% ../../pts/mod/_models.pct.py 13
+# %% ../../pts/mod/_models.pct.py 14
 def create_user_repos_symlinks(
     config: repoyard.config.Config,
     repo_metas: list[RepoMeta],
@@ -179,7 +206,7 @@ def create_user_repos_symlinks(
             else: continue # already correct
         symlink_path.symlink_to(source_path, target_is_directory=True)
 
-# %% ../../pts/mod/_models.pct.py 14
+# %% ../../pts/mod/_models.pct.py 15
 def create_user_repo_group_symlinks(
     config: repoyard.config.Config,
     repo_metas: list[RepoMeta],
@@ -218,12 +245,12 @@ def create_user_repo_group_symlinks(
         if not any(group_folder_path.iterdir()):
             group_folder_path.rmdir()
 
-# %% ../../pts/mod/_models.pct.py 16
+# %% ../../pts/mod/_models.pct.py 17
 class SyncDirection(Enum):
     PUSH = "push" # local -> remote
     PULL = "pull" # remote -> local
 
-# %% ../../pts/mod/_models.pct.py 17
+# %% ../../pts/mod/_models.pct.py 18
 class SyncRecord(const.StrictModel):
     ulid: ULID = Field(default_factory=ULID)
     creator_hostname: str
@@ -269,7 +296,7 @@ class SyncRecord(const.StrictModel):
         else:
             return None
 
-# %% ../../pts/mod/_models.pct.py 18
+# %% ../../pts/mod/_models.pct.py 19
 from typing import NamedTuple
 
 class SyncCondition(Enum):
