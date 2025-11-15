@@ -134,6 +134,7 @@ def cli_new(
     creator_hostname: str|None = Option(None, "--creator-hostname", help="Used to explicitly set the creator hostname of the new repository."),
     groups: list[str]|None = Option(None, "--groups", "-g", help="The groups to add the new repository to."),
     initialise_git: bool = Option(True, help="Initialise a git repository in the new repository."),
+    refresh_user_symlinks: bool = Option(True, help="Refresh the user symlinks."),
 ):
     """
     Create a new repository.
@@ -169,6 +170,9 @@ def cli_new(
             }
         )
 
+    from repoyard.cmds import create_user_symlinks
+    create_user_symlinks(config_path=app_state['config_path'])
+
 # %% ../../../pts/mod/_cli/main.pct.py 16
 @app.command(name='sync')
 def cli_sync(
@@ -181,6 +185,7 @@ def cli_sync(
     sync_setting: SyncSetting = Option(SyncSetting.CAREFUL, "--sync-setting", "-s", help="The sync setting to use."),
     sync_choices: list[RepoPart]|None = Option(None, "--sync-choices", "-c", help="The parts of the repository to sync. If not provided, all parts will be synced. By default, all parts are synced."),
     show_rclone_progress: bool = Option(False, "--progress", "-p", help="Show the progress of the sync in rclone."),
+    refresh_user_symlinks: bool = Option(True, help="Refresh the user symlinks."),
 ):
     """
     Sync a repository.
@@ -208,6 +213,10 @@ def cli_sync(
         show_rclone_progress=show_rclone_progress,
     ))
 
+    if refresh_user_symlinks:
+        from repoyard.cmds import create_user_symlinks
+        create_user_symlinks(config_path=app_state['config_path'])
+
 # %% ../../../pts/mod/_cli/main.pct.py 18
 @app.command(name='multi-sync')
 def cli_multi_sync(
@@ -217,6 +226,7 @@ def cli_multi_sync(
     sync_direction: SyncDirection|None = Option(None, "--sync-direction", help="The direction of the sync. If not provided, the appropriate direction will be automatically determined based on the sync status. This mode is only available for the 'CAREFUL' sync setting."),
     sync_setting: SyncSetting = Option(SyncSetting.CAREFUL, "--sync-setting", help="The sync setting to use."),
     sync_choices: list[RepoPart]|None = Option(None, "--sync-choices", "-c", help="The parts of the repository to sync. If not provided, all parts will be synced. By default, all parts are synced."),
+    refresh_user_symlinks: bool = Option(True, help="Refresh the user symlinks."),
 ):
     """
     Sync multiple repositories.
@@ -263,6 +273,10 @@ def cli_multi_sync(
         max_concurrency=max_concurrent_rclone_ops,
     ))
 
+    if refresh_user_symlinks:
+        from repoyard.cmds import create_user_symlinks
+        create_user_symlinks(config_path=app_state['config_path'])
+
 # %% ../../../pts/mod/_cli/main.pct.py 20
 @app.command(name='sync-meta')
 def cli_sync_meta(
@@ -272,6 +286,7 @@ def cli_sync_meta(
     sync_setting: SyncSetting = Option(SyncSetting.CAREFUL, "--sync-setting", help="The sync setting to use."),
     sync_direction: SyncDirection|None = Option(None, "--sync-direction", "-d", help="The direction of the sync. If not provided, the appropriate direction will be automatically determined based on the sync status. This mode is only available for the 'CAREFUL' sync setting."),
     max_concurrent_rclone_ops: int|None = Option(None, "--max-concurrent", "-m", help="The maximum number of concurrent rclone operations. If not provided, the default specified in the config will be used."),
+    refresh_user_symlinks: bool = Option(True, help="Refresh the user symlinks."),
 ):
     """
     Syncs the metadata of a repository.
@@ -300,6 +315,10 @@ def cli_sync_meta(
         max_concurrent_rclone_ops=max_concurrent_rclone_ops,
     ))
 
+    if refresh_user_symlinks:
+        from repoyard.cmds import create_user_symlinks
+        create_user_symlinks(config_path=app_state['config_path'])
+
 # %% ../../../pts/mod/_cli/main.pct.py 22
 @app.command(name='add-to-group')
 def cli_add_to_group(
@@ -311,6 +330,7 @@ def cli_add_to_group(
     group_name: str = Option(..., "--group-name", "-g", help="The name of the group to add the repository to."),
     sync_after: bool = Option(True, "--sync-after", "-s", help="Sync the repository after adding it to the group."),
     sync_setting: SyncSetting = Option(SyncSetting.CAREFUL, "--sync-setting", help="The sync setting to use."),
+    refresh_user_symlinks: bool = Option(True, help="Refresh the user symlinks."),
 ):
     """
     Modify the metadata of a repository.
@@ -352,6 +372,10 @@ def cli_add_to_group(
                 verbose=True,
             ))
 
+    if refresh_user_symlinks:
+        from repoyard.cmds import create_user_symlinks
+        create_user_symlinks(config_path=app_state['config_path'])
+
 # %% ../../../pts/mod/_cli/main.pct.py 24
 @app.command(name='remove-from-group')
 def cli_remove_from_group(
@@ -363,6 +387,7 @@ def cli_remove_from_group(
     group_name: str = Option(..., "--group-name", "-g", help="The name of the group to add the repository to."),
     sync_after: bool = Option(True, "--sync-after", "-s", help="Sync the repository after adding it to the group."),
     sync_setting: SyncSetting = Option(SyncSetting.CAREFUL, "--sync-setting", help="The sync setting to use."),
+    refresh_user_symlinks: bool = Option(True, help="Refresh the user symlinks."),
 ):
     """
     Modify the metadata of a repository.
@@ -404,6 +429,10 @@ def cli_remove_from_group(
                 verbose=True,
             ))
 
+    if refresh_user_symlinks:
+        from repoyard.cmds import create_user_symlinks
+        create_user_symlinks(config_path=app_state['config_path'])
+
 # %% ../../../pts/mod/_cli/main.pct.py 26
 @app.command(name='include')
 def cli_include(
@@ -412,6 +441,7 @@ def cli_include(
     repo_name: str|None = Option(None, "--repo-name", "-n", help="The name of the repository to sync."),
     name_match_mode: NameMatchMode|None = Option(None, "--name-match-mode", "-m", help="The mode to use for matching the repository name."),
     name_match_case: bool = Option(False, "--name-match-case", "-c", help="Whether to match the repository name case-sensitively."),
+    refresh_user_symlinks: bool = Option(True, help="Refresh the user symlinks."),
 ):
     """
     Include a repository in the local store.
@@ -437,6 +467,10 @@ def cli_include(
         repo_full_name=repo_full_name,
     ))
 
+    if refresh_user_symlinks:
+        from repoyard.cmds import create_user_symlinks
+        create_user_symlinks(config_path=app_state['config_path'])
+
 # %% ../../../pts/mod/_cli/main.pct.py 28
 @app.command(name='exclude')
 def cli_exclude(
@@ -446,6 +480,7 @@ def cli_exclude(
     name_match_mode: NameMatchMode|None = Option(None, "--name-match-mode", "-m", help="The mode to use for matching the repository name."),
     name_match_case: bool = Option(False, "--name-match-case", "-c", help="Whether to match the repository name case-sensitively."),
     skip_sync: bool = Option(False, "--skip-sync", "-s", help="Skip the sync before excluding the repository."),
+    refresh_user_symlinks: bool = Option(True, help="Refresh the user symlinks."),
 ):
     """
     Exclude a repository from the local store.
@@ -472,6 +507,10 @@ def cli_exclude(
         skip_sync=skip_sync,
     ))
 
+    if refresh_user_symlinks:
+        from repoyard.cmds import create_user_symlinks
+        create_user_symlinks(config_path=app_state['config_path'])
+
 # %% ../../../pts/mod/_cli/main.pct.py 30
 @app.command(name='delete')
 def cli_delete(
@@ -480,6 +519,7 @@ def cli_delete(
     repo_name: str|None = Option(None, "--repo-name", "-n", help="The name of the repository to sync."),
     name_match_mode: NameMatchMode|None = Option(None, "--name-match-mode", "-m", help="The mode to use for matching the repository name."),
     name_match_case: bool = Option(False, "--name-match-case", "-c", help="Whether to match the repository name case-sensitively."),
+    refresh_user_symlinks: bool = Option(True, help="Refresh the user symlinks."),
 ):
     """
     Delete a repository.
@@ -504,6 +544,10 @@ def cli_delete(
         config_path=app_state['config_path'],
         repo_full_name=repo_full_name,
     ))
+
+    if refresh_user_symlinks:
+        from repoyard.cmds import create_user_symlinks
+        create_user_symlinks(config_path=app_state['config_path'])
 
 # %% ../../../pts/mod/_cli/main.pct.py 32
 def _dict_to_hierarchical_text(data: dict, indents: int=0, lines: list[str]=None) -> list[str]:
