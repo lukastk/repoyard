@@ -80,6 +80,9 @@ class RepoMeta(const.StrictModel):
     def get_remote_sync_record_path(self, config: repoyard.config.Config, repo_part: RepoPart) -> Path:
         sl_conf = self.get_storage_location_config(config)
         return sl_conf.store_path / const.SYNC_RECORDS_REL_PATH / self.full_name / f"{repo_part.value}.rec"
+
+    def get_user_path(self, config: repoyard.config.Config) -> Path:
+        return config.user_repos_path / self.full_name
     
     def check_included(self, config: repoyard.config.Config) -> bool:
         included_repo_path = self.get_local_repodata_path(config)
