@@ -223,6 +223,13 @@ def create_user_repos_symlinks(
     for path in config.user_repos_path.glob('*'):
         if path.is_symlink(): path.unlink()
     
+    # Remove all existing symlinks
+    for symlink_path in config.user_repos_path.glob('*'):
+        if symlink_path.is_symlink():
+            symlink_path.unlink()
+        elif symlink_path.exists():
+            raise Exception(f"'{symlink_path}' is in the user repo path '{config.user_repos_path}' but is not a symlink!")
+
     for repo_meta in repo_metas:
         source_path = repo_meta.get_local_repodata_path(config)
         symlink_path = repo_meta.get_user_path(config)
