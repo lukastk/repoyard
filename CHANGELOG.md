@@ -1,3 +1,17 @@
+## [0.1.5] - 2025-11-16
+
+### 🚀 Features
+
+- 'get_sync_status' now raises an exception if there is no local sync record, but there is a remote folder. this indicates that the sync was aborted.
+- Safer syncing. syncing now creates an intermediate sync record signifying an ongoing sync, and also backups the synced files temporarily.
+- Enabled 'soft interruption', intercepting OS signals to delay termination until it is safe to do so.
+- Soft interruption will now force interrupt if 3 signals are sent
+- Better in-progress output for multi-sync
+
+### ⚙️ Miscellaneous Tasks
+
+- Update CHANGELOG.md
+- Update version in pyproject.toml
 ## [0.1.4] - 2025-11-16
 
 ### 🚀 Features
