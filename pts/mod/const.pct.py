@@ -38,6 +38,8 @@ REPO_METAFILE_REL_PATH = "repometa.toml"
 REPO_CONF_REL_PATH = "conf"
 REPO_DATA_REL_PATH = "data"
 
+SOFT_INTERRUPT_COUNT = 3
+
 DEFAULT_FAKE_STORE_REL_PATH = "fake_store"
 
 # %% [markdown]

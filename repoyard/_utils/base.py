@@ -149,21 +149,30 @@ async def async_throttler(
 
 # %% ../../../pts/mod/_utils/00_base.pct.py 19
 import signal
+import sys
 
 _interrupted = False
+_interrupt_count = 0
 
 class SoftInterruption(Exception):
     pass
 
 def _soft_interruption_handler(signum, frame):
-    global _interrupted
+    global _interrupted, _interrupt_count
+    _interrupt_count += 1
     sig_name = signal.Signals(signum).name
-    print(f"\nWARNING: {sig_name} received — will stop after the current operation.")
-    _interrupted = True
+
+    if _interrupt_count < const.SOFT_INTERRUPT_COUNT:
+        print(f"\nWARNING: {sig_name} received ({_interrupt_count}/3) — "
+              f"will stop after the current operation.")
+        _interrupted = True
+    else:
+        print(f"\n{sig_name} received 3 times — exiting immediately.")
+        sys.exit(1)   # or: raise KeyboardInterrupt
 
 def enable_soft_interruption():
-    signal.signal(signal.SIGINT, _soft_interruption_handler) # Ctrl-C
-    signal.signal(signal.SIGTERM, _soft_interruption_handler)   # shutdown
+    signal.signal(signal.SIGINT, _soft_interruption_handler)  # Ctrl-C
+    signal.signal(signal.SIGTERM, _soft_interruption_handler)  # shutdown
     signal.signal(signal.SIGHUP, _soft_interruption_handler)  # logout / terminal closed
 
 def check_interrupted():
