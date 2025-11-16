@@ -6,6 +6,7 @@ import subprocess
 from typing import Literal
 from enum import Enum
 import inspect
+from repoyard._utils import check_interrupted, enable_soft_interruption, SoftInterruption
 
 from repoyard import const
 
@@ -161,6 +162,8 @@ async def sync_helper(
     
     # %% ../../../pts/mod/_utils/02_sync_helper.pct.py 23
     from .._models import SyncRecord
+    
+    if check_interrupted(): raise SoftInterruption()
     
     rec = SyncRecord.create(creator_hostname=creator_hostname, sync_complete=False)
     backup_name = str(rec.ulid)

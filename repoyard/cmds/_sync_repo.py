@@ -7,6 +7,8 @@ from enum import Enum
 from repoyard._utils.sync_helper import sync_helper, SyncSetting, SyncDirection
 from repoyard._models import SyncStatus, RepoPart
 from repoyard.config import get_config, StorageType
+from repoyard._utils import async_throttler
+from repoyard._utils import check_interrupted, enable_soft_interruption, SoftInterruption
 from repoyard import const
 
 async def sync_repo(
@@ -17,6 +19,7 @@ async def sync_repo(
     sync_choices: list[RepoPart]|None = None,
     verbose: bool = False,
     show_rclone_progress: bool = False,
+    soft_interruption_enabled: bool = True,
 ) -> dict[RepoPart, SyncStatus]:
     """
     Syncs a repo with its remote.
@@ -42,6 +45,9 @@ async def sync_repo(
     config = get_config(config_path)
     if sync_choices is None:
         sync_choices = [repo_part for repo_part in RepoPart]
+    
+    if soft_interruption_enabled:
+        enable_soft_interruption()
     
     # %% ../../../pts/mod/cmds/03_sync_repo.pct.py 15
     from .._models import get_repoyard_meta
@@ -69,6 +75,8 @@ async def sync_repo(
     # %% ../../../pts/mod/cmds/03_sync_repo.pct.py 23
     sync_results = {}
     
+    if check_interrupted(): raise SoftInterruption()
+    
     sync_part = RepoPart.META
     if sync_part in sync_choices:
         if verbose: print(f"Syncing {sync_part.value}.")
@@ -88,6 +96,8 @@ async def sync_repo(
         )
     
     # %% ../../../pts/mod/cmds/03_sync_repo.pct.py 26
+    if check_interrupted(): raise SoftInterruption()
+    
     sync_part = RepoPart.CONF
     if sync_part in sync_choices:
         if verbose: print("Syncing", sync_part.value)
@@ -116,6 +126,8 @@ async def sync_repo(
     _repoyard_filters_path = _repoyard_filters_path if _repoyard_filters_path.exists() else None
     
     # %% ../../../pts/mod/cmds/03_sync_repo.pct.py 31
+    if check_interrupted(): raise SoftInterruption()
+    
     sync_part = RepoPart.DATA
     if sync_part in sync_choices:
         if verbose: print("Syncing", sync_part.value)
