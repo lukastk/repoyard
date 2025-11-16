@@ -23,7 +23,7 @@ import asyncio
 import repoyard as proj
 from repoyard import const
 from repoyard.config import get_config
-from repoyard._utils import async_throttler, check_interrupted, enable_soft_interruption
+from repoyard._utils import async_throttler, check_interrupted, enable_soft_interruption, SoftInterruption
 from repoyard._utils.sync_helper import SyncSetting, SyncDirection
 from repoyard._models import RepoPart
 from repoyard._cli.app import app, app_state
@@ -312,6 +312,7 @@ def cli_multi_sync(
     sync_setting: SyncSetting = Option(SyncSetting.CAREFUL, "--sync-setting", help="The sync setting to use."),
     sync_choices: list[RepoPart]|None = Option(None, "--sync-choices", "-c", help="The parts of the repository to sync. If not provided, all parts will be synced. By default, all parts are synced."),
     refresh_user_symlinks: bool = Option(True, help="Refresh the user symlinks."),
+    show_progress: bool = Option(True, help="Show the progress of the sync."),
     soft_interruption_enabled: bool = Option(True, help="Enable soft interruption."),
 ):
     """
@@ -319,6 +320,9 @@ def cli_multi_sync(
     """
     from repoyard._models import get_repoyard_meta
     from repoyard.cmds import sync_repo
+    from rich.live import Live
+    from rich.text import Text
+    from rich.console import Console
 
     if soft_interruption_enabled:
         enable_soft_interruption()
@@ -331,7 +335,7 @@ def cli_multi_sync(
 
     if storage_locations is None and repo_full_names is None:
         storage_locations = list(config.storage_locations.keys())
-    if any(sl not in config.storage_locations for sl in storage_locations):
+    if storage_locations is not None and any(sl not in config.storage_locations for sl in storage_locations):
         typer.echo(f"Invalid storage location: {storage_locations}")
         raise typer.Exit(code=1)
 
@@ -348,21 +352,68 @@ def cli_multi_sync(
         repo_metas = [repoyard_meta.by_full_name[repo_full_name] for repo_full_name in repo_full_names]
 
     async def _task(repo_meta):
-        if check_interrupted(): raise SoftInterruption()
-        await sync_repo(
-            config_path=app_state['config_path'],
-            repo_full_name=repo_meta.full_name,
-            sync_direction=sync_direction,
-            sync_setting=sync_setting,
-            sync_choices=sync_choices,
-            verbose=False,
-            soft_interruption_enabled=soft_interruption_enabled,
-        )
+        sync_stats[repo_meta.full_name] =("Syncing...", None)
+        try:
+            await sync_repo(
+                config_path=app_state['config_path'],
+                repo_full_name=repo_meta.full_name,
+                sync_direction=sync_direction,
+                sync_setting=sync_setting,
+                sync_choices=sync_choices,
+                verbose=False,
+            )
+            sync_stats[repo_meta.full_name] = ("Success", None)
+        except SoftInterruption:
+            sync_stats[repo_meta.full_name] = ("Interrupted", None)
+        except Exception as e:
+            sync_stats[repo_meta.full_name] = ("Error", str(e))
+        
+    sync_stats = {}
 
-    asyncio.run(async_throttler(
+    finish_monitoring = False
+    async def _progress_monitor_task():
+        nonlocal finish_monitoring
+        console = Console()
+        with Live(console=console, refresh_per_second=4) as live:
+            def _update_live():
+                lines = []
+                for repo_full_name, (sync_stat, e) in sync_stats.items():
+                    color = {
+                        "Syncing...": "yellow",
+                        "Success": "green",
+                        "Interrupted": "magenta",
+                        "Error": "red",
+                    }.get(sync_stat, "white")
+
+                    lines.append(f"{repo_full_name}")
+                    lines.append(f"    [bold {color}]{sync_stat}[/bold {color}]")
+                    if e:
+                        lines.append(f"    [red]{e}[/red]")
+
+                rendered = Text.from_markup("\n".join(lines))
+                live.update(rendered)
+            while not finish_monitoring:
+                _update_live()
+                await asyncio.sleep(0.2)
+            await asyncio.sleep(0.2)
+            _update_live()
+
+    sync_task = async_throttler(
         [_task(repo_meta) for repo_meta in repo_metas],
         max_concurrency=max_concurrent_rclone_ops,
-    ))
+    )
+
+    async def _runner():
+        nonlocal finish_monitoring
+        if show_progress:
+            monitor_task = asyncio.create_task(_progress_monitor_task())
+            await sync_task
+            finish_monitoring = True
+            await monitor_task
+        else:
+            await sync_task
+
+    asyncio.run(_runner())
 
     if refresh_user_symlinks:
         from repoyard.cmds import create_user_symlinks
@@ -827,7 +878,7 @@ def cli_yard_status(
     config = get_config(app_state['config_path'])
     if storage_locations is None:
         storage_locations = list(config.storage_locations.keys())
-    if any(sl not in config.storage_locations for sl in storage_locations):
+    if storage_locations is not None and any(sl not in config.storage_locations for sl in storage_locations):
         typer.echo(f"Invalid storage location: {storage_locations}")
         raise typer.Exit(code=1)
 
@@ -892,7 +943,7 @@ def cli_list(
     config = get_config(app_state['config_path'])
     if storage_locations is None:
         storage_locations = list(config.storage_locations.keys())
-    if any(sl not in config.storage_locations for sl in storage_locations):
+    if storage_locations is not None and any(sl not in config.storage_locations for sl in storage_locations):
         typer.echo(f"Invalid storage location: {storage_locations}")
         raise typer.Exit(code=1)
 
