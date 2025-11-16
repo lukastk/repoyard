@@ -1,3 +1,23 @@
+## [0.1.6] - 2025-11-16
+
+### 🚀 Features
+
+- The global default.repoyard_exclude file is now used by default if no exclude file is present
+
+### 🐛 Bug Fixes
+
+- Symlinks for fake stores
+- Typo in numbering
+- Added symlink syncing
+
+### 🚜 Refactor
+
+- Changed '.repoyard_*' files to '.rclone_' files. more fitting
+
+### ⚙️ Miscellaneous Tasks
+
+- Update CHANGELOG.md
+- Update version in pyproject.toml
 ## [0.1.5] - 2025-11-16
 
 ### 🚀 Features
