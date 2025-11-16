@@ -508,7 +508,9 @@ async def get_sync_status(
             if not remote_path_exists:
                 sync_condition = SyncCondition.NEEDS_PUSH
             else:
-                if local_last_modified > local_sync_record.timestamp:
+                if local_sync_record is None:
+                    raise Exception("Something wrong here. Local sync record does not exist, but the remote path exists.")
+                elif local_last_modified > local_sync_record.timestamp:
                     sync_condition = SyncCondition.CONFLICT
                 else:
                     sync_condition = SyncCondition.NEEDS_PULL
@@ -526,3 +528,8 @@ async def get_sync_status(
         remote_sync_record=remote_sync_record,
         is_dir=is_dir,
     )
+
+
+# %%
+from repoyard._utils import check_last_time_modified
+check_last_time_modified("/Users/lukastk/.repoyard/local_store/hetzner-box/20230225_000000_npwqR__ggct-paper/data")

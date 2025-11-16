@@ -458,7 +458,9 @@ async def get_sync_status(
             if not remote_path_exists:
                 sync_condition = SyncCondition.NEEDS_PUSH
             else:
-                if local_last_modified > local_sync_record.timestamp:
+                if local_sync_record is None:
+                    raise Exception("Something wrong here. Local sync record does not exist, but the remote path exists.")
+                elif local_last_modified > local_sync_record.timestamp:
                     sync_condition = SyncCondition.CONFLICT
                 else:
                     sync_condition = SyncCondition.NEEDS_PULL
