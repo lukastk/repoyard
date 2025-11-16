@@ -34,7 +34,7 @@ def _rclone_cmd_helper(
 ) -> list[str]:
     source_spec = f"{source}:{source_path}" if source else source_path
     dest_spec = f"{dest}:{dest_path}" if dest else dest_path
-    cmd = ["rclone", cmd_name, '--config', rclone_config_path, source_spec, dest_spec]
+    cmd = ["rclone", cmd_name, '--config', rclone_config_path, "--links", source_spec, dest_spec]
     if dry_run:
         cmd.append("--dry-run")
     for f in include:
