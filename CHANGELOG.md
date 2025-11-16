@@ -1,3 +1,24 @@
+## [0.1.4] - 2025-11-16
+
+### 🚀 Features
+
+- Supports specifying the creation timestamp
+- 'create_user_repo_group_symlinks' now removes empty folders that do not correspond to repo groups in the user repo group folder
+- Can now pass paths instead of specifying repo names to certain CLI functions
+
+### 🐛 Bug Fixes
+
+- Creation timestamp specification wasn't working
+- Typo in 'new'
+- Removed some tests now that bisync is no longer supported
+- Repo names were wrongly parsed from paths
+- Cmds had changed
+
+### ⚙️ Miscellaneous Tasks
+
+- Update CHANGELOG.md
+- Ran nbl prepare with new nblite version
+- Update version in pyproject.toml
 ## [0.1.3] - 2025-11-16
 
 ### 🚀 Features
