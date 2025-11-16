@@ -422,7 +422,7 @@ def cli_add_to_group(
     name_match_mode: NameMatchMode|None = Option(None, "--name-match-mode", "-m", help="The mode to use for matching the repository name."),
     name_match_case: bool = Option(False, "--name-match-case", "-c", help="Whether to match the repository name case-sensitively."),
     group_name: str = Option(..., "--group-name", "-g", help="The name of the group to add the repository to."),
-    sync_after: bool = Option(True, "--sync-after", "-s", help="Sync the repository after adding it to the group."),
+    sync_after: bool = Option(False, "--sync-after", "-s", help="Sync the repository after adding it to the group."),
     sync_setting: SyncSetting = Option(SyncSetting.CAREFUL, "--sync-setting", help="The sync setting to use."),
     refresh_user_symlinks: bool = Option(True, help="Refresh the user symlinks."),
 ):
@@ -493,7 +493,7 @@ def cli_remove_from_group(
     name_match_mode: NameMatchMode|None = Option(None, "--name-match-mode", "-m", help="The mode to use for matching the repository name."),
     name_match_case: bool = Option(False, "--name-match-case", "-c", help="Whether to match the repository name case-sensitively."),
     group_name: str = Option(..., "--group-name", "-g", help="The name of the group to add the repository to."),
-    sync_after: bool = Option(True, "--sync-after", "-s", help="Sync the repository after adding it to the group."),
+    sync_after: bool = Option(False, "--sync-after", "-s", help="Sync the repository after adding it to the group."),
     sync_setting: SyncSetting = Option(SyncSetting.CAREFUL, "--sync-setting", help="The sync setting to use."),
     refresh_user_symlinks: bool = Option(True, help="Refresh the user symlinks."),
 ):
