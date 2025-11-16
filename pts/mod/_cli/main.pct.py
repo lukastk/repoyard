@@ -789,14 +789,14 @@ def cli_yard_status(
 # %%
 #|exporti
 def _get_filtered_repo_metas(repo_metas, include_groups, exclude_groups, group_filter):
-    # Apply filter
     if include_groups:
         repo_metas = [repo_meta for repo_meta in repo_metas if any(group in repo_meta.groups for group in include_groups)]
     if exclude_groups:
         repo_metas = [repo_meta for repo_meta in repo_metas if not any(group in repo_meta.groups for group in exclude_groups)]
     if group_filter:
-        from repoyard._utils.logical_expressions import evaluate_group_expression
-        repo_metas = [repo_meta for repo_meta in repo_metas if evaluate_group_expression(group_filter, repo_meta.groups)]
+        from repoyard._utils.logical_expressions import get_group_filter_func
+        _filter_func = get_group_filter_func(group_filter)
+        repo_metas = [repo_meta for repo_meta in repo_metas if _filter_func(repo_meta.groups)]
     return repo_metas
 
 
