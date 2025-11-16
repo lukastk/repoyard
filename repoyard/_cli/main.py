@@ -204,22 +204,31 @@ def cli_new(
 # %% ../../../pts/mod/_cli/main.pct.py 16
 @app.command(name='sync')
 def cli_sync(
+    repo_path: Path|None = Option(None, "--repo-path", "-p", help="The path to the repository to sync."),
     repo_full_name: str|None = Option(None, "--repo", "-r", help="The full name of the repository."),
     repo_id: str|None = Option(None, "--repo-id", "-i", help="The id of the repository to sync."),
     repo_name: str|None = Option(None, "--repo-name", "-n", help="The name of the repository to sync."),
     name_match_mode: NameMatchMode|None = Option(None, "--name-match-mode", "-m", help="The mode to use for matching the repository name."),
-    name_match_case: bool = Option(False, "--name-match-case", "-c", help="Whether to match the repository name case-sensitively."),
+    name_match_case: bool = Option(False, "--name-match-case", help="Whether to match the repository name case-sensitively."),
     sync_direction: SyncDirection|None = Option(None, "--sync-direction", "-d", help="The direction of the sync. If not provided, the appropriate direction will be automatically determined based on the sync status. This mode is only available for the 'CAREFUL' sync setting."),
     sync_setting: SyncSetting = Option(SyncSetting.CAREFUL, "--sync-setting", "-s", help="The sync setting to use."),
     sync_choices: list[RepoPart]|None = Option(None, "--sync-choices", "-c", help="The parts of the repository to sync. If not provided, all parts will be synced. By default, all parts are synced."),
-    show_rclone_progress: bool = Option(False, "--progress", "-p", help="Show the progress of the sync in rclone."),
+    show_rclone_progress: bool = Option(False, "--progress", help="Show the progress of the sync in rclone."),
     refresh_user_symlinks: bool = Option(True, help="Refresh the user symlinks."),
 ):
     """
     Sync a repository.
     """
     from repoyard.cmds import sync_repo
-    
+
+    if repo_path is not None:
+        from repoyard._utils import get_repo_full_name_from_sub_path
+        config = get_config(app_state['config_path'])
+        repo_full_name = get_repo_full_name_from_sub_path(
+            config=config,
+            sub_path=repo_path,
+        )
+
     repo_full_name = _get_full_repo_name(
         repo_name=repo_name,
         repo_id=repo_id,
@@ -350,6 +359,7 @@ def cli_sync_meta(
 # %% ../../../pts/mod/_cli/main.pct.py 22
 @app.command(name='add-to-group')
 def cli_add_to_group(
+    repo_path: Path|None = Option(None, "--repo-path", "-p", help="The path to the repository to sync."),
     repo_full_name: str|None = Option(None, "--repo", "-r", help="The full name of the repository, in the form '{ULID}__{REPO_NAME}'."),
     repo_id: str|None = Option(None, "--repo-id", "-i", help="The id of the repository to sync."),
     repo_name: str|None = Option(None, "--repo-name", "-n", help="The name of the repository to sync."),
@@ -366,6 +376,14 @@ def cli_add_to_group(
     from repoyard.cmds import modify_repometa
     from repoyard._models import get_repoyard_meta
     
+    if repo_path is not None:
+        from repoyard._utils import get_repo_full_name_from_sub_path
+        config = get_config(app_state['config_path'])
+        repo_full_name = get_repo_full_name_from_sub_path(
+            config=config,
+            sub_path=repo_path,
+        )
+
     repo_full_name = _get_full_repo_name(
         repo_name=repo_name,
         repo_id=repo_id,
@@ -407,6 +425,7 @@ def cli_add_to_group(
 # %% ../../../pts/mod/_cli/main.pct.py 24
 @app.command(name='remove-from-group')
 def cli_remove_from_group(
+    repo_path: Path|None = Option(None, "--repo-path", "-p", help="The path to the repository to sync."),
     repo_full_name: str|None = Option(None, "--repo", "-r", help="The full name of the repository, in the form '{ULID}__{REPO_NAME}'."),
     repo_id: str|None = Option(None, "--repo-id", "-i", help="The id of the repository to sync."),
     repo_name: str|None = Option(None, "--repo-name", "-n", help="The name of the repository to sync."),
@@ -422,6 +441,14 @@ def cli_remove_from_group(
     """
     from repoyard.cmds import modify_repometa
     from repoyard._models import get_repoyard_meta
+
+    if repo_path is not None:
+        from repoyard._utils import get_repo_full_name_from_sub_path
+        config = get_config(app_state['config_path'])
+        repo_full_name = get_repo_full_name_from_sub_path(
+            config=config,
+            sub_path=repo_path,
+        )
     
     repo_full_name = _get_full_repo_name(
         repo_name=repo_name,
@@ -614,6 +641,7 @@ async def get_formatted_repo_status(config_path, repo_full_name):
 # %% ../../../pts/mod/_cli/main.pct.py 35
 @app.command(name='repo-status')
 def cli_repo_status(
+    repo_path: Path|None = Option(None, "--repo-path", "-p", help="The path to the repository to sync."),
     repo_full_name: str|None = Option(None, "--repo", "-r", help="The full name of the repository, in the form '{ULID}__{REPO_NAME}'."),
     repo_id: str|None = Option(None, "--repo-id", "-i", help="The id of the repository to sync."),
     repo_name: str|None = Option(None, "--repo-name", "-n", help="The name of the repository to sync."),
@@ -627,6 +655,14 @@ def cli_repo_status(
     """
     from repoyard._models import get_repoyard_meta
     import json
+
+    if repo_path is not None:
+        from repoyard._utils import get_repo_full_name_from_sub_path
+        config = get_config(app_state['config_path'])
+        repo_full_name = get_repo_full_name_from_sub_path(
+            config=config,
+            sub_path=repo_path,
+        )
     
     repo_full_name = _get_full_repo_name(
         repo_name=repo_name,

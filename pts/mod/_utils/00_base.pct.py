@@ -47,26 +47,8 @@ def get_repo_full_name_from_sub_path(
     if len(rel_path.parts) < 2: # The path is not inside a repo
         return None
     
-    repo_full_name = rel_path.parts[2]
+    repo_full_name = rel_path.parts[1]
     return repo_full_name
-
-
-# %%
-#|hide
-show_doc(this_module.get_repo_full_name_from_cwd)
-
-
-# %%
-#|export
-def get_repo_full_name_from_cwd(
-    config: repoyard.config.Config,
-) -> Path|None:
-    """
-    Get the full name of a synced repo from a path inside of the repo.
-    """
-    import os
-    cwd = os.getcwd()
-    return get_repo_full_name_from_sub_path(config, cwd)
 
 
 # %%
