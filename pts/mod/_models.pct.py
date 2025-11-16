@@ -242,7 +242,7 @@ def create_repoyard_meta(
     for storage_location_name in config.storage_locations:
         local_storage_location_path = config.local_store_path / storage_location_name
         for repo_path in local_storage_location_path.glob('*'):
-            repo_metas.append(RepoMeta.load(config, storage_location_name, repo_path.stem))
+            repo_metas.append(RepoMeta.load(config, storage_location_name, repo_path.name))
     return RepoyardMeta(repo_metas=repo_metas)
 
 
