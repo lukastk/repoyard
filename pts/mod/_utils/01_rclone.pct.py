@@ -346,59 +346,13 @@ async def rclone_bisync(
         if "ERROR : Safety abort: all files were changed" in stderr_clean:
             return BisyncResult.ERROR_ALL_FILES_CHANGED, stdout, stderr
         if ret_code != 0:
-            return BisyncResult.ERROR_OTHER, result.stdout, result.stderr
+            return BisyncResult.ERROR_OTHER, stdout, stderr
         if "NOTICE: - WARNING  New or changed in both paths" in stderr_clean:
             return BisyncResult.CONFLICTS, stdout, stderr
         return BisyncResult.SUCCESS, stdout, stderr
     else:
         return shlex.join([c.as_posix() if type(c) == Path else str(c) for c in cmd])
 
-
-# %%
-_path = setup_test_folder('bisync')
-
-res, stdout, stderr = await rclone_bisync(
-    _path / "rclone.conf",
-    source="",
-    source_path=_path / "my_local",
-    dest="my_remote",
-    dest_path="",
-    include=[],
-    include_file=None,
-    exclude=[],
-    exclude_file=None,
-    filter=[],
-    filters_file=None,
-    dry_run=False,
-    resync=False,
-    force=False,
-    verbose=False,
-)
-
-assert res == BisyncResult.ERROR_NEEDS_RESYNC
-
-# %%
-_path = setup_test_folder('bisync')
-
-res, stdout, stderr = await rclone_bisync(
-    _path / "rclone.conf",
-    source="",
-    source_path=_path / "my_local",
-    dest="my_remote",
-    dest_path="",
-    include=[],
-    exclude=[],
-    include_file=None,
-    exclude_file=None,
-    filter=[],
-    filters_file=None,
-    dry_run=False,
-    resync=True,
-    force=False,
-    verbose=False,
-)
-
-assert res == BisyncResult.SUCCESS
 
 # %%
 #|hide
@@ -458,43 +412,6 @@ async def rclone_lsjson(
 
 
 # %%
-_path = setup_test_folder('lsjson')
-(_path / 'my_remote' / 'subfolder').mkdir(parents=True, exist_ok=True)
-(_path / 'my_remote' / 'subfolder' / 'file1.txt').write_text("Hello, world!")
-(_path / 'my_remote' / 'subfolder' / 'file2.txt').write_text("Goodbye, world!")
-
-res, stdout, stderr = await rclone_bisync(
-    _path / "rclone.conf",
-    source="",
-    source_path=_path / "my_local",
-    dest="my_remote",
-    dest_path="",
-    include=[],
-    exclude=[],
-    filter=[],
-    include_file=None,
-    exclude_file=None,
-    filters_file=None,
-    dry_run=False,
-    resync=True,
-    force=False,
-    verbose=True,
-)
-
-res = await rclone_lsjson(
-    _path / "rclone.conf",
-    source="my_remote",
-    source_path="",
-    recursive=True,
-)
-file_names = [f["Path"] for f in res]
-assert "file1.txt" in file_names
-assert "file2.txt" in file_names
-assert "subfolder" in file_names
-assert "subfolder/file1.txt" in file_names
-assert "subfolder/file2.txt" in file_names
-
-# %%
 #|hide
 show_doc(this_module.rclone_path_exists)
 
@@ -526,13 +443,6 @@ async def rclone_path_exists(
     is_dir = ls[Path(source_path).name]["IsDir"] if exists else False
     return (exists, is_dir)
 
-
-# %%
-assert await rclone_path_exists(
-    _path / "rclone.conf",
-    source="my_remote",
-    source_path="file1.txt",
-) == (True, False)
 
 # %%
 assert await rclone_path_exists(

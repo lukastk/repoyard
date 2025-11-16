@@ -203,14 +203,14 @@ async def rclone_bisync(
         if "ERROR : Safety abort: all files were changed" in stderr_clean:
             return BisyncResult.ERROR_ALL_FILES_CHANGED, stdout, stderr
         if ret_code != 0:
-            return BisyncResult.ERROR_OTHER, result.stdout, result.stderr
+            return BisyncResult.ERROR_OTHER, stdout, stderr
         if "NOTICE: - WARNING  New or changed in both paths" in stderr_clean:
             return BisyncResult.CONFLICTS, stdout, stderr
         return BisyncResult.SUCCESS, stdout, stderr
     else:
         return shlex.join([c.as_posix() if type(c) == Path else str(c) for c in cmd])
 
-# %% ../../../pts/mod/_utils/01_rclone.pct.py 26
+# %% ../../../pts/mod/_utils/01_rclone.pct.py 24
 async def rclone_mkdir(
     rclone_config_path: str,
     source: str,
@@ -225,7 +225,7 @@ async def rclone_mkdir(
     if ret_code != 0:
         raise Exception(stderr)
 
-# %% ../../../pts/mod/_utils/01_rclone.pct.py 28
+# %% ../../../pts/mod/_utils/01_rclone.pct.py 26
 async def rclone_lsjson(
     rclone_config_path: str,
     source: str,
@@ -253,7 +253,7 @@ async def rclone_lsjson(
         return None
     return json.loads(stdout)
 
-# %% ../../../pts/mod/_utils/01_rclone.pct.py 31
+# %% ../../../pts/mod/_utils/01_rclone.pct.py 28
 async def rclone_path_exists(
     rclone_config_path: str,
     source: str,
@@ -279,7 +279,7 @@ async def rclone_path_exists(
     is_dir = ls[Path(source_path).name]["IsDir"] if exists else False
     return (exists, is_dir)
 
-# %% ../../../pts/mod/_utils/01_rclone.pct.py 35
+# %% ../../../pts/mod/_utils/01_rclone.pct.py 31
 async def rclone_purge(
     rclone_config_path: str,
     source: str,
@@ -290,7 +290,7 @@ async def rclone_purge(
     ret_code, stdout, stderr = await run_cmd_async(cmd)
     return ret_code == 0
 
-# %% ../../../pts/mod/_utils/01_rclone.pct.py 38
+# %% ../../../pts/mod/_utils/01_rclone.pct.py 34
 async def rclone_cat(
     rclone_config_path: str,
     source: str,
