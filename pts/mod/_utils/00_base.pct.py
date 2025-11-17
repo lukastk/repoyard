@@ -204,6 +204,21 @@ async def test_task():
 coros = [test_task() for _ in range(10)]
 res = await async_throttler(coros, max_concurrency=2)
 
+# %%
+#|hide
+show_doc(this_module.is_in_event_loop)
+
+
+# %%
+#|export
+def is_in_event_loop():
+    try:
+        asyncio.get_running_loop()
+        return True
+    except RuntimeError:
+        return False
+
+
 # %% [markdown]
 # #### Soft interruption
 

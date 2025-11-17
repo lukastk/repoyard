@@ -42,6 +42,8 @@ def create_repoyards(remote_name="my_remote", num_repoyards=1):
 
         # Add a storage location
         config_dump = toml.load(config_path)
+        config_dump['user_repos_path'] = (test_folder_path / "user_repos").as_posix()
+        config_dump['user_repo_groups_path'] = (test_folder_path / "user_repo_groups").as_posix()
         config_dump['storage_locations'][remote_name] = {
             'storage_type' : "rclone",
             'store_path' : "repoyard",

@@ -31,12 +31,15 @@ def _rclone_cmd_helper(
     filters_file: str|None,
     dry_run: bool,
     progress: bool,
+    use_fast_list: bool=True,
 ) -> list[str]:
     source_spec = f"{source}:{source_path}" if source else source_path
     dest_spec = f"{dest}:{dest_path}" if dest else dest_path
     cmd = ["rclone", cmd_name, '--config', rclone_config_path, "--links", source_spec, dest_spec]
     if dry_run:
         cmd.append("--dry-run")
+    if use_fast_list:
+        cmd.append("--fast-list")
     for f in include:
         cmd.append(f"--include")
         cmd.append(f)

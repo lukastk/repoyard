@@ -2,7 +2,7 @@
 
 # %% auto 0
 __all__ = ['get_repo_full_name_from_sub_path', 'get_hostname', 'run_fzf', 'check_last_time_modified', 'run_cmd_async',
-           'async_throttler', 'SoftInterruption', 'enable_soft_interruption', 'check_interrupted']
+           'async_throttler', 'is_in_event_loop', 'SoftInterruption', 'enable_soft_interruption', 'check_interrupted']
 
 # %% ../../../pts/mod/_utils/00_base.pct.py 3
 import subprocess
@@ -148,6 +148,14 @@ async def async_throttler(
     return res
 
 # %% ../../../pts/mod/_utils/00_base.pct.py 19
+def is_in_event_loop():
+    try:
+        asyncio.get_running_loop()
+        return True
+    except RuntimeError:
+        return False
+
+# %% ../../../pts/mod/_utils/00_base.pct.py 21
 import signal
 import sys
 
