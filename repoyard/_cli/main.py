@@ -155,7 +155,7 @@ def cli_new(
         "--creation-timestamp-utc",
         help="The timestamp of the new repository. Should be in the form '%Y%m%d_%H%M%S' (e.g. '20251116_105532') or '%Y%m%d' (e.g. '20251116'). If not provided, the current UTC timestamp will be used."
     ),
-    groups: list[str]|None = Option(None, "--groups", "-g", help="The groups to add the new repository to."),
+    groups: list[str]|None = Option(None, "--group", "-g", help="The groups to add the new repository to."),
     initialise_git: bool = Option(True, help="Initialise a git repository in the new repository."),
     refresh_user_symlinks: bool = Option(True, help="Refresh the user symlinks."),
 ):
@@ -316,7 +316,7 @@ def cli_add_to_group(
     repo_name: str|None = Option(None, "--repo-name", "-n", help="The name of the repository to sync."),
     name_match_mode: NameMatchMode|None = Option(None, "--name-match-mode", "-m", help="The mode to use for matching the repository name."),
     name_match_case: bool = Option(False, "--name-match-case", "-c", help="Whether to match the repository name case-sensitively."),
-    group_name: str = Option(..., "--group-name", "-g", help="The name of the group to add the repository to."),
+    group_name: str = Option(..., "--group", "-g", help="The name of the group to add the repository to."),
     sync_after: bool = Option(False, "--sync-after", "-s", help="Sync the repository after adding it to the group."),
     sync_setting: SyncSetting = Option(SyncSetting.CAREFUL, "--sync-setting", help="The sync setting to use."),
     refresh_user_symlinks: bool = Option(True, help="Refresh the user symlinks."),
@@ -384,7 +384,7 @@ def cli_remove_from_group(
     repo_name: str|None = Option(None, "--repo-name", "-n", help="The name of the repository to sync."),
     name_match_mode: NameMatchMode|None = Option(None, "--name-match-mode", "-m", help="The mode to use for matching the repository name."),
     name_match_case: bool = Option(False, "--name-match-case", "-c", help="Whether to match the repository name case-sensitively."),
-    group_name: str = Option(..., "--group-name", "-g", help="The name of the group to add the repository to."),
+    group_name: str = Option(..., "--group", "-g", help="The name of the group to add the repository to."),
     sync_after: bool = Option(False, "--sync-after", "-s", help="Sync the repository after adding it to the group."),
     sync_setting: SyncSetting = Option(SyncSetting.CAREFUL, "--sync-setting", help="The sync setting to use."),
     refresh_user_symlinks: bool = Option(True, help="Refresh the user symlinks."),
