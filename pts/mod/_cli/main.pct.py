@@ -85,6 +85,7 @@ def _get_full_repo_name(
     name_match_mode: NameMatchMode|None,
     name_match_case: bool,
     repo_metas = None,
+    pick_first: bool = False,
 ) -> str:
     from repoyard._models import RepoyardMeta
     if sum(1 for x in [repo_name, repo_full_name, repo_id] if x is not None) > 1:
@@ -92,6 +93,9 @@ def _get_full_repo_name(
     
     if name_match_mode is not None and repo_name is None:
         raise typer.Exit("`repo-name` must be provided if `name-match-mode` is provided.")
+
+    if pick_first and repo_name is None:
+        raise typer.Exit("`repo-name` must be provided if `pick-first` is provided.")
     
     search_mode = (repo_id is None) and (repo_name is None) and (repo_full_name is None)
 
@@ -129,10 +133,13 @@ def _get_full_repo_name(
             elif len(repos_with_name) == 1:
                 repo_full_name = repos_with_name[0].full_name
             else:
-                from repoyard._utils import run_fzf
-                _, repo_full_name = run_fzf(
-                    terms=[r.full_name for r in repos_with_name],
-                    disp_terms=[f"{r.name} ({r.repo_id}) groups: {', '.join(r.groups)}" for r in repos_with_name],
+                if pick_first:
+                    repo_full_name = repos_with_name[0].full_name
+                else:
+                    from repoyard._utils import run_fzf
+                    _, repo_full_name = run_fzf(
+                        terms=[r.full_name for r in repos_with_name],
+                        disp_terms=[f"{r.name} ({r.repo_id}) groups: {', '.join(r.groups)}" for r in repos_with_name],
                 )
         
     if repo_full_name is None:
@@ -866,6 +873,7 @@ def cli_path(
     repo_full_name: str|None = Option(None, "--repo", "-r", help="The full name of the repository, in the form '{ULID}__{REPO_NAME}'."),
     repo_id: str|None = Option(None, "--repo-id", "-i", help="The id of the repository to sync."),
     repo_name: str|None = Option(None, "--repo-name", "-n", help="What repo path to show."),
+    pick_first: bool = Option(False, "--pick-first", "-1", help="Pick the first repository if multiple repositories match the name."),
     name_match_mode: NameMatchMode|None = Option(None, "--name-match-mode", "-m", help="The mode to use for matching the repository name."),
     name_match_case: bool = Option(False, "--name-match-case", "-c", help="Whether to match the repository name case-sensitively."),
     path_option: Literal[
@@ -877,7 +885,6 @@ def cli_path(
             'sync-record-data',
             'sync-record-meta',
             'sync-record-conf',
-
         ] = Option('data-user', "--path-option", "-p", help="The part of the repository to get the path of."),
     include_groups: list[str]|None = Option(None, "--include-group", "-g", help="The group to include in the output."),
     exclude_groups: list[str]|None = Option(None, "--exclude-group", "-e", help="The group to exclude from the output."),
@@ -906,6 +913,7 @@ def cli_path(
         name_match_mode=name_match_mode,
         name_match_case=name_match_case,
         repo_metas=repo_metas,
+        pick_first=pick_first,
     )
     
     if repo_full_name not in repoyard_meta.by_full_name:
