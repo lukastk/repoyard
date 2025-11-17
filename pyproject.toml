@@ -24,6 +24,7 @@ include = ["repoyard/static/**"]
 [dependency-groups]
 dev = [
     "git-cliff>=2.10.1",
+    "ipywidgets>=8.1.8",
     "jupyterlab>=4.4.0",
     "nblite>=0.6.8",
     "pytest>=9.0.0",
