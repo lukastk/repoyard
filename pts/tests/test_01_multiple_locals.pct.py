@@ -73,7 +73,7 @@ await asyncio.gather(*[_task(i)for i in range(num_repos)]);
 
 # %%
 #|export
-await sync_repometas(
+await sync_missing_repometas(
     config_path=config_path2
 )
 

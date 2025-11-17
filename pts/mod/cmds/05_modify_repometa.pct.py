@@ -176,7 +176,8 @@ refresh_repoyard_meta(config)
 
 # %%
 import toml
-from repoyard.cmds import sync_repometas
-await sync_repometas(config_path=config_path)
+from repoyard.cmds import sync_repo
+from repoyard._models import RepoPart
+await sync_repo(config_path=config_path, repo_full_name=repo_full_name, sync_choices=[RepoPart.META])
 repometa_dump = toml.load(remote_rclone_path / "repoyard" / const.REMOTE_REPOS_REL_PATH / repo_full_name / const.REPO_METAFILE_REL_PATH)
 assert repometa_dump['groups'] == ['group1', 'group2']

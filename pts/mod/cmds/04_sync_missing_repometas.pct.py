@@ -1,8 +1,8 @@
 # %% [markdown]
-# # _sync_repometas
+# # _sync_missing_repometas
 
 # %%
-#|default_exp cmds._sync_repometas
+#|default_exp cmds._sync_missing_repometas
 #|export_as_func true
 
 # %%
@@ -21,7 +21,7 @@ from repoyard import const
 
 # %%
 #|set_func_signature
-async def sync_repometas(
+async def sync_missing_repometas(
     config_path: Path,
     max_concurrent_rclone_ops: int|None = None,
     repo_full_names: list[str]|None = None,
@@ -43,9 +43,9 @@ async def sync_repometas(
 # Set up test environment
 import tempfile
 tests_working_dir = const.pkg_path.parent / "tmp_tests"
-test_folder_path = Path(tempfile.mkdtemp(prefix="sync_repometas", dir="/tmp"))
+test_folder_path = Path(tempfile.mkdtemp(prefix="sync_missing_repometas", dir="/tmp"))
 test_folder_path.mkdir(parents=True, exist_ok=True)
-symlink_path = tests_working_dir / "_cmds" / "sync_repometas"
+symlink_path = tests_working_dir / "_cmds" / "sync_missing_repometas"
 symlink_path.parent.mkdir(parents=True, exist_ok=True)
 if symlink_path.exists() or symlink_path.is_symlink():
     symlink_path.unlink()
@@ -139,7 +139,7 @@ for sl_name, sl_config in config.storage_locations.items():
         max_depth=2,
     )
     _ls_remote = {f["Path"] for f in _ls_remote} if _ls_remote else set()
-
+    
     _ls_local = await rclone_lsjson(
         config.rclone_config_path,
         source="",
@@ -160,6 +160,11 @@ for sl_name, sl_config in config.storage_locations.items():
     if check_interrupted(): raise SoftInterruption()
     
     if len(missing_metas) > 0:
+        if verbose:
+            print(f"Syncing {len(missing_metas)} missing repometas from '{sl_name}'.")
+            for missing_meta in missing_metas:
+                print(f"  - {missing_meta}")
+
         await rclone_sync(
             rclone_config_path=config.rclone_config_path,
             source=sl_name,
@@ -179,63 +184,9 @@ for sl_name, sl_config in config.storage_locations.items():
             [_task(repo_full_name) for repo_full_name in missing_repo_full_names],
             max_concurrency=max_concurrent_rclone_ops,
         )
-
-# %% [markdown]
-# Sync the remaining repometas
-
-# %%
-# Modify a local repometa to test if it syncs properly
-repoyard_meta = get_repoyard_meta(config)
-repo_meta = list(repoyard_meta.by_full_name.values())[0]
-repo_meta.groups = ["group1", "group2"]
-repo_meta.save(config)
-
-# %%
-#|export
-from repoyard.cmds._sync_repo import RepoPart, sync_repo
-repoyard_meta = get_repoyard_meta(config)
-
-repo_meta_sync_res = []
-
-async def _task(repo_meta):
-    if check_interrupted(): raise SoftInterruption()
-    
-    if repo_full_names is not None and repo_meta.full_name not in repo_full_names: return
-    if storage_locations is not None and repo_meta.storage_location not in storage_locations: return
-
-    sync_res = None
-    try:
-        sync_res = await sync_repo(
-            config_path=config_path,
-            repo_full_name=repo_meta.full_name,
-            sync_direction=None,
-            sync_setting=SyncSetting.CAREFUL,
-            sync_choices=[RepoPart.META],
-            verbose=False,
-        )
-        sync_pre_status, sync_happened = sync_res[RepoPart.META]
-        repo_meta_sync_res.append((True, None, sync_pre_status, sync_happened))
-    except SyncFailed as e:
-        repo_meta_sync_res.append((False, e, sync_res, False))
-    except SyncUnsafe as e:
-        repo_meta_sync_res.append((False, e, sync_res, False))
-    except InvalidRemotePath as e:
-        repo_meta_sync_res.append((False, e, sync_res, False))
-
-await async_throttler(
-    [_task(repo_meta) for repo_meta in repoyard_meta.repo_metas],
-    max_concurrency=max_concurrent_rclone_ops,
-);
-
-# %%
-# Modify a local repometa to test if it syncs properly
-from repoyard._models import get_repoyard_meta, RepoMeta
-repoyard_meta = get_repoyard_meta(config)
-repo_meta = list(repoyard_meta.by_full_name.values())[0]
-import toml
-_groups = toml.loads((remote_rclone_path / "repoyard" / const.REMOTE_REPOS_REL_PATH / repo_meta.full_name / "repometa.toml").read_text())["groups"]
-assert "group1" in _groups
-assert "group2" in _groups
+    else:
+        if verbose:
+            print(f"No missing repometas in '{sl_name}' to sync.")
 
 # %% [markdown]
 # Refresh the repoyard meta file
@@ -247,4 +198,4 @@ refresh_repoyard_meta(config)
 
 # %%
 #|func_return
-missing_metas, repo_meta_sync_res;
+missing_metas;

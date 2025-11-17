@@ -307,15 +307,14 @@ def cli_sync(
 
 
 # %% [markdown]
-# # `sync-meta`
+# # `sync-missing-meta`
 
 # %%
 #|export
-@app.command(name='sync-meta')
-def cli_sync_meta(
+@app.command(name='sync-missing-meta')
+def cli_sync_missing_meta(
     repo_full_names: list[str]|None = Option(None, "--repo", "-r", help="The full name of the repository, in the form '{ULID}__{REPO_NAME}'."),
     storage_locations: list[str]|None = Option(None, "--storage-location", "-s", help="The storage location to sync the metadata from."),
-    sync_all: bool = Option(False, "--all", "-a", help="Sync all repositories."),
     sync_setting: SyncSetting = Option(SyncSetting.CAREFUL, "--sync-setting", help="The sync setting to use."),
     sync_direction: SyncDirection|None = Option(None, "--sync-direction", "-d", help="The direction of the sync. If not provided, the appropriate direction will be automatically determined based on the sync status. This mode is only available for the 'CAREFUL' sync setting."),
     max_concurrent_rclone_ops: int|None = Option(None, "--max-concurrent", "-m", help="The maximum number of concurrent rclone operations. If not provided, the default specified in the config will be used."),
@@ -323,24 +322,11 @@ def cli_sync_meta(
     soft_interruption_enabled: bool = Option(True, help="Enable soft interruption."),
 ):
     """
-    Syncs the metadata of a repository.
+    Syncs repometa on remote storage locations not yet present locally.
     """
-    from repoyard.cmds import sync_repometas
+    from repoyard.cmds import sync_missing_repometas
     
-    if sync_all and (repo_full_names is not None or storage_locations is not None):
-        raise typer.Exit("Cannot provide both `--all` and `--repo` or `--storage-location`.")
-
-    if not sync_all and repo_full_names is None and storage_locations is None:
-        from repoyard._utils import get_repo_full_name_from_sub_path
-        repo_full_name = get_repo_full_name_from_sub_path(
-            config=get_config(app_state['config_path']),
-            sub_path=Path.cwd(),
-        )
-        if repo_full_name is None:
-            raise typer.Exit("Repo names to sync not specified and could not be inferred from current working directory.")
-        repo_full_names = [repo_full_name]
-
-    asyncio.run(sync_repometas(
+    asyncio.run(sync_missing_repometas(
         config_path=app_state['config_path'],
         repo_full_names=repo_full_names,
         storage_locations=storage_locations,
@@ -414,12 +400,14 @@ def cli_add_to_group(
         )
         
         if sync_after:
-            from repoyard.cmds import sync_repometas
-            asyncio.run(sync_repometas(
+            from repoyard.cmds import sync_repo
+            from repoyard._models import RepoPart
+            asyncio.run(sync_repo(
                 config_path=app_state['config_path'],
-                repo_full_names=[repo_full_name],
+                repo_full_names=repo_full_name,
                 sync_setting=sync_setting,
                 sync_direction=SyncDirection.PUSH,
+                sync_choices=[RepoPart.REPO_META],
                 verbose=True,
                 soft_interruption_enabled=soft_interruption_enabled,
             ))
@@ -487,12 +475,14 @@ def cli_remove_from_group(
         )
         
         if sync_after:
-            from repoyard.cmds import sync_repometas
-            asyncio.run(sync_repometas(
+            from repoyard.cmds import sync_repo
+            from repoyard._models import RepoPart
+            asyncio.run(sync_repo(
                 config_path=app_state['config_path'],
-                repo_full_names=[repo_full_name],
+                repo_full_name=repo_full_name,
                 sync_setting=sync_setting,
                 sync_direction=SyncDirection.PUSH,
+                sync_choices=[RepoPart.REPO_META],
                 verbose=True,
                 soft_interruption_enabled=soft_interruption_enabled,
             ))
