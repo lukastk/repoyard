@@ -164,7 +164,7 @@ def get_sync_stat_board(finished: bool):
     lines = []
 
     for repo_full_name, (num, sync_stat, e, timestamp, sync_results) in sync_stats.items():
-        if not finished and sync_stat != "Syncing" and timestamp < datetime.now() - timedelta(seconds=FINISHED_REMAIN_TIME):
+        if not finished and sync_stat not in ["Syncing", "Error"] and timestamp < datetime.now() - timedelta(seconds=FINISHED_REMAIN_TIME):
             continue
 
         status_color = {
@@ -195,7 +195,7 @@ def get_sync_stat_board(finished: bool):
 
         line = f"{left} {'.' * dots} {right}"
         syncs_happened = [False if sync_results is None else sync_results[repo_part][1] for repo_part in RepoPart]
-        if finished and no_print_skipped and all([not synced for synced in syncs_happened]):
+        if finished and sync_stat == "Success" and no_print_skipped and all([not synced for synced in syncs_happened]):
             continue
         lines.append(line)
 
@@ -210,7 +210,7 @@ def get_sync_stat_board(finished: bool):
         else:
             lines.append(f"{indent}[yellow]Results pending...[/yellow]")
 
-    return "\n".join(lines)
+    return "\n".join(lines).strip()
 
 async def _progress_monitor_task():
     console = Console()
