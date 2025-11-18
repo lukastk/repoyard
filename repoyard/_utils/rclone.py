@@ -241,6 +241,7 @@ async def rclone_lsjson(
     files_only: bool=False,
     recursive: bool=False,
     max_depth: int|None=None,
+    symlinks: bool=True,
     filter: list[str]=[],
 ) -> dict|None:
     source_str = f"{source}:{source_path}" if source else source_path
@@ -248,9 +249,11 @@ async def rclone_lsjson(
     if dirs_only: cmd.append("--dirs-only")
     if files_only: cmd.append("--files-only")
     if recursive: cmd.append("--recursive")
+    if symlinks: cmd.append("--links")
     if max_depth is not None:
         cmd.append(f"--max-depth")
         cmd.append(str(max_depth))
+    cmd.append("--fast-list")
     
     for f in filter:
         cmd.append(f"--filter")
