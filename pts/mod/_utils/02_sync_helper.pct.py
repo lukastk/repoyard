@@ -187,7 +187,7 @@ def _raise_unsafe():
             Remote exists: {remote_path_exists}
             Local sync record: {local_sync_record}
             Remote sync record: {remote_sync_record}
-            Sync status: {sync_condition.value}
+            Sync condition: {sync_condition.value}
     """))
 
 if sync_setting != SyncSetting.FORCE and sync_condition == SyncCondition.SYNCED:
