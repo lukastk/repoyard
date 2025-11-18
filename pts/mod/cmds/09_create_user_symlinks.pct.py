@@ -110,6 +110,14 @@ if user_repo_groups_path is None:
     user_repo_groups_path = config.user_repo_groups_path
 
 # %% [markdown]
+# Refresh the repoyard meta file
+
+# %%
+#|export
+from repoyard._models import refresh_repoyard_meta
+refresh_repoyard_meta(config)
+
+# %% [markdown]
 # Create repo symlinks
 
 # %%

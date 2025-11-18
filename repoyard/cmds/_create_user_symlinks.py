@@ -28,6 +28,10 @@ def create_user_symlinks(
         user_repo_groups_path = config.user_repo_groups_path
     
     # %% ../../../pts/mod/cmds/09_create_user_symlinks.pct.py 13
+    from .._models import refresh_repoyard_meta
+    refresh_repoyard_meta(config)
+    
+    # %% ../../../pts/mod/cmds/09_create_user_symlinks.pct.py 15
     from .._models import create_user_repos_symlinks, get_repoyard_meta
     
     repoyard_meta = get_repoyard_meta(config)
@@ -37,7 +41,7 @@ def create_user_symlinks(
         repo_metas=included_repo_metas,
     )
     
-    # %% ../../../pts/mod/cmds/09_create_user_symlinks.pct.py 16
+    # %% ../../../pts/mod/cmds/09_create_user_symlinks.pct.py 18
     from .._models import create_user_repo_group_symlinks
     
     create_user_repo_group_symlinks(
