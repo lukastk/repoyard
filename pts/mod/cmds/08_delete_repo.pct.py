@@ -111,6 +111,9 @@ repo_meta = repoyard_meta.by_full_name[repo_full_name]
 assert repo_meta.get_local_path(config).exists()
 assert (remote_rclone_path / repo_meta.get_remote_path(config)).exists()
 
+# %% [markdown]
+# Delete the repo
+
 # %%
 #|export
 

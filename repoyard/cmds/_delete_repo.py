@@ -35,7 +35,7 @@ async def delete_repo(
     
     repo_meta = repoyard_meta.by_full_name[repo_full_name]
     
-    # %% ../../../pts/mod/cmds/08_delete_repo.pct.py 16
+    # %% ../../../pts/mod/cmds/08_delete_repo.pct.py 17
     # Delete local repo
     import shutil
     shutil.rmtree(repo_meta.get_local_path(config))
@@ -50,6 +50,6 @@ async def delete_repo(
             source_path=repo_meta.get_remote_path(config),
         )
     
-    # %% ../../../pts/mod/cmds/08_delete_repo.pct.py 19
+    # %% ../../../pts/mod/cmds/08_delete_repo.pct.py 20
     from .._models import refresh_repoyard_meta
     refresh_repoyard_meta(config)
