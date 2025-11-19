@@ -108,6 +108,15 @@ if not repo_meta.check_included(config):
     raise ValueError(f"Repo '{repo_full_name}' is already excluded.")
 
 # %% [markdown]
+# Check that the repo is not local
+
+# %%
+#|export
+from repoyard.config import StorageType
+if repo_meta.get_storage_location_config(config).storage_type == StorageType.LOCAL:
+    raise ValueError(f"Repo '{repo_full_name}' in local storage location '{repo_meta.storage_location}' cannot be excluded.")
+
+# %% [markdown]
 # Sync any changes before removing locally
 
 # %%

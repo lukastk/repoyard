@@ -37,6 +37,11 @@ async def exclude_repo(
         raise ValueError(f"Repo '{repo_full_name}' is already excluded.")
     
     # %% ../../../pts/mod/cmds/06_exclude_repo.pct.py 16
+    from ..config import StorageType
+    if repo_meta.get_storage_location_config(config).storage_type == StorageType.LOCAL:
+        raise ValueError(f"Repo '{repo_full_name}' in local storage location '{repo_meta.storage_location}' cannot be excluded.")
+    
+    # %% ../../../pts/mod/cmds/06_exclude_repo.pct.py 18
     from . import sync_repo
     
     if not skip_sync:
@@ -46,7 +51,7 @@ async def exclude_repo(
             sync_setting=SyncSetting.CAREFUL,
         )
     
-    # %% ../../../pts/mod/cmds/06_exclude_repo.pct.py 18
+    # %% ../../../pts/mod/cmds/06_exclude_repo.pct.py 20
     import shutil
     from .._models import RepoPart
     shutil.rmtree(repo_meta.get_local_repodata_path(config))
