@@ -431,7 +431,7 @@ async def get_sync_status(
     if (local_path_exists and remote_path_exists) and (local_path_is_dir != remote_path_is_dir):
         _local = "directory" if local_path_is_dir else "file"
         _remote = "directory" if remote_path_is_dir else "file"
-        raise Exception(f"Local and remote paths are not both files or both directories. Local is {_local} and remote is {_remote}.")
+        raise Exception(f"Local and remote paths are not both files or both directories. Local is {_local} and remote is {_remote}. Local path: '{local_path}', remote path: '{remote_path}'.")
     
     is_dir = local_path_is_dir or remote_path_is_dir
 
@@ -453,10 +453,8 @@ async def get_sync_status(
     sync_records_match = (local_sync_record is not None and remote_sync_record is not None) and \
         (local_sync_record.ulid == remote_sync_record.ulid)
 
-    if remote_path_exists and local_sync_record is None:
-        raise Exception("Something wrong here. Local sync record exists but remote path does not exist.")
     if remote_path_exists and remote_sync_record is None:
-        raise Exception("Something wrong here. Remote path exists, but remote sync record does not exist.")
+        raise Exception(f"Something wrong here. Remote path exists, but remote sync record does not exist. Local path: '{local_path}', remote path: '{remote_path}.")
 
     local_last_modified = check_last_time_modified(local_path)
 
@@ -464,7 +462,7 @@ async def get_sync_status(
         if (not local_path_is_dir) or (local_path_is_dir and not local_path_is_empty):
             # Logic here: If the local path is a file, it should be able to be checked for last modification.
             # If the local path is a non-empty directory, it should also be able to be checked for last modification.
-            raise Exception("Something wrong here. Local path exists and is not empty, but cannot be checked for last modification.")
+            raise Exception(f"Something wrong here. Local path exists and is not empty, but cannot be checked for last modification. Local path: '{local_path}', remote path: '{remote_path}.")
 
     if local_sync_incomplete or remote_sync_incomplete:
         sync_condition = SyncCondition.SYNC_INCOMPLETE
@@ -477,6 +475,8 @@ async def get_sync_status(
         else:
             if local_path_exists:
                 if remote_path_exists:
+                    if local_sync_record is None:
+                        raise Exception(f"Something wrong here. Local sync record does not exist, but the local and remote path exists. Local path: '{local_path}', remote path: '{remote_path}.")
                     remote_sync_more_recent = remote_sync_record.ulid.datetime > local_sync_record.ulid.datetime
                     if remote_sync_more_recent:
                         if local_last_modified is not None and local_last_modified > local_sync_record.timestamp:
@@ -491,7 +491,7 @@ async def get_sync_status(
                 if remote_path_exists:
                     sync_condition = SyncCondition.NEEDS_PULL
                 else:
-                    raise Exception("Neither local nor remote paths exist.")
+                    sync_condition = SyncCondition.SYNCED # Synced by default, since neither local nor remote path exists. This will often be the case for `conf`, for example.
 
 
 
