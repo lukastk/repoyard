@@ -112,7 +112,7 @@ def _get_full_repo_name(
             repo_full_name = repoyard_meta.by_id[repo_id].full_name
         else:
             if repo_name is not None:
-                if name_match_mode is None: name_match_mode = NameMatchMode.SUBSEQUENCE
+                if name_match_mode is None: name_match_mode = NameMatchMode.CONTAINS
                 if name_match_mode == NameMatchMode.EXACT:
                     cmp = lambda x: x.name == repo_name if not name_match_case else x.name.lower() == repo_name.lower()
                     repos_with_name = [x for x in repoyard_meta.repo_metas if cmp(x)]
