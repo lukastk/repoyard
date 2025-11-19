@@ -27,6 +27,7 @@ def cli_multi_sync(
     sync_direction: SyncDirection|None = Option(None, "--sync-direction", help="The direction of the sync. If not provided, the appropriate direction will be automatically determined based on the sync status. This mode is only available for the 'CAREFUL' sync setting."),
     sync_setting: SyncSetting = Option(SyncSetting.CAREFUL, "--sync-setting", help="The sync setting to use."),
     sync_choices: list[RepoPart]|None = Option(None, "--sync-choices", "-c", help="The parts of the repository to sync. If not provided, all parts will be synced. By default, all parts are synced."),
+    sync_recently_modified_first: bool = Option(False, help="Sync repositories that have been recently modified first."),
     refresh_user_symlinks: bool = Option(True, help="Refresh the user symlinks."),
     show_progress: bool = Option(True, help="Show the progress of the sync."),
     no_print_skipped: bool = Option(True, help="Do not print repositories for which no syncs happened."),
@@ -167,12 +168,20 @@ def cli_multi_sync(
                 await asyncio.sleep(0.2)
             live.update(Text.from_markup("Finished. Final results:\n\n"))
     
+    # %% ../../../pts/mod/_cli/multi-sync.pct.py 17
+    _repo_metas = repo_metas
+    if sync_recently_modified_first:
+        from repoyard._utils import check_last_time_modified
+        def get_last_modified(repo_meta):
+            last_modified = check_last_time_modified(repo_meta.get_local_path(config))
+            return last_modified.timestamp() if last_modified else 0
+        _repo_metas = sorted(_repo_metas, key=get_last_modified, reverse=True)
+    
     sync_task = async_throttler(
-        [_task(num, repo_meta) for num, repo_meta in enumerate(repo_metas)],
+        [_task(num, repo_meta) for num, repo_meta in enumerate(_repo_metas)],
         max_concurrency=max_concurrent_rclone_ops,
     )
     
-    # %% ../../../pts/mod/_cli/multi-sync.pct.py 17
     async def _runner():
         if show_progress:
             monitor_task = asyncio.create_task(_progress_monitor_task())
