@@ -290,18 +290,23 @@ def get_repo_group_configs(
         for group_name in repo_meta.groups:
             if group_name not in repo_group_configs:
                 repo_group_configs[group_name] = RepoGroupConfig()
-    return repo_group_configs
+    return repo_group_configs, config.virtual_repo_groups
 
 # %% ../../pts/mod/_models.pct.py 16
 def create_user_repo_group_symlinks(
     config: repoyard.config.Config,
 ):
     from collections import defaultdict
-    from repoyard.config import RepoGroupTitleMode
+    from repoyard.config import RepoGroupTitleMode, VirtualRepoGroupConfig
     repo_metas = [repo_meta for repo_meta in get_repoyard_meta(config).repo_metas if repo_meta.check_included(config)]
     repo_metas.sort(key=lambda x: x.creation_timestamp_datetime)
-    groups = get_repo_group_configs(config, repo_metas)
+    groups, virtual_repo_groups = get_repo_group_configs(config, repo_metas)
     symlink_paths = []
+
+    for vg in virtual_repo_groups:
+        if vg in groups:
+            print(f"Warning: Virtual repo group '{vg}' is also a regular repo group.")
+    groups.update(virtual_repo_groups)
 
     def _get_symlink_title(repo_meta: RepoMeta, group_config: RepoGroupConfig) -> str:
         if group_config.repo_title_mode == RepoGroupTitleMode.FULL_NAME:
@@ -320,7 +325,10 @@ def create_user_repo_group_symlinks(
         title_counter = defaultdict(int)
         for repo_meta in repo_metas:
             if not repo_meta.check_included(config): continue
-            if group_name not in repo_meta.groups: continue
+            if isinstance(group_config, VirtualRepoGroupConfig):
+                if not group_config.is_in_group(repo_meta.groups): continue
+            else:
+                if group_name not in repo_meta.groups: continue
             dest_path = repo_meta.get_local_repodata_path(config)
             title = _get_symlink_title(repo_meta, group_config)
             if title_counter[title] > 1:

@@ -362,7 +362,7 @@ def cli_add_to_group(
     soft_interruption_enabled: bool = Option(True, help="Enable soft interruption."),
 ):
     """
-    Modify the metadata of a repository.
+    Add a repository to a group.
     """
     from repoyard.cmds import modify_repometa
     from repoyard._models import get_repoyard_meta
@@ -437,7 +437,7 @@ def cli_remove_from_group(
     soft_interruption_enabled: bool = Option(True, help="Enable soft interruption."),
 ):
     """
-    Modify the metadata of a repository.
+    Remove a repository from a group.
     """
     from repoyard.cmds import modify_repometa
     from repoyard._models import get_repoyard_meta
@@ -855,7 +855,12 @@ def cli_list(
     else:
         if storage_locations is None: storage_locations = list(config.storage_locations.keys())
         repo_metas = [repo_meta for repo_meta in get_repoyard_meta(config).repo_metas if repo_meta.storage_location in storage_locations]
-    group_configs = get_repo_group_configs(config, repo_metas)
+    group_configs, virtual_repo_groups = get_repo_group_configs(config, repo_metas)
+    for vg, vg_config in virtual_repo_groups.items():
+        if vg in group_configs:
+            print(f"Warning: Virtual repo group '{vg}' is also a regular repo group.")
+        if any(vg_config.is_in_group(repo_meta.groups) for repo_meta in repo_metas):
+            group_configs[vg] = vg_config
 
     for group_name in sorted(group_configs.keys()):
         typer.echo(group_name)

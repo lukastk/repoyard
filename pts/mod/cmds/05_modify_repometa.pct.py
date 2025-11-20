@@ -137,8 +137,11 @@ _repo_metas = list(repoyard_meta.repo_metas)
 _repo_metas.remove(_old_repo_meta)
 _repo_metas.append(modified_repo_meta)
 
-repo_group_configs = get_repo_group_configs(config, _repo_metas)
+repo_group_configs, virtual_repo_groups = get_repo_group_configs(config, _repo_metas)
 for g in modified_repo_meta.groups:
+    if g in virtual_repo_groups:
+        raise Exception(f"Cannot add a repository to a virtual repo group (virtual repo group: '{g}')")
+
     repo_group_config = repo_group_configs[g]
     repo_metas_in_group = [rm for rm in _repo_metas if g in modified_repo_meta.groups]
 
