@@ -125,7 +125,7 @@ async def _task(repo_meta):
     assert await rclone_lsjson(
         config.rclone_config_path,
         source="",
-        source_path=repo_meta.get_local_repodata_path(config),
+        source_path=repo_meta.get_local_part_path(config, RepoPart.DATA),
     ) is None
 
 await asyncio.gather(*[_task(repo_meta) for repo_meta in [repo_meta1, repo_meta2, repo_meta3]]);
@@ -145,7 +145,7 @@ async def _task(repo_meta):
     assert await rclone_lsjson(
         config.rclone_config_path,
         source="",
-        source_path=repo_meta.get_local_repodata_path(config),
+        source_path=repo_meta.get_local_part_path(config, RepoPart.DATA),
     ) is not None
 
 await asyncio.gather(*[_task(repo_meta) for repo_meta in [repo_meta1, repo_meta2, repo_meta3]]);

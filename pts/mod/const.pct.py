@@ -36,7 +36,6 @@ REMOTE_BACKUP_REL_PATH = "sync_backups"
 
 REPO_METAFILE_REL_PATH = "repometa.toml"
 REPO_CONF_REL_PATH = "conf"
-REPO_DATA_REL_PATH = "data"
 
 SOFT_INTERRUPT_COUNT = 3
 

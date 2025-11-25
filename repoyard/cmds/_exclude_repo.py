@@ -54,5 +54,5 @@ async def exclude_repo(
     # %% ../../../pts/mod/cmds/06_exclude_repo.pct.py 20
     import shutil
     from .._models import RepoPart
-    shutil.rmtree(repo_meta.get_local_repodata_path(config))
+    shutil.rmtree(repo_meta.get_local_part_path(config, RepoPart.DATA))
     repo_meta.get_local_sync_record_path(config, RepoPart.DATA).unlink()

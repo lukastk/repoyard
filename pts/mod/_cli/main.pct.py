@@ -966,13 +966,13 @@ def cli_path(
     config = get_config(app_state['config_path'])
 
     if path_option == 'data-user':
-        typer.echo(repo_meta.get_user_path(config).as_posix())
+        typer.echo(repo_meta.get_user_repos_path(config).as_posix())
     elif path_option == 'data':
-        typer.echo(repo_meta.get_local_repodata_path(config).as_posix())
+        typer.echo(repo_meta.get_local_part_path(config, RepoPart.DATA).as_posix())
     elif path_option == 'meta':
-        typer.echo(repo_meta.get_local_repometa_path(config).as_posix())
+        typer.echo(repo_meta.get_local_part_path(config, RepoPart.META).as_posix())
     elif path_option == 'conf':
-        typer.echo(repo_meta.get_local_repoconf_path(config).as_posix())
+        typer.echo(repo_meta.get_local_part_path(config, RepoPart.CONF).as_posix())
     elif path_option == 'root':
         typer.echo(config.get_local_path(config).as_posix())
     elif path_option == 'sync-record-data':

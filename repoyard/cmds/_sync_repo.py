@@ -84,10 +84,10 @@ async def sync_repo(
             rclone_config_path=config.rclone_config_path,
             sync_direction=sync_direction,
             sync_setting=sync_setting,
-            local_path=repo_meta.get_local_repometa_path(config),
+            local_path=repo_meta.get_local_part_path(config, RepoPart.META),
             local_sync_record_path=repo_meta.get_local_sync_record_path(config, sync_part),
             remote=repo_meta.storage_location,
-            remote_path=repo_meta.get_remote_repometa_path(config),
+            remote_path=repo_meta.get_remote_part_path(config, RepoPart.META),
             remote_sync_record_path=repo_meta.get_remote_sync_record_path(config, sync_part),
             local_sync_backups_path=local_sync_backups_path,
             remote_sync_backups_path=remote_sync_backups_path,
@@ -105,10 +105,10 @@ async def sync_repo(
             rclone_config_path=config.rclone_config_path,
             sync_direction=sync_direction,
             sync_setting=sync_setting,
-            local_path=repo_meta.get_local_repoconf_path(config),
+            local_path=repo_meta.get_local_part_path(config, RepoPart.CONF),
             local_sync_record_path=repo_meta.get_local_sync_record_path(config, sync_part),
             remote=repo_meta.storage_location,
-            remote_path=repo_meta.get_remote_repoconf_path(config),
+            remote_path=repo_meta.get_remote_part_path(config, RepoPart.CONF),
             remote_sync_record_path=repo_meta.get_remote_sync_record_path(config, sync_part),
             local_sync_backups_path=local_sync_backups_path,
             remote_sync_backups_path=remote_sync_backups_path,
@@ -117,9 +117,9 @@ async def sync_repo(
         )
     
     # %% ../../../pts/mod/cmds/03_sync_repo.pct.py 29
-    _rclone_include_path = repo_meta.get_local_repoconf_path(config) / ".rclone_include"
-    _rclone_exclude_path = repo_meta.get_local_repoconf_path(config) / ".rclone_exclude"
-    _rclone_filters_path = repo_meta.get_local_repoconf_path(config) / ".rclone_filters"
+    _rclone_include_path = repo_meta.get_local_part_path(config, RepoPart.CONF) / ".rclone_include"
+    _rclone_exclude_path = repo_meta.get_local_part_path(config, RepoPart.CONF) / ".rclone_exclude"
+    _rclone_filters_path = repo_meta.get_local_part_path(config, RepoPart.CONF) / ".rclone_filters"
     
     _rclone_include_path = _rclone_include_path if _rclone_include_path.exists() else None
     _rclone_exclude_path = _rclone_exclude_path if _rclone_exclude_path.exists() else config.default_rclone_exclude_path
@@ -135,10 +135,10 @@ async def sync_repo(
             rclone_config_path=config.rclone_config_path,
             sync_direction=sync_direction,
             sync_setting=sync_setting,
-            local_path=repo_meta.get_local_repodata_path(config),
+            local_path=repo_meta.get_local_part_path(config, RepoPart.DATA),
             local_sync_record_path=repo_meta.get_local_sync_record_path(config, sync_part),
             remote=repo_meta.storage_location,
-            remote_path=repo_meta.get_remote_repodata_path(config),
+            remote_path=repo_meta.get_remote_part_path(config, RepoPart.DATA),
             remote_sync_record_path=repo_meta.get_remote_sync_record_path(config, sync_part),
             local_sync_backups_path=local_sync_backups_path,
             remote_sync_backups_path=remote_sync_backups_path,

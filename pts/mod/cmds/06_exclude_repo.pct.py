@@ -137,7 +137,7 @@ if not skip_sync:
 #|export
 import shutil
 from repoyard._models import RepoPart
-shutil.rmtree(repo_meta.get_local_repodata_path(config))
+shutil.rmtree(repo_meta.get_local_part_path(config, RepoPart.DATA))
 repo_meta.get_local_sync_record_path(config, RepoPart.DATA).unlink()
 
 # %%

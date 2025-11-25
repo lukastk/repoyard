@@ -71,8 +71,8 @@ repo_full_name = new_repo(config_path=config_path, repo_name="test_repo", storag
 
 # %%
 # Put an excluded file into the repo data folder to make sure it is not synced
-(data_path / "local_store" / "my_remote" / repo_full_name / const.REPO_DATA_REL_PATH / ".venv").mkdir(parents=True, exist_ok=True)
-(data_path / "local_store" / "my_remote" / repo_full_name / const.REPO_DATA_REL_PATH / ".venv" / "test.txt").write_text("test");
+(data_path / "local_store" / "my_remote" / repo_full_name / "test_repo" / ".venv").mkdir(parents=True, exist_ok=True)
+(data_path / "local_store" / "my_remote" / repo_full_name / "test_repo" / ".venv" / "test.txt").write_text("test");
 
 # %% [markdown]
 # # Function body
@@ -112,10 +112,10 @@ import asyncio
 
 tasks = [get_sync_status(
     rclone_config_path=config.rclone_config_path,
-    local_path=repo_meta.get_local_repometa_path(config),
+    local_path=repo_meta.get_local_part_path(config, RepoPart.META),
     local_sync_record_path=repo_meta.get_local_sync_record_path(config, repo_part),
     remote=repo_meta.storage_location,
-    remote_path=repo_meta.get_remote_repometa_path(config),
+    remote_path=repo_meta.get_remote_part_path(config, RepoPart.META),
     remote_sync_record_path=repo_meta.get_remote_sync_record_path(config, repo_part),
 ) for repo_part in RepoPart]
 

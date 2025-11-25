@@ -135,9 +135,10 @@ repo_meta.save(config)
 
 # %%
 #|export
+from repoyard._models import RepoPart
 repo_path = repo_meta.get_local_path(config)
-repo_data_path = repo_meta.get_local_repodata_path(config)
-repo_conf_path = repo_meta.get_local_repoconf_path(config)
+repo_data_path = repo_meta.get_local_part_path(config, RepoPart.DATA)
+repo_conf_path = repo_meta.get_local_part_path(config, RepoPart.CONF)
 repo_path.mkdir(parents=True, exist_ok=True)
 repo_conf_path.mkdir(parents=True, exist_ok=True)
 
