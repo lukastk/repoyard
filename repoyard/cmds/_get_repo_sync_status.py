@@ -20,10 +20,10 @@ async def get_repo_sync_status(
     # %% auto 0
     __all__ = ['config', 'repoyard_meta', 'repo_meta', 'tasks', 'repo_sync_status']
     
-    # %% ../../../pts/mod/cmds/02_get_repo_sync_status.pct.py 12
+    # %% ../../../pts/mod/cmds/02_get_repo_sync_status.pct.py 11
     config = get_config(config_path)
     
-    # %% ../../../pts/mod/cmds/02_get_repo_sync_status.pct.py 15
+    # %% ../../../pts/mod/cmds/02_get_repo_sync_status.pct.py 13
     from .._models import get_repoyard_meta
     repoyard_meta = get_repoyard_meta(config)
     
@@ -32,16 +32,16 @@ async def get_repo_sync_status(
     
     repo_meta = repoyard_meta.by_full_name[repo_full_name]
     
-    # %% ../../../pts/mod/cmds/02_get_repo_sync_status.pct.py 16
+    # %% ../../../pts/mod/cmds/02_get_repo_sync_status.pct.py 14
     from .._models import get_sync_status, RepoPart
     import asyncio
     
     tasks = [get_sync_status(
         rclone_config_path=config.rclone_config_path,
-        local_path=repo_meta.get_local_repometa_path(config),
+        local_path=repo_meta.get_local_part_path(config, RepoPart.META),
         local_sync_record_path=repo_meta.get_local_sync_record_path(config, repo_part),
         remote=repo_meta.storage_location,
-        remote_path=repo_meta.get_remote_repometa_path(config),
+        remote_path=repo_meta.get_remote_part_path(config, RepoPart.META),
         remote_sync_record_path=repo_meta.get_remote_sync_record_path(config, repo_part),
     ) for repo_part in RepoPart]
     

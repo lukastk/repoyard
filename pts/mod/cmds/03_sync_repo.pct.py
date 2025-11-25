@@ -54,21 +54,14 @@ async def sync_repo(
 # Set up testing args
 
 # %%
-# Set up test environment
-import tempfile
-tests_working_dir = const.pkg_path.parent / "tmp_tests"
-test_folder_path = Path(tempfile.mkdtemp(prefix="sync_repo", dir="/tmp"))
-test_folder_path.mkdir(parents=True, exist_ok=True)
-symlink_path = tests_working_dir / "_cmds" / "sync_repo"
-symlink_path.parent.mkdir(parents=True, exist_ok=True)
-if symlink_path.exists() or symlink_path.is_symlink():
-    symlink_path.unlink()
-symlink_path.symlink_to(test_folder_path, target_is_directory=True) # So that it can be viewed from within the project working directory
-data_path = test_folder_path / ".repoyard"
+from tests.utils import *
+remote_name, remote_rclone_path, config, config_path, data_path = create_repoyards()
 
 # %%
 # Args (1/2)
-config_path = test_folder_path / "repoyard_config" / "config.toml"
+from repoyard.cmds import new_repo
+config_path = config_path
+repo_full_name = new_repo(config_path=config_path, repo_name="test_repo", storage_location="my_remote")
 sync_direction = None
 sync_setting = SyncSetting.CAREFUL
 sync_choices = None
@@ -77,28 +70,9 @@ show_rclone_progress = False
 soft_interruption_enabled = True
 
 # %%
-# Run init
-from repoyard.cmds import init_repoyard
-from repoyard.cmds import new_repo
-init_repoyard(config_path=config_path, data_path=data_path)
-
-# Add a storage location 'my_remote'
-import toml
-config_dump = toml.load(config_path)
-remote_rclone_path = Path(tempfile.mkdtemp(prefix="rclone_remote", dir="/tmp"))
-config_dump['storage_locations']['my_remote'] = {
-    'storage_type' : "rclone",
-    'store_path' : "repoyard",
-}
-config_path.write_text(toml.dumps(config_dump))
-
-# Args (2/2)
-repo_full_name = new_repo(config_path=config_path, repo_name="test_repo", storage_location="my_remote")
-
-# %%
 # Put an excluded file into the repo data folder to make sure it is not synced
-(data_path / "local_store" / "my_remote" / repo_full_name / const.REPO_DATA_REL_PATH / ".venv").mkdir(parents=True, exist_ok=True)
-(data_path / "local_store" / "my_remote" / repo_full_name / const.REPO_DATA_REL_PATH / ".venv" / "test.txt").write_text("test");
+(data_path / "local_store" / "my_remote" / repo_full_name / "test_repo" / ".venv").mkdir(parents=True, exist_ok=True)
+(data_path / "local_store" / "my_remote" / repo_full_name / "test_repo"/ ".venv" / "test.txt").write_text("test");
 
 # %% [markdown]
 # # Function body
@@ -178,10 +152,10 @@ if sync_part in sync_choices:
         rclone_config_path=config.rclone_config_path,
         sync_direction=sync_direction,
         sync_setting=sync_setting,
-        local_path=repo_meta.get_local_repometa_path(config),
+        local_path=repo_meta.get_local_part_path(config, RepoPart.META),
         local_sync_record_path=repo_meta.get_local_sync_record_path(config, sync_part),
         remote=repo_meta.storage_location,
-        remote_path=repo_meta.get_remote_repometa_path(config),
+        remote_path=repo_meta.get_remote_part_path(config, RepoPart.META),
         remote_sync_record_path=repo_meta.get_remote_sync_record_path(config, sync_part),
         local_sync_backups_path=local_sync_backups_path,
         remote_sync_backups_path=remote_sync_backups_path,
@@ -213,10 +187,10 @@ if sync_part in sync_choices:
         rclone_config_path=config.rclone_config_path,
         sync_direction=sync_direction,
         sync_setting=sync_setting,
-        local_path=repo_meta.get_local_repoconf_path(config),
+        local_path=repo_meta.get_local_part_path(config, RepoPart.CONF),
         local_sync_record_path=repo_meta.get_local_sync_record_path(config, sync_part),
         remote=repo_meta.storage_location,
-        remote_path=repo_meta.get_remote_repoconf_path(config),
+        remote_path=repo_meta.get_remote_part_path(config, RepoPart.CONF),
         remote_sync_record_path=repo_meta.get_remote_sync_record_path(config, sync_part),
         local_sync_backups_path=local_sync_backups_path,
         remote_sync_backups_path=remote_sync_backups_path,
@@ -230,7 +204,7 @@ from repoyard._utils import rclone_lsjson
 _lsjson = await rclone_lsjson(
     rclone_config_path=config.rclone_config_path,
     source=repo_meta.storage_location,
-    source_path=repo_meta.get_remote_repoconf_path(config)
+    source_path=repo_meta.get_remote_part_path(config, RepoPart.CONF)
 )
 assert _lsjson is None # Empty by default
 
@@ -239,9 +213,9 @@ assert _lsjson is None # Empty by default
 
 # %%
 #|export
-_rclone_include_path = repo_meta.get_local_repoconf_path(config) / ".rclone_include"
-_rclone_exclude_path = repo_meta.get_local_repoconf_path(config) / ".rclone_exclude"
-_rclone_filters_path = repo_meta.get_local_repoconf_path(config) / ".rclone_filters"
+_rclone_include_path = repo_meta.get_local_part_path(config, RepoPart.CONF) / ".rclone_include"
+_rclone_exclude_path = repo_meta.get_local_part_path(config, RepoPart.CONF) / ".rclone_exclude"
+_rclone_filters_path = repo_meta.get_local_part_path(config, RepoPart.CONF) / ".rclone_filters"
 
 _rclone_include_path = _rclone_include_path if _rclone_include_path.exists() else None
 _rclone_exclude_path = _rclone_exclude_path if _rclone_exclude_path.exists() else config.default_rclone_exclude_path
@@ -261,10 +235,10 @@ if sync_part in sync_choices:
         rclone_config_path=config.rclone_config_path,
         sync_direction=sync_direction,
         sync_setting=sync_setting,
-        local_path=repo_meta.get_local_repodata_path(config),
+        local_path=repo_meta.get_local_part_path(config, RepoPart.DATA),
         local_sync_record_path=repo_meta.get_local_sync_record_path(config, sync_part),
         remote=repo_meta.storage_location,
-        remote_path=repo_meta.get_remote_repodata_path(config),
+        remote_path=repo_meta.get_remote_part_path(config, RepoPart.DATA),
         remote_sync_record_path=repo_meta.get_remote_sync_record_path(config, sync_part),
         local_sync_backups_path=local_sync_backups_path,
         remote_sync_backups_path=remote_sync_backups_path,
@@ -281,7 +255,7 @@ from repoyard._utils import rclone_lsjson
 _lsjson = await rclone_lsjson(
     rclone_config_path=config.rclone_config_path,
     source=repo_meta.storage_location,
-    source_path=repo_meta.get_remote_repodata_path(config)
+    source_path=repo_meta.get_remote_part_path(config, RepoPart.DATA)
 )
 assert ".git" in {f["Name"] for f in _lsjson}
 assert ".venv" not in {f["Name"] for f in _lsjson}

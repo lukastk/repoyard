@@ -56,15 +56,12 @@ def new_repo(
 # Set up testing args
 
 # %%
-# Set up test environment
-tests_working_dir = const.pkg_path.parent / "tmp_tests"
-test_folder_path = tests_working_dir / "_cmds" / "new_repo"
-data_path = test_folder_path / ".repoyard"
-# !rm -rf {test_folder_path}
+from tests.utils import *
+remote_name, remote_rclone_path, config, config_path, data_path = create_repoyards()
 
 # %%
 # Args
-config_path = test_folder_path / "repoyard_config" / "config.toml"
+config_path = config_path
 storage_location = None
 repo_name = "test_repo"
 from_path = None
@@ -74,11 +71,6 @@ add_rclone_exclude = True
 creation_timestamp_utc = None
 initialise_git = True
 verbose = True
-
-# %%
-# Run init
-from repoyard.cmds import init_repoyard
-init_repoyard(config_path=config_path, data_path=data_path)
 
 # %% [markdown]
 # # Function body
@@ -135,9 +127,10 @@ repo_meta.save(config)
 
 # %%
 #|export
+from repoyard._models import RepoPart
 repo_path = repo_meta.get_local_path(config)
-repo_data_path = repo_meta.get_local_repodata_path(config)
-repo_conf_path = repo_meta.get_local_repoconf_path(config)
+repo_data_path = repo_meta.get_local_part_path(config, RepoPart.DATA)
+repo_conf_path = repo_meta.get_local_part_path(config, RepoPart.CONF)
 repo_path.mkdir(parents=True, exist_ok=True)
 repo_conf_path.mkdir(parents=True, exist_ok=True)
 

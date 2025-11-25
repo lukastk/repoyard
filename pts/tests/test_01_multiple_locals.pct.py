@@ -112,7 +112,7 @@ await asyncio.gather(*[_task(repo_meta) for repo_meta in repoyard_meta2.repo_met
 # %%
 #|export
 async def _task(repo_meta):
-    (repo_meta.get_local_repodata_path(config2) / "hello.txt").write_text("Hello, world!")
+    (repo_meta.get_local_part_path(config2, RepoPart.DATA) / "hello.txt").write_text("Hello, world!")
     await sync_repo(
         config_path=config_path2,
         repo_full_name=repo_meta.full_name,
@@ -140,7 +140,7 @@ await asyncio.gather(*[
 
 # %%
 for repo_meta in repoyard_meta1.repo_metas:
-    assert (repo_meta.get_local_repodata_path(config1) / "hello.txt").exists()
+    assert (repo_meta.get_local_part_path(config1, RepoPart.DATA) / "hello.txt").exists()
 
 
 # %% [markdown]
@@ -149,14 +149,14 @@ for repo_meta in repoyard_meta1.repo_metas:
 # %%
 #|export
 async def _task(repo_meta):
-    (repo_meta.get_local_repodata_path(config1) / "goodbye.txt").write_text("Goodbye, world!")
+    (repo_meta.get_local_part_path(config1, RepoPart.DATA) / "goodbye.txt").write_text("Goodbye, world!")
     await sync_repo(
         config_path=config_path1,
         repo_full_name=repo_meta.full_name,
     )
     
     with pytest.raises(SyncUnsafe):
-        (repo_meta.get_local_repodata_path(config2) / "goodbye.txt").write_text("I'm sorry, world!")
+        (repo_meta.get_local_part_path(config2, RepoPart.DATA) / "goodbye.txt").write_text("I'm sorry, world!")
         await sync_repo(
             config_path=config_path2,
             repo_full_name=repo_meta.full_name,

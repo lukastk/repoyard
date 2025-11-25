@@ -806,7 +806,6 @@ def cli_path(
     name_match_mode: NameMatchMode|None = Option(None, "--name-match-mode", "-m", help="The mode to use for matching the repository name."),
     name_match_case: bool = Option(False, "--name-match-case", "-c", help="Whether to match the repository name case-sensitively."),
     path_option: Literal[
-            'data-user',
             'data',
             'meta',
             'conf',
@@ -814,7 +813,7 @@ def cli_path(
             'sync-record-data',
             'sync-record-meta',
             'sync-record-conf',
-        ] = Option('data-user', "--path-option", "-p", help="The part of the repository to get the path of."),
+        ] = Option('data', "--path-option", "-p", help="The part of the repository to get the path of."),
     include_groups: list[str]|None = Option(None, "--include-group", "-g", help="The group to include in the output."),
     exclude_groups: list[str]|None = Option(None, "--exclude-group", "-e", help="The group to exclude from the output."),
     group_filter: str|None = Option(None, "--group-filter", "-f", help="The filter to apply to the groups. The filter is a boolean expression over the groups of the repositories. Allowed operators are `AND`, `OR`, `NOT`, and parentheses for grouping.."),
@@ -852,14 +851,12 @@ def cli_path(
 
     config = get_config(app_state['config_path'])
 
-    if path_option == 'data-user':
-        typer.echo(repo_meta.get_user_path(config).as_posix())
-    elif path_option == 'data':
-        typer.echo(repo_meta.get_local_repodata_path(config).as_posix())
+    if path_option == 'data':
+        typer.echo(repo_meta.get_local_part_path(config, RepoPart.DATA).as_posix())
     elif path_option == 'meta':
-        typer.echo(repo_meta.get_local_repometa_path(config).as_posix())
+        typer.echo(repo_meta.get_local_part_path(config, RepoPart.META).as_posix())
     elif path_option == 'conf':
-        typer.echo(repo_meta.get_local_repoconf_path(config).as_posix())
+        typer.echo(repo_meta.get_local_part_path(config, RepoPart.CONF).as_posix())
     elif path_option == 'root':
         typer.echo(config.get_local_path(config).as_posix())
     elif path_option == 'sync-record-data':

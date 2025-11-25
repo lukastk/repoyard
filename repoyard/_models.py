@@ -2,8 +2,8 @@
 
 # %% auto 0
 __all__ = ['RepoPart', 'RepoMeta', 'RepoyardMeta', 'create_repoyard_meta', 'refresh_repoyard_meta', 'get_repoyard_meta',
-           'create_user_repos_symlinks', 'get_repo_group_configs', 'create_user_repo_group_symlinks', 'SyncRecord',
-           'SyncCondition', 'SyncStatus', 'get_sync_status']
+           'get_repo_group_configs', 'create_user_repo_group_symlinks', 'SyncRecord', 'SyncCondition', 'SyncStatus',
+           'get_sync_status']
 
 # %% ../../pts/mod/_models.pct.py 3
 from typing import Callable, Literal
@@ -86,43 +86,42 @@ class RepoMeta(const.StrictModel):
     def get_remote_path(self, config: repoyard.config.Config) -> Path:
         return config.storage_locations[self.storage_location].store_path / const.REMOTE_REPOS_REL_PATH / self.full_name
     
-    def get_remote_repometa_path(self, config: repoyard.config.Config) -> Path:
-        return self.get_remote_path(config) / const.REPO_METAFILE_REL_PATH
-    
-    def get_remote_repoconf_path(self, config: repoyard.config.Config) -> Path:
-        return self.get_remote_path(config) / const.REPO_CONF_REL_PATH
-    
-    def get_remote_repodata_path(self, config: repoyard.config.Config) -> Path:
-        return self.get_remote_path(config) / const.REPO_DATA_REL_PATH
-    
     def get_local_path(self, config: repoyard.config.Config) -> Path:
         return config.local_store_path / self.storage_location / self.full_name
-    
-    def get_local_repometa_path(self, config: repoyard.config.Config) -> Path:
-        return self.get_local_path(config) / const.REPO_METAFILE_REL_PATH
-    
-    def get_local_repoconf_path(self, config: repoyard.config.Config) -> Path:
-        return self.get_local_path(config) / const.REPO_CONF_REL_PATH
-    
-    def get_local_repodata_path(self, config: repoyard.config.Config) -> Path:
-        return self.get_local_path(config) / const.REPO_DATA_REL_PATH
 
-    def get_local_sync_record_path(self, config: repoyard.config.Config, repo_part: RepoPart) -> Path:
-        return config.repoyard_data_path / const.SYNC_RECORDS_REL_PATH / self.full_name / f"{repo_part.value}.rec"
+    def get_remote_part_path(self, config: repoyard.config.Config, repo_part: RepoPart) -> Path:
+        if repo_part == RepoPart.DATA:
+            return self.get_remote_path(config) / const.REPO_DATA_REL_PATH
+        elif repo_part == RepoPart.META:
+            return self.get_remote_path(config) / const.REPO_METAFILE_REL_PATH
+        elif repo_part == RepoPart.CONF:
+            return self.get_remote_path(config) / const.REPO_CONF_REL_PATH
+        else:
+            raise ValueError(f"Invalid repo part: {repo_part}")
+
+    def get_local_part_path(self, config: repoyard.config.Config, repo_part: RepoPart) -> Path:
+        if repo_part == RepoPart.DATA:
+            return config.user_repos_path / self.full_name
+        elif repo_part == RepoPart.META:
+            return self.get_local_path(config) / const.REPO_METAFILE_REL_PATH
+        elif repo_part == RepoPart.CONF:
+            return self.get_local_path(config) / const.REPO_CONF_REL_PATH
+        else:
+            raise ValueError(f"Invalid repo part: {repo_part}")
 
     def get_remote_sync_record_path(self, config: repoyard.config.Config, repo_part: RepoPart) -> Path:
         sl_conf = self.get_storage_location_config(config)
         return sl_conf.store_path / const.SYNC_RECORDS_REL_PATH / self.full_name / f"{repo_part.value}.rec"
-
-    def get_user_path(self, config: repoyard.config.Config) -> Path:
-        return config.user_repos_path / self.full_name
+    
+    def get_local_sync_record_path(self, config: repoyard.config.Config, repo_part: RepoPart) -> Path:
+        return config.repoyard_data_path / const.SYNC_RECORDS_REL_PATH / self.full_name / f"{repo_part.value}.rec"
     
     def check_included(self, config: repoyard.config.Config) -> bool:
-        included_repo_path = self.get_local_repodata_path(config)
+        included_repo_path = self.get_local_part_path(config, RepoPart.DATA)
         return included_repo_path.is_dir() and included_repo_path.exists()
     
     def save(self, config: repoyard.config.Config):
-        save_path = self.get_local_repometa_path(config)
+        save_path = self.get_local_part_path(config, RepoPart.META)
         save_path.parent.mkdir(parents=True, exist_ok=True)
         model_dump = self.model_dump()
         del model_dump['creation_timestamp_utc']
@@ -246,41 +245,6 @@ def get_repoyard_meta(
     return RepoyardMeta.model_validate_json(config.repoyard_meta_path.read_text())
 
 # %% ../../pts/mod/_models.pct.py 14
-def create_user_repos_symlinks(
-    config: repoyard.config.Config,
-    repo_metas: list[RepoMeta],
-):
-    for path in config.user_repos_path.glob('*'):
-        if path.is_symlink(): path.unlink()
-
-    symlink_paths = []
-    for repo_meta in repo_metas:
-        source_path = repo_meta.get_local_repodata_path(config)
-        symlink_path = repo_meta.get_user_path(config)
-        symlink_path.parent.mkdir(parents=True, exist_ok=True)
-
-        if symlink_path.exists():
-            if not symlink_path.is_symlink():
-                raise Exception(f"'{symlink_path}' is in the user repo path '{config.user_repos_path}' but is not a symlink!")
-            if symlink_path.resolve() != source_path.resolve():
-                symlink_path.unlink()
-            else:
-                symlink_paths.append(symlink_path)
-                continue
-        symlink_path.symlink_to(source_path, target_is_directory=True)
-        symlink_paths.append(symlink_path)
-
-    # Remove all other symlinks
-    for symlink_path in config.user_repos_path.glob('*'):
-        if symlink_path in symlink_paths: continue
-        if symlink_path.is_symlink():
-            symlink_path.unlink()
-        elif symlink_path.exists():
-            raise Exception(f"'{symlink_path}' is in the user repo path '{config.user_repos_path}' but is not a symlink!")
-        
-
-
-# %% ../../pts/mod/_models.pct.py 15
 def get_repo_group_configs(
     config: repoyard.config.Config,
     repo_metas: list[RepoMeta],
@@ -292,7 +256,7 @@ def get_repo_group_configs(
                 repo_group_configs[group_name] = RepoGroupConfig()
     return repo_group_configs, config.virtual_repo_groups
 
-# %% ../../pts/mod/_models.pct.py 16
+# %% ../../pts/mod/_models.pct.py 15
 def create_user_repo_group_symlinks(
     config: repoyard.config.Config,
 ):
@@ -329,7 +293,7 @@ def create_user_repo_group_symlinks(
                 if not group_config.is_in_group(repo_meta.groups): continue
             else:
                 if group_name not in repo_meta.groups: continue
-            dest_path = repo_meta.get_local_repodata_path(config)
+            dest_path = repo_meta.get_local_part_path(config, RepoPart.DATA)
             title = _get_symlink_title(repo_meta, group_config)
             if title_counter[title] > 1:
                 title = f"{title} (CONFLICT {title_counter[title]})" # TODO this will break if the title contains a `(CONFLICT ...`
@@ -384,7 +348,7 @@ def create_user_repo_group_symlinks(
     for path in config.user_repo_groups_path.glob('*'):
         _remove_empty_non_group_folders(path)
 
-# %% ../../pts/mod/_models.pct.py 18
+# %% ../../pts/mod/_models.pct.py 17
 class SyncRecord(const.StrictModel):
     ulid: ULID = Field(default_factory=ULID)
     timestamp: datetime|None = None # Is set after validation. It's just to read it easier in printouts.
@@ -435,7 +399,7 @@ class SyncRecord(const.StrictModel):
             raise ValueError("`timestamp` should be set to the ULID's datetime.")
         return self
 
-# %% ../../pts/mod/_models.pct.py 19
+# %% ../../pts/mod/_models.pct.py 18
 from typing import NamedTuple
 
 class SyncCondition(Enum):
@@ -453,7 +417,7 @@ class SyncStatus(NamedTuple):
     remote_sync_record: SyncRecord
     is_dir: bool
 
-# %% ../../pts/mod/_models.pct.py 20
+# %% ../../pts/mod/_models.pct.py 19
 async def get_sync_status(
     rclone_config_path: str,
     local_path: str,
