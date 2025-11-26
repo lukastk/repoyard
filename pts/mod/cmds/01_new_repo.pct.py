@@ -106,6 +106,21 @@ if creator_hostname is None:
     creator_hostname = get_hostname()
 
 # %% [markdown]
+# Check if the `from_path` is a repo within the repoyard
+
+# %%
+#|export
+from repoyard._models import get_repoyard_meta, RepoPart
+repoyard_meta = get_repoyard_meta(config)
+
+if from_path is not None:
+    from_path = Path(from_path).expanduser().resolve()
+    repo_paths = [repo_meta.get_local_part_path(config, RepoPart.DATA) for repo_meta in repoyard_meta.repo_metas]
+
+    if from_path in repo_paths and not copy_from_path:
+        raise ValueError(f"'{from_path}' is already a repoyard repository. Use `copy_from_path=True` to copy the contents of this repo into a new repo.")
+
+# %% [markdown]
 # Create meta file
 
 # %%
