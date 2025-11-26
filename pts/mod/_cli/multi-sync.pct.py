@@ -150,72 +150,87 @@ async def _task(num, repo_meta):
     except Exception as e:
         sync_stats[repo_meta.full_name] = (num, "Error", str(e), datetime.now(), None)
 
+    if show_progress:
+        print_finished(repo_meta.full_name)
+
 
 # %% [markdown]
 # Set up the progress printing (shown if `show_progress == True`)
 
 # %%
+
 #|export
 sync_stats = {}
 
 finish_monitoring_event = asyncio.Event()
 
-FINISHED_REMAIN_TIME = 10 # how long to show the finished message
+def get_status_lines(repo_full_name):
+    num, sync_stat, e, timestamp, sync_results = sync_stats[repo_full_name]
+    lines = []
+
+    console_width = shutil.get_terminal_size((80, 20)).columns
+
+    status_color = {
+        "Syncing": "yellow",
+        "Success": "green",
+        "Interrupted": "magenta",
+        "Error": "red",
+    }.get(sync_stat, "")
+
+    name_color = {
+        "Success": "green",
+        "Interrupted": "magenta",
+        "Error": "red",
+    }.get(sync_stat, "")
+
+    left = f"({num+1}/{len(repo_metas)}) [bold {name_color}]{repo_full_name}[/bold {name_color}]"
+    right = f"[bold {status_color}]{sync_stat}[/bold {status_color}]"
+
+    # Strip markup to compute the real visible lengths
+    left_len = len(Text.from_markup(left).plain)
+    right_len = len(Text.from_markup(right).plain)
+
+    # compute how many dots are needed
+    dots = console_width - left_len - right_len - 1 - 2 # -2 for the space between dots and the left and right text
+    if dots < 1:
+        dots = 1
+
+    line = f"{left} {'.' * dots} {right}"
+    syncs_happened = [False if sync_results is None else sync_results[repo_part][1] for repo_part in RepoPart]
+    lines.append(line)
+
+    indent = "    "
+    if e:
+        lines.append(f"{indent}[red]{e}[/red]")
+    elif sync_stat == "Success":
+        line = []
+        for repo_part, synced in zip(RepoPart, syncs_happened):
+            line.append(f"[bold]{repo_part.value}:[/bold] {'[green]Synced[/green]' if synced else '[blue]Skipped[/blue]'}")
+        lines.append(indent + f",{indent}".join(line))
+    else:
+        lines.append(f"{indent}[yellow]Results pending...[/yellow]")
+
+    return lines
+
 def get_sync_stat_board(finished: bool):
     console_width = shutil.get_terminal_size((80, 20)).columns
     lines = []
-
     for repo_full_name, (num, sync_stat, e, timestamp, sync_results) in sync_stats.items():
-        if not finished and sync_stat not in ["Syncing", "Error"] and timestamp < datetime.now() - timedelta(seconds=FINISHED_REMAIN_TIME):
-            continue
-
-        status_color = {
-            "Syncing": "yellow",
-            "Success": "green",
-            "Interrupted": "magenta",
-            "Error": "red",
-        }.get(sync_stat, "")
-
-        name_color = {
-            "Success": "green",
-            "Interrupted": "magenta",
-            "Error": "red",
-        }.get(sync_stat, "")
-
-        left = f"({num+1}/{len(repo_metas)}) [bold {name_color}]{repo_full_name}[/bold {name_color}]"
-        right = f"[bold {status_color}]{sync_stat}[/bold {status_color}]"
-
-        # Strip markup to compute the real visible lengths
-        console = Console()
-        left_len = len(Text.from_markup(left).plain)
-        right_len = len(Text.from_markup(right).plain)
-
-        # compute how many dots are needed
-        dots = console_width - left_len - right_len - 1 - 2 # -2 for the space between dots and the left and right text
-        if dots < 1:
-            dots = 1
-
-        line = f"{left} {'.' * dots} {right}"
-        syncs_happened = [False if sync_results is None else sync_results[repo_part][1] for repo_part in RepoPart]
-        if finished and sync_stat == "Success" and no_print_skipped and all([not synced for synced in syncs_happened]):
-            continue
-        lines.append(line)
-
-        indent = "    "
-        if e:
-            lines.append(f"{indent}[red]{e}[/red]")
-        elif sync_stat == "Success":
-            line = []
-            for repo_part, synced in zip(RepoPart, syncs_happened):
-                line.append(f"[bold]{repo_part.value}:[/bold] {'[green]Synced[/green]' if synced else '[blue]Skipped[/blue]'}")
-            lines.append(indent + f",{indent}".join(line))
-        else:
-            lines.append(f"{indent}[yellow]Results pending...[/yellow]")
-
+        if sync_stat != "Syncing...": continue
+        lines.extend(get_status_lines(repo_full_name))
     return "\n".join(lines).strip()
 
+def print_finished(repo_full_name: str):
+    num, sync_stat, e, timestamp, sync_results = sync_stats[repo_full_name]
+    syncs_happened = [False if sync_results is None else sync_results[repo_part][1] for repo_part in RepoPart]
+    if no_print_skipped and not any(syncs_happened):
+        return
+    lines = get_status_lines(repo_full_name)
+    console.print(Text.from_markup("\n".join(lines).strip()))
+
+console = Console()
+
 async def _progress_monitor_task():
-    console = Console()
     with Live(console=console, refresh_per_second=4) as live:
         def _update_live(finished: bool):
             rendered = Text.from_markup(get_sync_stat_board(finished=finished))
