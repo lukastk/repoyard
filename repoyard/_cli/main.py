@@ -203,11 +203,12 @@ def cli_new(
 
     if groups:
         from repoyard.cmds import modify_repometa
+        config = get_config(app_state['config_path'])
         modify_repometa(
             config_path=app_state['config_path'],
             repo_full_name=repo_full_name,
             modifications={
-                'groups': groups,
+                'groups': config.default_repo_groups + groups,
             }
         )
 
