@@ -23,7 +23,7 @@ from repoyard import const
 #|set_func_signature
 async def get_repo_sync_status(
     config_path: Path,
-    repo_full_name: str,
+    repo_index_name: str,
 ) -> dict[RepoPart, SyncStatus]:
     """
     """
@@ -41,12 +41,12 @@ remote_name, remote_rclone_path, config, config_path, data_path = create_repoyar
 # Args
 from repoyard.cmds import new_repo
 config_path = config_path
-repo_full_name = new_repo(config_path=config_path, repo_name="test_repo", storage_location=remote_name)
+repo_index_name = new_repo(config_path=config_path, repo_name="test_repo", storage_location=remote_name)
 
 # %%
 # Put an excluded file into the repo data folder to make sure it is not synced
-(data_path / "local_store" / "my_remote" / repo_full_name / "test_repo" / ".venv").mkdir(parents=True, exist_ok=True)
-(data_path / "local_store" / "my_remote" / repo_full_name / "test_repo" / ".venv" / "test.txt").write_text("test");
+(data_path / "local_store" / "my_remote" / repo_index_name / "test_repo" / ".venv").mkdir(parents=True, exist_ok=True)
+(data_path / "local_store" / "my_remote" / repo_index_name / "test_repo" / ".venv" / "test.txt").write_text("test");
 
 # %% [markdown]
 # # Function body
@@ -66,10 +66,10 @@ config = get_config(config_path)
 from repoyard._models import get_repoyard_meta
 repoyard_meta = get_repoyard_meta(config)
 
-if repo_full_name not in repoyard_meta.by_full_name:
-    raise ValueError(f"Repo '{repo_full_name}' not found.")
+if repo_index_name not in repoyard_meta.by_index_name:
+    raise ValueError(f"Repo '{repo_index_name}' not found.")
 
-repo_meta = repoyard_meta.by_full_name[repo_full_name]
+repo_meta = repoyard_meta.by_index_name[repo_index_name]
 
 # %%
 #|export

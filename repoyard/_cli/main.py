@@ -52,22 +52,22 @@ class NameMatchMode(Enum):
     CONTAINS = "contains"
     SUBSEQUENCE = "subsequence"
 
-def _get_full_repo_name(
+def _get_repo_index_name(
     repo_name: str|None,
     repo_id: str|None,
-    repo_full_name: str|None,
+    repo_index_name: str|None,
     name_match_mode: NameMatchMode|None,
     name_match_case: bool,
     repo_metas = None,
     pick_first: bool = False,
     allow_no_args: bool = True,
 ) -> str:
-    if not allow_no_args and (repo_name is None and repo_full_name is None and repo_id is None and repo_metas is None):
-        typer.echo("No repository name, id or full name provided.", err=True)
+    if not allow_no_args and (repo_name is None and repo_index_name is None and repo_id is None and repo_metas is None):
+        typer.echo("No repository name, id or index name provided.", err=True)
         raise typer.Exit(code=1)
 
     from repoyard._models import RepoyardMeta
-    if sum(1 for x in [repo_name, repo_full_name, repo_id] if x is not None) > 1:
+    if sum(1 for x in [repo_name, repo_index_name, repo_id] if x is not None) > 1:
         raise typer.Exit("Cannot provide more than one of `repo-name`, `repo-full-name` or `repo-id`.")
     
     if name_match_mode is not None and repo_name is None:
@@ -76,7 +76,7 @@ def _get_full_repo_name(
     if pick_first and repo_name is None:
         raise typer.Exit("`repo-name` must be provided if `pick-first` is provided.")
     
-    search_mode = (repo_id is None) and (repo_name is None) and (repo_full_name is None)
+    search_mode = (repo_id is None) and (repo_name is None) and (repo_index_name is None)
 
     from repoyard._models import get_repoyard_meta
     config = get_config(app_state['config_path'])
@@ -88,7 +88,7 @@ def _get_full_repo_name(
         if repo_id is not None:
             if not repo_id in repoyard_meta.by_id:
                 raise typer.Exit(f"Repository with id `{repo_id}` not found.")
-            repo_full_name = repoyard_meta.by_id[repo_id].full_name
+            repo_index_name = repoyard_meta.by_id[repo_id].index_name
         else:
             if repo_name is not None:
                 if name_match_mode is None: name_match_mode = NameMatchMode.CONTAINS
@@ -104,33 +104,33 @@ def _get_full_repo_name(
             else:
                 repos_with_name = repoyard_meta.repo_metas
 
-            repos_with_name = sorted(repos_with_name, key=lambda x: x.full_name)
+            repos_with_name = sorted(repos_with_name, key=lambda x: x.index_name)
             
             if len(repos_with_name) == 0:
                 typer.echo(f"Repository not found.", err=True)
                 raise typer.Exit(code=1)
             elif len(repos_with_name) == 1:
-                repo_full_name = repos_with_name[0].full_name
+                repo_index_name = repos_with_name[0].index_name
             else:
                 if pick_first:
-                    repo_full_name = repos_with_name[0].full_name
+                    repo_index_name = repos_with_name[0].index_name
                 else:
                     from repoyard._utils import run_fzf
-                    _, repo_full_name = run_fzf(
-                        terms=[r.full_name for r in repos_with_name],
+                    _, repo_index_name = run_fzf(
+                        terms=[r.index_name for r in repos_with_name],
                         disp_terms=[f"{r.name} ({r.repo_id}) groups: {', '.join(r.groups)}" for r in repos_with_name],
                 )
         
-    if repo_full_name is None:
-        from repoyard._utils import get_repo_full_name_from_sub_path
-        repo_full_name = get_repo_full_name_from_sub_path(
+    if repo_index_name is None:
+        from repoyard._utils import get_repo_index_name_from_sub_path
+        repo_index_name = get_repo_index_name_from_sub_path(
             config=config,
             sub_path=Path.cwd(),
         )
-        if repo_full_name is None:
+        if repo_index_name is None:
             raise typer.Exit("Repo not specified and could not be inferred from current working directory.")
         
-    return repo_full_name
+    return repo_index_name
 
 # %% ../../../pts/mod/_cli/main.pct.py 12
 @app.command(name='init')
@@ -188,7 +188,7 @@ def cli_new(
                 typer.echo(f"Invalid creation timestamp: {creation_timestamp_utc}")
                 raise typer.Exit(code=1)
     
-    repo_full_name = new_repo(
+    repo_index_name = new_repo(
         config_path=app_state['config_path'],
         storage_location=storage_location,
         repo_name=repo_name,
@@ -199,14 +199,14 @@ def cli_new(
         creation_timestamp_utc=creation_timestamp_utc,
         verbose=False,
     )
-    typer.echo(repo_full_name)
+    typer.echo(repo_index_name)
 
     if groups:
         from repoyard.cmds import modify_repometa
         config = get_config(app_state['config_path'])
         modify_repometa(
             config_path=app_state['config_path'],
-            repo_full_name=repo_full_name,
+            repo_index_name=repo_index_name,
             modifications={
                 'groups': config.default_repo_groups + groups,
             }
@@ -219,7 +219,7 @@ def cli_new(
 @app.command(name='sync')
 def cli_sync(
     repo_path: Path|None = Option(None, "--repo-path", "-p", help="The path to the repository to sync."),
-    repo_full_name: str|None = Option(None, "--repo", "-r", help="The full name of the repository."),
+    repo_index_name: str|None = Option(None, "--repo", "-r", help="The index name of the repository."),
     repo_id: str|None = Option(None, "--repo-id", "-i", help="The id of the repository to sync."),
     repo_name: str|None = Option(None, "--repo-name", "-n", help="The name of the repository to sync."),
     name_match_mode: NameMatchMode|None = Option(None, "--name-match-mode", "-m", help="The mode to use for matching the repository name."),
@@ -237,17 +237,17 @@ def cli_sync(
     from repoyard.cmds import sync_repo
 
     if repo_path is not None:
-        from repoyard._utils import get_repo_full_name_from_sub_path
+        from repoyard._utils import get_repo_index_name_from_sub_path
         config = get_config(app_state['config_path'])
-        repo_full_name = get_repo_full_name_from_sub_path(
+        repo_index_name = get_repo_index_name_from_sub_path(
             config=config,
             sub_path=repo_path,
         )
 
-    repo_full_name = _get_full_repo_name(
+    repo_index_name = _get_repo_index_name(
         repo_name=repo_name,
         repo_id=repo_id,
-        repo_full_name=repo_full_name,
+        repo_index_name=repo_index_name,
         name_match_mode=name_match_mode,
         name_match_case=name_match_case,
     )
@@ -257,7 +257,7 @@ def cli_sync(
     
     asyncio.run(sync_repo(
         config_path=app_state['config_path'],
-        repo_full_name=repo_full_name,
+        repo_index_name=repo_index_name,
         sync_direction=sync_direction,
         sync_setting=sync_setting,
         sync_choices=sync_choices,
@@ -273,7 +273,7 @@ def cli_sync(
 # %% ../../../pts/mod/_cli/main.pct.py 18
 @app.command(name='sync-missing-meta')
 def cli_sync_missing_meta(
-    repo_full_names: list[str]|None = Option(None, "--repo", "-r", help="The full name of the repository, in the form '{ULID}__{REPO_NAME}'."),
+    repo_index_names: list[str]|None = Option(None, "--repo", "-r", help="The index name of the repository, in the form '{ULID}__{REPO_NAME}'."),
     storage_locations: list[str]|None = Option(None, "--storage-location", "-s", help="The storage location to sync the metadata from."),
     sync_setting: SyncSetting = Option(SyncSetting.CAREFUL, "--sync-setting", help="The sync setting to use."),
     sync_direction: SyncDirection|None = Option(None, "--sync-direction", "-d", help="The direction of the sync. If not provided, the appropriate direction will be automatically determined based on the sync status. This mode is only available for the 'CAREFUL' sync setting."),
@@ -288,7 +288,7 @@ def cli_sync_missing_meta(
     
     asyncio.run(sync_missing_repometas(
         config_path=app_state['config_path'],
-        repo_full_names=repo_full_names,
+        repo_index_names=repo_index_names,
         storage_locations=storage_locations,
         sync_setting=sync_setting,
         sync_direction=sync_direction,
@@ -305,7 +305,7 @@ def cli_sync_missing_meta(
 @app.command(name='add-to-group')
 def cli_add_to_group(
     repo_path: Path|None = Option(None, "--repo-path", "-p", help="The path to the repository to sync."),
-    repo_full_name: str|None = Option(None, "--repo", "-r", help="The full name of the repository, in the form '{ULID}__{REPO_NAME}'."),
+    repo_index_name: str|None = Option(None, "--repo", "-r", help="The index name of the repository, in the form '{ULID}__{REPO_NAME}'."),
     repo_id: str|None = Option(None, "--repo-id", "-i", help="The id of the repository to sync."),
     repo_name: str|None = Option(None, "--repo-name", "-n", help="The name of the repository to sync."),
     name_match_mode: NameMatchMode|None = Option(None, "--name-match-mode", "-m", help="The mode to use for matching the repository name."),
@@ -322,39 +322,39 @@ def cli_add_to_group(
     from repoyard.cmds import modify_repometa
     from repoyard._models import get_repoyard_meta
 
-    if all([arg is None for arg in [repo_path, repo_full_name, repo_id, repo_name]]):
+    if all([arg is None for arg in [repo_path, repo_index_name, repo_id, repo_name]]):
         repo_path = Path.cwd()
     
     if repo_path is not None:
-        from repoyard._utils import get_repo_full_name_from_sub_path
+        from repoyard._utils import get_repo_index_name_from_sub_path
         config = get_config(app_state['config_path'])
-        repo_full_name = get_repo_full_name_from_sub_path(
+        repo_index_name = get_repo_index_name_from_sub_path(
             config=config,
             sub_path=repo_path,
         )
-        if repo_full_name is None:
+        if repo_index_name is None:
             typer.echo(f"Repository not found in `{repo_path}`.", err=True)
             raise typer.Exit(code=1)
 
-    repo_full_name = _get_full_repo_name(
+    repo_index_name = _get_repo_index_name(
         repo_name=repo_name,
         repo_id=repo_id,
-        repo_full_name=repo_full_name,
+        repo_index_name=repo_index_name,
         name_match_mode=name_match_mode,
         name_match_case=name_match_case,
     )
     
     repoyard_meta = get_repoyard_meta(get_config(app_state['config_path']))
-    if repo_full_name not in repoyard_meta.by_full_name:
-        typer.echo(f"Repository with full name `{repo_full_name}` not found.")
+    if repo_index_name not in repoyard_meta.by_index_name:
+        typer.echo(f"Repository with index name `{repo_index_name}` not found.")
         raise typer.Exit(code=1)
-    repo_meta = repoyard_meta.by_full_name[repo_full_name]
+    repo_meta = repoyard_meta.by_index_name[repo_index_name]
     if group_name in repo_meta.groups:
-        typer.echo(f"Repository `{repo_full_name}` already in group `{group_name}`.")
+        typer.echo(f"Repository `{repo_index_name}` already in group `{group_name}`.")
     else:
         modify_repometa(
             config_path=app_state['config_path'],
-            repo_full_name=repo_full_name,
+            repo_index_name=repo_index_name,
             modifications={
                 'groups': [*repo_meta.groups, group_name]
             }
@@ -365,7 +365,7 @@ def cli_add_to_group(
             from repoyard._models import RepoPart
             asyncio.run(sync_repo(
                 config_path=app_state['config_path'],
-                repo_full_names=repo_full_name,
+                repo_index_names=repo_index_name,
                 sync_setting=sync_setting,
                 sync_direction=SyncDirection.PUSH,
                 sync_choices=[RepoPart.REPO_META],
@@ -381,7 +381,7 @@ def cli_add_to_group(
 @app.command(name='remove-from-group')
 def cli_remove_from_group(
     repo_path: Path|None = Option(None, "--repo-path", "-p", help="The path to the repository to sync."),
-    repo_full_name: str|None = Option(None, "--repo", "-r", help="The full name of the repository, in the form '{ULID}__{REPO_NAME}'."),
+    repo_index_name: str|None = Option(None, "--repo", "-r", help="The index name of the repository, in the form '{ULID}__{REPO_NAME}'."),
     repo_id: str|None = Option(None, "--repo-id", "-i", help="The id of the repository to sync."),
     repo_name: str|None = Option(None, "--repo-name", "-n", help="The name of the repository to sync."),
     name_match_mode: NameMatchMode|None = Option(None, "--name-match-mode", "-m", help="The mode to use for matching the repository name."),
@@ -398,36 +398,36 @@ def cli_remove_from_group(
     from repoyard.cmds import modify_repometa
     from repoyard._models import get_repoyard_meta
 
-    if all([arg is None for arg in [repo_path, repo_full_name, repo_id, repo_name]]):
+    if all([arg is None for arg in [repo_path, repo_index_name, repo_id, repo_name]]):
         repo_path = Path.cwd()
 
     if repo_path is not None:
-        from repoyard._utils import get_repo_full_name_from_sub_path
+        from repoyard._utils import get_repo_index_name_from_sub_path
         config = get_config(app_state['config_path'])
-        repo_full_name = get_repo_full_name_from_sub_path(
+        repo_index_name = get_repo_index_name_from_sub_path(
             config=config,
             sub_path=repo_path,
         )
     
-    repo_full_name = _get_full_repo_name(
+    repo_index_name = _get_repo_index_name(
         repo_name=repo_name,
         repo_id=repo_id,
-        repo_full_name=repo_full_name,
+        repo_index_name=repo_index_name,
         name_match_mode=name_match_mode,
         name_match_case=name_match_case,
     )
     
     repoyard_meta = get_repoyard_meta(get_config(app_state['config_path']))
-    if repo_full_name not in repoyard_meta.by_full_name:
-        typer.echo(f"Repository with full name `{repo_full_name}` not found.")
+    if repo_index_name not in repoyard_meta.by_index_name:
+        typer.echo(f"Repository with index name `{repo_index_name}` not found.")
         raise typer.Exit(code=1)
-    repo_meta = repoyard_meta.by_full_name[repo_full_name]
+    repo_meta = repoyard_meta.by_index_name[repo_index_name]
     if group_name not in repo_meta.groups:
-        raise typer.echo(f"Repository `{repo_full_name}` not in group `{group_name}`.")
+        raise typer.echo(f"Repository `{repo_index_name}` not in group `{group_name}`.")
     else:
         modify_repometa(
             config_path=app_state['config_path'],
-            repo_full_name=repo_full_name,
+            repo_index_name=repo_index_name,
             modifications={
                 'groups': [g for g in repo_meta.groups if g != group_name]
             }
@@ -438,7 +438,7 @@ def cli_remove_from_group(
             from repoyard._models import RepoPart
             asyncio.run(sync_repo(
                 config_path=app_state['config_path'],
-                repo_full_name=repo_full_name,
+                repo_index_name=repo_index_name,
                 sync_setting=sync_setting,
                 sync_direction=SyncDirection.PUSH,
                 sync_choices=[RepoPart.REPO_META],
@@ -453,7 +453,7 @@ def cli_remove_from_group(
 # %% ../../../pts/mod/_cli/main.pct.py 24
 @app.command(name='include')
 def cli_include(
-    repo_full_name: str|None = Option(None, "--repo", "-r", help="The full name of the repository, in the form '{ULID}__{REPO_NAME}'."),
+    repo_index_name: str|None = Option(None, "--repo", "-r", help="The index name of the repository, in the form '{ULID}__{REPO_NAME}'."),
     repo_id: str|None = Option(None, "--repo-id", "-i", help="The id of the repository to sync."),
     repo_name: str|None = Option(None, "--repo-name", "-n", help="The name of the repository to sync."),
     name_match_mode: NameMatchMode|None = Option(None, "--name-match-mode", "-m", help="The mode to use for matching the repository name."),
@@ -467,22 +467,22 @@ def cli_include(
     from repoyard.cmds import include_repo
     from repoyard._models import get_repoyard_meta
     
-    repo_full_name = _get_full_repo_name(
+    repo_index_name = _get_repo_index_name(
         repo_name=repo_name,
         repo_id=repo_id,
-        repo_full_name=repo_full_name,
+        repo_index_name=repo_index_name,
         name_match_mode=name_match_mode,
         name_match_case=name_match_case,
     )
     
     repoyard_meta = get_repoyard_meta(get_config(app_state['config_path']))
-    if repo_full_name not in repoyard_meta.by_full_name:
-        typer.echo(f"Repository with full name `{repo_full_name}` not found.")
+    if repo_index_name not in repoyard_meta.by_index_name:
+        typer.echo(f"Repository with index name `{repo_index_name}` not found.")
         raise typer.Exit(code=1)
     
     asyncio.run(include_repo(
         config_path=app_state['config_path'],
-        repo_full_name=repo_full_name,
+        repo_index_name=repo_index_name,
         soft_interruption_enabled=soft_interruption_enabled,
     ))
 
@@ -493,7 +493,7 @@ def cli_include(
 # %% ../../../pts/mod/_cli/main.pct.py 26
 @app.command(name='exclude')
 def cli_exclude(
-    repo_full_name: str|None = Option(None, "--repo", "-r", help="The full name of the repository, in the form '{ULID}__{REPO_NAME}'."),
+    repo_index_name: str|None = Option(None, "--repo", "-r", help="The index name of the repository, in the form '{ULID}__{REPO_NAME}'."),
     repo_id: str|None = Option(None, "--repo-id", "-i", help="The id of the repository to sync."),
     repo_name: str|None = Option(None, "--repo-name", "-n", help="The name of the repository to sync."),
     name_match_mode: NameMatchMode|None = Option(None, "--name-match-mode", "-m", help="The mode to use for matching the repository name."),
@@ -508,22 +508,22 @@ def cli_exclude(
     from repoyard.cmds import exclude_repo
     from repoyard._models import get_repoyard_meta
     
-    repo_full_name = _get_full_repo_name(
+    repo_index_name = _get_repo_index_name(
         repo_name=repo_name,
         repo_id=repo_id,
-        repo_full_name=repo_full_name,
+        repo_index_name=repo_index_name,
         name_match_mode=name_match_mode,
         name_match_case=name_match_case,
     )
     
     repoyard_meta = get_repoyard_meta(get_config(app_state['config_path']))
-    if repo_full_name not in repoyard_meta.by_full_name:
-        typer.echo(f"Repository with full name `{repo_full_name}` not found.")
+    if repo_index_name not in repoyard_meta.by_index_name:
+        typer.echo(f"Repository with index name `{repo_index_name}` not found.")
         raise typer.Exit(code=1)
     
     asyncio.run(exclude_repo(
         config_path=app_state['config_path'],
-        repo_full_name=repo_full_name,
+        repo_index_name=repo_index_name,
         skip_sync=skip_sync,
         soft_interruption_enabled=soft_interruption_enabled,
     ))
@@ -535,7 +535,7 @@ def cli_exclude(
 # %% ../../../pts/mod/_cli/main.pct.py 28
 @app.command(name='delete')
 def cli_delete(
-    repo_full_name: str|None = Option(None, "--repo", "-r", help="The full name of the repository, in the form '{ULID}__{REPO_NAME}'."),
+    repo_index_name: str|None = Option(None, "--repo", "-r", help="The index name of the repository, in the form '{ULID}__{REPO_NAME}'."),
     repo_id: str|None = Option(None, "--repo-id", "-i", help="The id of the repository to sync."),
     repo_name: str|None = Option(None, "--repo-name", "-n", help="The name of the repository to sync."),
     name_match_mode: NameMatchMode|None = Option(None, "--name-match-mode", "-m", help="The mode to use for matching the repository name."),
@@ -549,23 +549,23 @@ def cli_delete(
     from repoyard.cmds import delete_repo
     from repoyard._models import get_repoyard_meta
     
-    repo_full_name = _get_full_repo_name(
+    repo_index_name = _get_repo_index_name(
         repo_name=repo_name,
         repo_id=repo_id,
-        repo_full_name=repo_full_name,
+        repo_index_name=repo_index_name,
         name_match_mode=name_match_mode,
         name_match_case=name_match_case,
         allow_no_args=False,
     )
     
     repoyard_meta = get_repoyard_meta(get_config(app_state['config_path']))
-    if repo_full_name not in repoyard_meta.by_full_name:
-        typer.echo(f"Repository with full name `{repo_full_name}` not found.")
+    if repo_index_name not in repoyard_meta.by_index_name:
+        typer.echo(f"Repository with index name `{repo_index_name}` not found.")
         raise typer.Exit(code=1)
     
     asyncio.run(delete_repo(
         config_path=app_state['config_path'],
-        repo_full_name=repo_full_name,
+        repo_index_name=repo_index_name,
         soft_interruption_enabled=soft_interruption_enabled,
     ))
 
@@ -586,13 +586,13 @@ def _dict_to_hierarchical_text(data: dict, indents: int=0, lines: list[str]=None
     return lines
 
 # %% ../../../pts/mod/_cli/main.pct.py 32
-async def get_formatted_repo_status(config_path, repo_full_name):
+async def get_formatted_repo_status(config_path, repo_index_name):
     from repoyard.cmds import get_repo_sync_status
     from pydantic import BaseModel
     import json
     sync_status = await get_repo_sync_status(
         config_path=app_state['config_path'],
-        repo_full_name=repo_full_name,
+        repo_index_name=repo_index_name,
     )
 
     data = {}
@@ -611,7 +611,7 @@ async def get_formatted_repo_status(config_path, repo_full_name):
 @app.command(name='repo-status')
 def cli_repo_status(
     repo_path: Path|None = Option(None, "--repo-path", "-p", help="The path to the repository to sync."),
-    repo_full_name: str|None = Option(None, "--repo", "-r", help="The full name of the repository, in the form '{ULID}__{REPO_NAME}'."),
+    repo_index_name: str|None = Option(None, "--repo", "-r", help="The index name of the repository, in the form '{ULID}__{REPO_NAME}'."),
     repo_id: str|None = Option(None, "--repo-id", "-i", help="The id of the repository to sync."),
     repo_name: str|None = Option(None, "--repo-name", "-n", help="The name of the repository to sync."),
     name_match_mode: NameMatchMode|None = Option(None, "--name-match-mode", "-m", help="The mode to use for matching the repository name."),
@@ -626,29 +626,29 @@ def cli_repo_status(
     import json
 
     if repo_path is not None:
-        from repoyard._utils import get_repo_full_name_from_sub_path
+        from repoyard._utils import get_repo_index_name_from_sub_path
         config = get_config(app_state['config_path'])
-        repo_full_name = get_repo_full_name_from_sub_path(
+        repo_index_name = get_repo_index_name_from_sub_path(
             config=config,
             sub_path=repo_path,
         )
     
-    repo_full_name = _get_full_repo_name(
+    repo_index_name = _get_repo_index_name(
         repo_name=repo_name,
         repo_id=repo_id,
-        repo_full_name=repo_full_name,
+        repo_index_name=repo_index_name,
         name_match_mode=name_match_mode,
         name_match_case=name_match_case,
     )
     
     repoyard_meta = get_repoyard_meta(get_config(app_state['config_path']))
-    if repo_full_name not in repoyard_meta.by_full_name:
-        typer.echo(f"Repository with full name `{repo_full_name}` not found.")
+    if repo_index_name not in repoyard_meta.by_index_name:
+        typer.echo(f"Repository with index name `{repo_index_name}` not found.")
         raise typer.Exit(code=1)
     
     sync_status_data = asyncio.run(get_formatted_repo_status(
         config_path=app_state['config_path'],
-        repo_full_name=repo_full_name,
+        repo_index_name=repo_index_name,
     ))
 
     if output_format == 'json':
@@ -685,14 +685,14 @@ def cli_yard_status(
 
     repo_sync_statuses = asyncio.run(
         async_throttler(
-            [get_formatted_repo_status(config, repo_meta.full_name) for repo_meta in repo_metas],
+            [get_formatted_repo_status(config, repo_meta.index_name) for repo_meta in repo_metas],
             max_concurrency=max_concurrent_rclone_ops,
         )
     )
     
     repo_sync_statuses_by_sl = {}
     for repo_sync_status, repo_meta in zip(repo_sync_statuses, repo_metas):
-        repo_sync_statuses_by_sl.setdefault(repo_meta.storage_location, {})[repo_meta.full_name] = repo_sync_status
+        repo_sync_statuses_by_sl.setdefault(repo_meta.storage_location, {})[repo_meta.index_name] = repo_sync_status
 
     if output_format == 'json':
         typer.echo(json.dumps(repo_sync_statuses_by_sl, indent=2))
@@ -743,7 +743,7 @@ def cli_list(
         typer.echo(json.dumps([rm.model_dump() for rm in repo_metas], indent=2))
     else:
         for repo_meta in repo_metas:
-            typer.echo(repo_meta.full_name)
+            typer.echo(repo_meta.index_name)
 
 
 
@@ -751,7 +751,7 @@ def cli_list(
 @app.command(name='list-groups')
 def cli_list_groups(
     repo_path: Path|None = Option(None, "--repo-path", "-p", help="The path to the repository to get the groups of."),
-    repo_full_name: str|None = Option(None, "--repo", "-r", help="The repository full name to get the groups of."),
+    repo_index_name: str|None = Option(None, "--repo", "-r", help="The repository index name to get the groups of."),
     list_all: bool = Option(False, "--all", "-a", help="List all groups, including virtual groups."),
     include_virtual: bool = Option(False, "--include-virtual", "-v", help="Include virtual groups in the output."),
 ):
@@ -761,11 +761,11 @@ def cli_list_groups(
     from repoyard._models import get_repoyard_meta, get_repo_group_configs
     config = get_config(app_state['config_path'])
     repoyard_meta = get_repoyard_meta(config)
-    if repo_full_name is not None and repo_path is not None:
+    if repo_index_name is not None and repo_path is not None:
         typer.echo("Both --repo and --repo-path cannot be provided.")
         raise typer.Exit(code=1)
 
-    if list_all and (repo_path is not None or repo_full_name is not None):
+    if list_all and (repo_path is not None or repo_index_name is not None):
         typer.echo("Cannot provide both --repo and --repo-path when using --all.")
         raise typer.Exit(code=1)
 
@@ -778,27 +778,27 @@ def cli_list_groups(
             typer.echo(group_name)
         return
 
-    if repo_full_name is None and repo_path is None:
+    if repo_index_name is None and repo_path is None:
         repo_path = Path.cwd()
 
     if repo_path is not None:
-        from repoyard._utils import get_repo_full_name_from_sub_path
-        repo_full_name = get_repo_full_name_from_sub_path(
+        from repoyard._utils import get_repo_index_name_from_sub_path
+        repo_index_name = get_repo_index_name_from_sub_path(
             config=config,
             sub_path=repo_path,
         )
-        if repo_full_name is None:
-            typer.echo("Could not determine the repository full name from the provided repository path.")
+        if repo_index_name is None:
+            typer.echo("Could not determine the repository index name from the provided repository path.")
             raise typer.Exit(code=1)
 
-    if repo_full_name is None:
+    if repo_index_name is None:
         typer.echo("Must provied repo full namae.")
         raise typer.Exit(code=1)
     
-    if repo_full_name not in repoyard_meta.by_full_name:
-        typer.echo(f"Repository with full name `{repo_full_name}` not found.")
+    if repo_index_name not in repoyard_meta.by_index_name:
+        typer.echo(f"Repository with index name `{repo_index_name}` not found.")
         raise typer.Exit(code=1)
-    repo_meta = repoyard_meta.by_full_name[repo_full_name]
+    repo_meta = repoyard_meta.by_index_name[repo_index_name]
     repo_groups = repo_meta.groups
     group_configs, virtual_repo_group_configs = get_repo_group_configs(config, [repo_meta])\
 
@@ -815,7 +815,7 @@ def cli_list_groups(
 # %% ../../../pts/mod/_cli/main.pct.py 42
 @app.command(name='path')
 def cli_path(
-    repo_full_name: str|None = Option(None, "--repo", "-r", help="The full name of the repository, in the form '{ULID}__{REPO_NAME}'."),
+    repo_index_name: str|None = Option(None, "--repo", "-r", help="The index name of the repository, in the form '{ULID}__{REPO_NAME}'."),
     repo_id: str|None = Option(None, "--repo-id", "-i", help="The id of the repository to sync."),
     repo_name: str|None = Option(None, "--repo-name", "-n", help="What repo path to show."),
     pick_first: bool = Option(False, "--pick-first", "-1", help="Pick the first repository if multiple repositories match the name."),
@@ -850,20 +850,20 @@ def cli_path(
         group_filter=group_filter,
     )
     
-    repo_full_name = _get_full_repo_name(
+    repo_index_name = _get_repo_index_name(
         repo_name=repo_name,
         repo_id=repo_id,
-        repo_full_name=repo_full_name,
+        repo_index_name=repo_index_name,
         name_match_mode=name_match_mode,
         name_match_case=name_match_case,
         repo_metas=repo_metas,
         pick_first=pick_first,
     )
     
-    if repo_full_name not in repoyard_meta.by_full_name:
-        typer.echo(f"Repository with full name `{repo_full_name}` not found.")
+    if repo_index_name not in repoyard_meta.by_index_name:
+        typer.echo(f"Repository with index name `{repo_index_name}` not found.")
         raise typer.Exit(code=1)
-    repo_meta = repoyard_meta.by_full_name[repo_full_name]  
+    repo_meta = repoyard_meta.by_index_name[repo_index_name]  
 
     config = get_config(app_state['config_path'])
 

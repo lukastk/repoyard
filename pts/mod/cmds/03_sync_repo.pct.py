@@ -26,7 +26,7 @@ from repoyard import const
 #|set_func_signature
 async def sync_repo(
     config_path: Path,
-    repo_full_name: str,
+    repo_index_name: str,
     sync_direction: SyncDirection|None = None,
     sync_setting: SyncSetting = SyncSetting.CAREFUL,
     sync_choices: list[RepoPart]|None = None,
@@ -39,7 +39,7 @@ async def sync_repo(
     
     Args:
         config_path: Path to the repoyard config file.
-        repo_full_name: Full name of the repository to sync.
+        repo_index_name: Full name of the repository to sync.
         sync_direction: Direction of sync.
         sync_setting: SyncSetting option (SAFE, CAREFUL, FORCE).
         sync_choices: List of RepoPart specifying what to sync. If None, all parts are synced.
@@ -61,7 +61,7 @@ remote_name, remote_rclone_path, config, config_path, data_path = create_repoyar
 # Args (1/2)
 from repoyard.cmds import new_repo
 config_path = config_path
-repo_full_name = new_repo(config_path=config_path, repo_name="test_repo", storage_location="my_remote")
+repo_index_name = new_repo(config_path=config_path, repo_name="test_repo", storage_location="my_remote")
 sync_direction = None
 sync_setting = SyncSetting.CAREFUL
 sync_choices = None
@@ -71,8 +71,8 @@ soft_interruption_enabled = True
 
 # %%
 # Put an excluded file into the repo data folder to make sure it is not synced
-(data_path / "local_store" / "my_remote" / repo_full_name / "test_repo" / ".venv").mkdir(parents=True, exist_ok=True)
-(data_path / "local_store" / "my_remote" / repo_full_name / "test_repo"/ ".venv" / "test.txt").write_text("test");
+(data_path / "local_store" / "my_remote" / repo_index_name / "test_repo" / ".venv").mkdir(parents=True, exist_ok=True)
+(data_path / "local_store" / "my_remote" / repo_index_name / "test_repo"/ ".venv" / "test.txt").write_text("test");
 
 # %% [markdown]
 # # Function body
@@ -105,10 +105,10 @@ remote = {remote_rclone_path}
 from repoyard._models import get_repoyard_meta
 repoyard_meta = get_repoyard_meta(config)
 
-if repo_full_name not in repoyard_meta.by_full_name:
-    raise ValueError(f"Repo '{repo_full_name}' not found.")
+if repo_index_name not in repoyard_meta.by_index_name:
+    raise ValueError(f"Repo '{repo_index_name}' not found.")
 
-repo_meta = repoyard_meta.by_full_name[repo_full_name]
+repo_meta = repoyard_meta.by_index_name[repo_index_name]
 
 # %% [markdown]
 # Check if the repo is in a local storage location, in which case quit.
@@ -125,7 +125,7 @@ if repo_meta.get_storage_location_config(config).storage_type == StorageType.LOC
 # %%
 #|export
 if verbose:
-    print(f"Syncing repo {repo_full_name} at {repo_meta.storage_location}.")
+    print(f"Syncing repo {repo_index_name} at {repo_meta.storage_location}.")
 
 # %% [markdown]
 # Get the backup locations

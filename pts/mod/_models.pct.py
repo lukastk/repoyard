@@ -91,17 +91,17 @@ class RepoMeta(const.StrictModel):
         return f"{self.creation_timestamp_utc}_{str(self.repo_subid)}"
 
     @property
-    def full_name(self) -> str:
+    def index_name(self) -> str:
         return f"{self.repo_id}__{self.name}"
 
     def get_storage_location_config(self, config: repoyard.config.StorageConfig) -> repoyard.config.StorageConfig:
         return config.storage_locations[self.storage_location]
 
     def get_remote_path(self, config: repoyard.config.Config) -> Path:
-        return config.storage_locations[self.storage_location].store_path / const.REMOTE_REPOS_REL_PATH / self.full_name
+        return config.storage_locations[self.storage_location].store_path / const.REMOTE_REPOS_REL_PATH / self.index_name
     
     def get_local_path(self, config: repoyard.config.Config) -> Path:
-        return config.local_store_path / self.storage_location / self.full_name
+        return config.local_store_path / self.storage_location / self.index_name
 
     def get_remote_part_path(self, config: repoyard.config.Config, repo_part: RepoPart) -> Path:
         if repo_part == RepoPart.DATA:
@@ -115,7 +115,7 @@ class RepoMeta(const.StrictModel):
 
     def get_local_part_path(self, config: repoyard.config.Config, repo_part: RepoPart) -> Path:
         if repo_part == RepoPart.DATA:
-            return config.user_repos_path / self.full_name
+            return config.user_repos_path / self.index_name
         elif repo_part == RepoPart.META:
             return self.get_local_path(config) / const.REPO_METAFILE_REL_PATH
         elif repo_part == RepoPart.CONF:
@@ -125,10 +125,10 @@ class RepoMeta(const.StrictModel):
 
     def get_remote_sync_record_path(self, config: repoyard.config.Config, repo_part: RepoPart) -> Path:
         sl_conf = self.get_storage_location_config(config)
-        return sl_conf.store_path / const.SYNC_RECORDS_REL_PATH / self.full_name / f"{repo_part.value}.rec"
+        return sl_conf.store_path / const.SYNC_RECORDS_REL_PATH / self.index_name / f"{repo_part.value}.rec"
     
     def get_local_sync_record_path(self, config: repoyard.config.Config, repo_part: RepoPart) -> Path:
-        return config.repoyard_data_path / const.SYNC_RECORDS_REL_PATH / self.full_name / f"{repo_part.value}.rec"
+        return config.repoyard_data_path / const.SYNC_RECORDS_REL_PATH / self.index_name / f"{repo_part.value}.rec"
     
     def check_included(self, config: repoyard.config.Config) -> bool:
         included_repo_path = self.get_local_part_path(config, RepoPart.DATA)
@@ -144,13 +144,13 @@ class RepoMeta(const.StrictModel):
         save_path.write_text(toml.dumps(model_dump))
 
     @classmethod
-    def load(cls, config: repoyard.config.Config, storage_location_name: str, repo_full_name: str) -> None:
-        repo_id, name = repo_full_name.split('__', 1)
+    def load(cls, config: repoyard.config.Config, storage_location_name: str, repo_index_name: str) -> None:
+        repo_id, name = repo_index_name.split('__', 1)
         timestamp_len =_get_repo_timestamp_length(config)
         creation_timestamp = repo_id[:timestamp_len]
         repo_subid = repo_id[timestamp_len+1:]
         
-        repometa_path = config.local_store_path / storage_location_name / repo_full_name / const.REPO_METAFILE_REL_PATH
+        repometa_path = config.local_store_path / storage_location_name / repo_index_name / const.REPO_METAFILE_REL_PATH
         if not repometa_path.exists():
             raise ValueError(f"Repo meta file {repometa_path} does not exist.")
         
@@ -202,7 +202,7 @@ config = get_config(config_path)
 
 repo_meta = RepoMeta.create(config, "my_repo", sl_name, "creator_hostname", [])
 repo_meta.save(config)
-_repo_meta = RepoMeta.load(config, sl_name, repo_meta.full_name)
+_repo_meta = RepoMeta.load(config, sl_name, repo_meta.index_name)
 
 assert repo_meta.model_dump_json() == _repo_meta.model_dump_json()
 
@@ -220,7 +220,7 @@ class RepoyardMeta(const.StrictModel):
         if not hasattr(self, '__by_storage_location'):
             self.__by_storage_location = {
                 sl_name: {
-                    repo_meta.full_name: repo_meta
+                    repo_meta.index_name: repo_meta
                     for repo_meta in self.repo_metas
                     if repo_meta.storage_location == sl_name
             }
@@ -238,13 +238,13 @@ class RepoyardMeta(const.StrictModel):
         return self.__by_id
 
     @property
-    def by_full_name(self) -> dict[str, RepoMeta]:
-        if not hasattr(self, '__by_full_name'):
-            self.__by_full_name = {
-                repo_meta.full_name: repo_meta
+    def by_index_name(self) -> dict[str, RepoMeta]:
+        if not hasattr(self, '__by_index_name'):
+            self.__by_index_name = {
+                repo_meta.index_name: repo_meta
                 for repo_meta in self.repo_metas
             }
-        return self.__by_full_name
+        return self.__by_index_name
 
 
 
@@ -315,8 +315,8 @@ def create_user_repo_group_symlinks(
     groups.update(virtual_repo_groups)
 
     def _get_symlink_title(repo_meta: RepoMeta, group_config: RepoGroupConfig) -> str:
-        if group_config.repo_title_mode == RepoGroupTitleMode.FULL_NAME:
-            title = repo_meta.full_name
+        if group_config.repo_title_mode == RepoGroupTitleMode.INDEX_NAME:
+            title = repo_meta.index_name
         elif group_config.repo_title_mode == RepoGroupTitleMode.DATETIME_AND_NAME:
             title = f"{repo_meta.creation_timestamp_utc}__{repo_meta.name}"
         elif group_config.repo_title_mode == RepoGroupTitleMode.NAME:

@@ -44,7 +44,7 @@ import shutil
 #|set_func_signature
 @app.command(name='multi-sync')
 def cli_multi_sync(
-    repo_full_names: list[str]|None = Option(None, "--repo", "-r", help="The full names of the repository, in the form."),
+    repo_index_names: list[str]|None = Option(None, "--repo", "-r", help="The index names of the repository, in the form."),
     storage_locations: list[str]|None = Option(None, "--storage-location", "-s", help="The storage locations to sync."),
     max_concurrent_rclone_ops: int|None = Option(None, "--max-concurrent", "-m", help="The maximum number of concurrent rclone operations. If not provided, the default specified in the config will be used."),
     sync_direction: SyncDirection|None = Option(None, "--sync-direction", help="The direction of the sync. If not provided, the appropriate direction will be automatically determined based on the sync status. This mode is only available for the 'CAREFUL' sync setting."),
@@ -80,7 +80,7 @@ for i in range(3):
 # Args
 app_state = {'config_path': config_path}
 
-repo_full_names = None
+repo_index_names = None
 storage_locations = None
 max_concurrent_rclone_ops = None
 sync_direction = None
@@ -103,13 +103,13 @@ soft_interruption_enabled = True
 if soft_interruption_enabled:
     enable_soft_interruption()
 
-if repo_full_names is not None and storage_locations is not None:
+if repo_index_names is not None and storage_locations is not None:
     typer.echo("Cannot provide both `--repo` and `--storage-location`.", err=True)
     raise typer.Exit(code=1)
 
 config = get_config(app_state['config_path'])
 
-if storage_locations is None and repo_full_names is None:
+if storage_locations is None and repo_index_names is None:
     storage_locations = list(config.storage_locations.keys())
 if storage_locations is not None and any(sl not in config.storage_locations for sl in storage_locations):
     typer.echo(f"Invalid storage location: {storage_locations}")
@@ -119,13 +119,13 @@ if max_concurrent_rclone_ops is None:
     max_concurrent_rclone_ops = config.max_concurrent_rclone_ops
 
 repoyard_meta = get_repoyard_meta(config)
-if repo_full_names is None:
+if repo_index_names is None:
     repo_metas = [repo_meta for repo_meta in repoyard_meta.repo_metas if repo_meta.storage_location in storage_locations]
 else:
-    if any(repo_full_name not in repoyard_meta.by_full_name for repo_full_name in repo_full_names):
-        typer.echo(f"Non-existent repository: {repo_full_names}")
+    if any(repo_index_name not in repoyard_meta.by_index_name for repo_index_name in repo_index_names):
+        typer.echo(f"Non-existent repository: {repo_index_names}")
         raise typer.Exit(code=1)
-    repo_metas = [repoyard_meta.by_full_name[repo_full_name] for repo_full_name in repo_full_names]
+    repo_metas = [repoyard_meta.by_index_name[repo_index_name] for repo_index_name in repo_index_names]
 
 
 # %% [markdown]
@@ -134,24 +134,24 @@ else:
 # %%
 #|export
 async def _task(num, repo_meta):
-    sync_stats[repo_meta.full_name] = (num, "Syncing...", None, datetime.now(), None)
+    sync_stats[repo_meta.index_name] = (num, "Syncing...", None, datetime.now(), None)
     try:
         sync_results = await sync_repo(
             config_path=app_state['config_path'],
-            repo_full_name=repo_meta.full_name,
+            repo_index_name=repo_meta.index_name,
             sync_direction=sync_direction,
             sync_setting=sync_setting,
             sync_choices=sync_choices,
             verbose=False,
         )
-        sync_stats[repo_meta.full_name] = (num, "Success", None, datetime.now(), sync_results)
+        sync_stats[repo_meta.index_name] = (num, "Success", None, datetime.now(), sync_results)
     except SoftInterruption:
-        sync_stats[repo_meta.full_name] = (num, "Interrupted", None, datetime.now(), None)
+        sync_stats[repo_meta.index_name] = (num, "Interrupted", None, datetime.now(), None)
     except Exception as e:
-        sync_stats[repo_meta.full_name] = (num, "Error", str(e), datetime.now(), None)
+        sync_stats[repo_meta.index_name] = (num, "Error", str(e), datetime.now(), None)
 
     if show_progress:
-        print_finished(repo_meta.full_name)
+        print_finished(repo_meta.index_name)
 
 
 # %% [markdown]
@@ -164,8 +164,8 @@ sync_stats = {}
 
 finish_monitoring_event = asyncio.Event()
 
-def get_status_lines(repo_full_name):
-    num, sync_stat, e, timestamp, sync_results = sync_stats[repo_full_name]
+def get_status_lines(repo_index_name):
+    num, sync_stat, e, timestamp, sync_results = sync_stats[repo_index_name]
     lines = []
 
     console_width = shutil.get_terminal_size((80, 20)).columns
@@ -183,7 +183,7 @@ def get_status_lines(repo_full_name):
         "Error": "red",
     }.get(sync_stat, "")
 
-    left = f"({num+1}/{len(repo_metas)}) [bold {name_color}]{repo_full_name}[/bold {name_color}]"
+    left = f"({num+1}/{len(repo_metas)}) [bold {name_color}]{repo_index_name}[/bold {name_color}]"
     right = f"[bold {status_color}]{sync_stat}[/bold {status_color}]"
 
     # Strip markup to compute the real visible lengths
@@ -215,17 +215,17 @@ def get_status_lines(repo_full_name):
 def get_sync_stat_board(finished: bool):
     console_width = shutil.get_terminal_size((80, 20)).columns
     lines = []
-    for repo_full_name, (num, sync_stat, e, timestamp, sync_results) in sync_stats.items():
+    for repo_index_name, (num, sync_stat, e, timestamp, sync_results) in sync_stats.items():
         if sync_stat != "Syncing...": continue
-        lines.extend(get_status_lines(repo_full_name))
+        lines.extend(get_status_lines(repo_index_name))
     return "\n".join(lines).strip()
 
-def print_finished(repo_full_name: str):
-    num, sync_stat, e, timestamp, sync_results = sync_stats[repo_full_name]
+def print_finished(repo_index_name: str):
+    num, sync_stat, e, timestamp, sync_results = sync_stats[repo_index_name]
     syncs_happened = [False if sync_results is None else sync_results[repo_part][1] for repo_part in RepoPart]
     if no_print_skipped and sync_stat == "Success" and not any(syncs_happened):
         return
-    lines = get_status_lines(repo_full_name)
+    lines = get_status_lines(repo_index_name)
     console.print(Text.from_markup("\n".join(lines).strip()))
 
 console = Console()

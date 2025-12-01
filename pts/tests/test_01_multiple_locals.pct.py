@@ -60,11 +60,11 @@ num_repos = 5
 
 # %%
 #|export
-repo_full_names = []
+repo_index_names = []
 async def _task(i):
-    repo_full_name = new_repo(config_path=config_path1, repo_name=f"test_repo_{i}", storage_location=sl_name)
-    await sync_repo(config_path=config_path1, repo_full_name=repo_full_name)
-    repo_full_names.append(repo_full_name)
+    repo_index_name = new_repo(config_path=config_path1, repo_name=f"test_repo_{i}", storage_location=sl_name)
+    await sync_repo(config_path=config_path1, repo_index_name=repo_index_name)
+    repo_index_names.append(repo_index_name)
 
 await asyncio.gather(*[_task(i)for i in range(num_repos)]);
 
@@ -100,7 +100,7 @@ await asyncio.gather(*[_task(repo_meta) for repo_meta in repoyard_meta2.repo_met
 async def _task(repo_meta):
     await include_repo(
         config_path=config_path2,
-        repo_full_name=repo_meta.full_name,
+        repo_index_name=repo_meta.index_name,
     )
 
 await asyncio.gather(*[_task(repo_meta) for repo_meta in repoyard_meta2.repo_metas]);
@@ -115,7 +115,7 @@ async def _task(repo_meta):
     (repo_meta.get_local_part_path(config2, RepoPart.DATA) / "hello.txt").write_text("Hello, world!")
     await sync_repo(
         config_path=config_path2,
-        repo_full_name=repo_meta.full_name,
+        repo_index_name=repo_meta.index_name,
     )
 
 await asyncio.gather(*[_task(repo_meta) for repo_meta in repoyard_meta2.repo_metas]);
@@ -130,7 +130,7 @@ repoyard_meta1 = get_repoyard_meta(config1)
 await asyncio.gather(*[
     sync_repo(
         config_path=config_path1,
-        repo_full_name=repo_meta.full_name,
+        repo_index_name=repo_meta.index_name,
     )
     for repo_meta in repoyard_meta1.repo_metas
 ]);
@@ -152,14 +152,14 @@ async def _task(repo_meta):
     (repo_meta.get_local_part_path(config1, RepoPart.DATA) / "goodbye.txt").write_text("Goodbye, world!")
     await sync_repo(
         config_path=config_path1,
-        repo_full_name=repo_meta.full_name,
+        repo_index_name=repo_meta.index_name,
     )
     
     with pytest.raises(SyncUnsafe):
         (repo_meta.get_local_part_path(config2, RepoPart.DATA) / "goodbye.txt").write_text("I'm sorry, world!")
         await sync_repo(
             config_path=config_path2,
-            repo_full_name=repo_meta.full_name,
+            repo_index_name=repo_meta.index_name,
         )
 
 await asyncio.gather(*[_task(repo_meta) for repo_meta in repoyard_meta1.repo_metas]);

@@ -55,15 +55,15 @@ remote_name, remote_rclone_path, config, config_path, data_path = create_repoyar
 
 # %%
 #|export
-repo_full_names = []
+repo_index_names = []
 for i in range(num_test_repos):
-    repo_full_name = new_repo(config_path=config_path, repo_name=f"test_repo_{i}", storage_location=remote_name)
-    repo_full_names.append(repo_full_name)
+    repo_index_name = new_repo(config_path=config_path, repo_name=f"test_repo_{i}", storage_location=remote_name)
+    repo_index_names.append(repo_index_name)
     
 # Verify that the repos are included
 repoyard_meta = get_repoyard_meta(config, force_create=True)
-for repo_full_name in repo_full_names:
-    assert repoyard_meta.by_full_name[repo_full_name].check_included(config)
+for repo_index_name in repo_index_names:
+    assert repoyard_meta.by_index_name[repo_index_name].check_included(config)
 
 # %% [markdown]
 # # Exclude all repos using `exclude_repo`
@@ -71,14 +71,14 @@ for repo_full_name in repo_full_names:
 # %%
 #|export
 await asyncio.gather(*[
-    exclude_repo(config_path=config_path, repo_full_name=repo_full_name)
-    for repo_full_name in repo_full_names
+    exclude_repo(config_path=config_path, repo_index_name=repo_index_name)
+    for repo_index_name in repo_index_names
 ])
     
 # Verify that the repos have been excluded
 repoyard_meta = get_repoyard_meta(config, force_create=True)
-for repo_full_name in repo_full_names:
-    assert not repoyard_meta.by_full_name[repo_full_name].check_included(config)
+for repo_index_name in repo_index_names:
+    assert not repoyard_meta.by_index_name[repo_index_name].check_included(config)
 
 # %% [markdown]
 # # Include all repos using `include_repo`
@@ -86,14 +86,14 @@ for repo_full_name in repo_full_names:
 # %%
 #|export
 await asyncio.gather(*[
-    include_repo(config_path=config_path, repo_full_name=repo_full_name)
-    for repo_full_name in repo_full_names
+    include_repo(config_path=config_path, repo_index_name=repo_index_name)
+    for repo_index_name in repo_index_names
 ])
     
 # Verify that the repos are included
 repoyard_meta = get_repoyard_meta(config, force_create=True)
-for repo_full_name in repo_full_names:
-    assert repoyard_meta.by_full_name[repo_full_name].check_included(config)
+for repo_index_name in repo_index_names:
+    assert repoyard_meta.by_index_name[repo_index_name].check_included(config)
 
 # %% [markdown]
 # # Delete all repos using `delete_repo`
@@ -101,11 +101,11 @@ for repo_full_name in repo_full_names:
 # %%
 #|export
 await asyncio.gather(*[
-    delete_repo(config_path=config_path, repo_full_name=repo_full_name)
-    for repo_full_name in repo_full_names
+    delete_repo(config_path=config_path, repo_index_name=repo_index_name)
+    for repo_index_name in repo_index_names
 ])
 
 # Verify that the repos have been deleted
-for repo_meta in repoyard_meta.by_full_name.values():
+for repo_meta in repoyard_meta.by_index_name.values():
     assert not repo_meta.get_local_path(config).exists()
     assert not (remote_rclone_path / repo_meta.get_remote_path(config)).exists()

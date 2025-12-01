@@ -74,19 +74,19 @@ except CmdFailed:
 
 # %%
 #|export
-repo_full_name1 = run_cmd(f"repoyard new -n test-repo-1 -g repoyard-unit-tests -s {sl_name}").strip()
-run_cmd(f"repoyard sync -r {repo_full_name1}", capture_output=True);
+repo_index_name1 = run_cmd(f"repoyard new -n test-repo-1 -g repoyard-unit-tests -s {sl_name}").strip()
+run_cmd(f"repoyard sync -r {repo_index_name1}", capture_output=True);
 
 # %% [markdown]
 # Create two other repos and see they can both sync at the same time (i.e. test if simultaneous rclone commands can be run)
 
 # %%
 #|export
-repo_full_name2 = run_cmd(f"repoyard new -n test-repo-2 -g repoyard-unit-tests -s {sl_name}").strip()
-repo_full_name3 = run_cmd(f"repoyard new -n test-repo-3 -g repoyard-unit-tests -s {sl_name}").strip()
+repo_index_name2 = run_cmd(f"repoyard new -n test-repo-2 -g repoyard-unit-tests -s {sl_name}").strip()
+repo_index_name3 = run_cmd(f"repoyard new -n test-repo-3 -g repoyard-unit-tests -s {sl_name}").strip()
 
-p1 = run_cmd_in_background(f"repoyard sync -r {repo_full_name2}", print_output=False)
-p2 = run_cmd_in_background(f"repoyard sync -r {repo_full_name3}", print_output=False)
+p1 = run_cmd_in_background(f"repoyard sync -r {repo_index_name2}", print_output=False)
+p2 = run_cmd_in_background(f"repoyard sync -r {repo_index_name3}", print_output=False)
 
 p1.wait()
 p2.wait()
@@ -98,9 +98,9 @@ p2.wait()
 #|export
 from repoyard._models import get_repoyard_meta
 repoyard_meta = get_repoyard_meta(config, force_create=True)
-repo_meta1 = repoyard_meta.by_full_name[repo_full_name1]
-repo_meta2 = repoyard_meta.by_full_name[repo_full_name2]
-repo_meta3 = repoyard_meta.by_full_name[repo_full_name3]
+repo_meta1 = repoyard_meta.by_index_name[repo_index_name1]
+repo_meta2 = repoyard_meta.by_index_name[repo_index_name2]
+repo_meta3 = repoyard_meta.by_index_name[repo_index_name3]
 
 from repoyard._utils import rclone_lsjson
 for repo_meta in [repo_meta1, repo_meta2, repo_meta3]:
@@ -116,7 +116,7 @@ for repo_meta in [repo_meta1, repo_meta2, repo_meta3]:
 # %%
 #|export
 for repo_meta in [repo_meta1, repo_meta2, repo_meta3]:
-    run_cmd(f"repoyard exclude -r {repo_meta.full_name}")
+    run_cmd(f"repoyard exclude -r {repo_meta.index_name}")
 
 
 # %%
@@ -136,7 +136,7 @@ await asyncio.gather(*[_task(repo_meta) for repo_meta in [repo_meta1, repo_meta2
 # %%
 #|export
 for repo_meta in [repo_meta1, repo_meta2, repo_meta3]:
-    run_cmd(f"repoyard include -r {repo_meta.full_name}")
+    run_cmd(f"repoyard include -r {repo_meta.index_name}")
 
 
 # %%
@@ -156,7 +156,7 @@ await asyncio.gather(*[_task(repo_meta) for repo_meta in [repo_meta1, repo_meta2
 # %%
 #|export
 for repo_meta in [repo_meta1, repo_meta2, repo_meta3]:
-    run_cmd(f"repoyard delete -r {repo_meta.full_name}")
+    run_cmd(f"repoyard delete -r {repo_meta.index_name}")
 
 
 # %%

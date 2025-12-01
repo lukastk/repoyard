@@ -49,10 +49,10 @@ user_repo_groups_path = None
 from repoyard.cmds import new_repo, modify_repometa
 
 # Create a new repo
-repo_full_name = new_repo(config_path=config_path, repo_name="test_repo")
+repo_index_name = new_repo(config_path=config_path, repo_name="test_repo")
 modify_repometa(
     config_path=config_path,
-    repo_full_name=repo_full_name,
+    repo_index_name=repo_index_name,
     modifications={
         'groups': ['test_group'],
     }
@@ -72,10 +72,10 @@ config_path.write_text(toml.dumps(config_dump));
 # Create a new repo with the same name, to test the conflict handling when adding it to the same group
 from repoyard.cmds._modify_repometa import RepoNameConflict
 try:
-    repo_full_name2 = new_repo(config_path=config_path, repo_name="test_repo")
+    repo_index_name2 = new_repo(config_path=config_path, repo_name="test_repo")
     modify_repometa(
         config_path=config_path,
-        repo_full_name=repo_full_name2,
+        repo_index_name=repo_index_name2,
         modifications={
             'groups': ['test_group'],
         }
@@ -108,7 +108,7 @@ refresh_repoyard_meta(config)
 
 # %%
 ps = [p.name for p in config.user_repos_path.glob('*')]
-assert repo_full_name in ps
+assert repo_index_name in ps
 
 # %% [markdown]
 # Create repo group symlinks

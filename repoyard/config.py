@@ -30,16 +30,16 @@ class StorageConfig(const.StrictModel):
         return self
     
 class RepoGroupTitleMode(Enum):
-    FULL_NAME = "full_name"
+    INDEX_NAME = "index_name"
     DATETIME_AND_NAME = "datetime_and_name"
     NAME = "name"
 
 class RepoGroupConfig(const.StrictModel):
-    repo_title_mode: RepoGroupTitleMode = RepoGroupTitleMode.FULL_NAME
+    repo_title_mode: RepoGroupTitleMode = RepoGroupTitleMode.INDEX_NAME
     unique_repo_names: bool = False
 
 class VirtualRepoGroupConfig(const.StrictModel):
-    repo_title_mode: RepoGroupTitleMode = RepoGroupTitleMode.FULL_NAME
+    repo_title_mode: RepoGroupTitleMode = RepoGroupTitleMode.INDEX_NAME
     filter_expr: str
 
     def is_in_group(self, groups: list[str]) -> bool:

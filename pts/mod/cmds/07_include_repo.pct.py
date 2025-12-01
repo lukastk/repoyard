@@ -21,7 +21,7 @@ from repoyard import const
 #|set_func_signature
 async def include_repo(
     config_path: Path,
-    repo_full_name: str,
+    repo_index_name: str,
     soft_interruption_enabled: bool = True,
 ):
     """
@@ -40,7 +40,7 @@ remote_name, remote_rclone_path, config, config_path, data_path = create_repoyar
 # Args
 from repoyard.cmds import new_repo
 config_path = config_path
-repo_full_name = new_repo(config_path=config_path, repo_name="test_repo", storage_location="my_remote")
+repo_index_name = new_repo(config_path=config_path, repo_name="test_repo", storage_location="my_remote")
 soft_interruption_enabled = True
 
 # %% [markdown]
@@ -56,9 +56,9 @@ config = get_config(config_path)
 # %%
 from repoyard.cmds import sync_repo, exclude_repo
 # Sync the repo
-await sync_repo(config_path=config_path, repo_full_name=repo_full_name)
+await sync_repo(config_path=config_path, repo_index_name=repo_index_name)
 # Remove the repo from the local store to test the inclusion
-await exclude_repo(config_path=config_path, repo_full_name=repo_full_name)
+await exclude_repo(config_path=config_path, repo_index_name=repo_index_name)
 
 # %% [markdown]
 # Check if repo is already included
@@ -68,13 +68,13 @@ await exclude_repo(config_path=config_path, repo_full_name=repo_full_name)
 from repoyard._models import get_repoyard_meta
 repoyard_meta = get_repoyard_meta(config)
 
-if repo_full_name not in repoyard_meta.by_full_name:
-    raise ValueError(f"Repo '{repo_full_name}' does not exist.")
+if repo_index_name not in repoyard_meta.by_index_name:
+    raise ValueError(f"Repo '{repo_index_name}' does not exist.")
 
-repo_meta = repoyard_meta.by_full_name[repo_full_name]
+repo_meta = repoyard_meta.by_index_name[repo_index_name]
 
 if repo_meta.check_included(config):
-    raise ValueError(f"Repo '{repo_full_name}' is already included.")
+    raise ValueError(f"Repo '{repo_index_name}' is already included.")
 
 # %% [markdown]
 # Include it
@@ -88,7 +88,7 @@ from repoyard._utils.sync_helper import sync_helper, SyncSetting, SyncDirection
 # First force sync the data
 await sync_repo(
     config_path=config_path,
-    repo_full_name=repo_full_name,
+    repo_index_name=repo_index_name,
     sync_direction=SyncDirection.PULL,
     sync_setting=SyncSetting.FORCE,
     sync_choices=[RepoPart.DATA],
@@ -98,7 +98,7 @@ await sync_repo(
 # Then sync the rest
 await sync_repo(
     config_path=config_path,
-    repo_full_name=repo_full_name,
+    repo_index_name=repo_index_name,
     sync_direction=None,
     sync_setting=SyncSetting.CAREFUL,
     sync_choices=[RepoPart.META, RepoPart.CONF],

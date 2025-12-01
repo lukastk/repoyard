@@ -11,7 +11,7 @@ from repoyard import const
 async def sync_missing_repometas(
     config_path: Path,
     max_concurrent_rclone_ops: int|None = None,
-    repo_full_names: list[str]|None = None,
+    repo_index_names: list[str]|None = None,
     storage_locations: list[str]|None = None,
     sync_setting: SyncSetting = SyncSetting.CAREFUL,
     sync_direction: SyncDirection|None = None,
@@ -29,8 +29,8 @@ async def sync_missing_repometas(
     # %% ../../../pts/mod/cmds/04_sync_missing_repometas.pct.py 10
     config = get_config(config_path)
     
-    if repo_full_names is not None and storage_locations is not None:
-        raise ValueError("Cannot provide both `repo_full_names` and `storage_locations`.")
+    if repo_index_names is not None and storage_locations is not None:
+        raise ValueError("Cannot provide both `repo_index_names` and `storage_locations`.")
     
     if max_concurrent_rclone_ops is None:
         max_concurrent_rclone_ops = config.max_concurrent_rclone_ops
@@ -74,10 +74,10 @@ async def sync_missing_repometas(
         _ls_local = {f["Path"] for f in _ls_local} if _ls_local else set()
     
         missing_metas = _ls_remote - _ls_local
-        missing_repo_full_names = [Path(p).parts[0] for p in missing_metas]
+        missing_repo_index_names = [Path(p).parts[0] for p in missing_metas]
     
-        if repo_full_names is not None:
-            missing_metas = [missing_meta for repo_full_name, missing_meta in zip(missing_repo_full_names, missing_metas) if repo_full_name in repo_full_names]
+        if repo_index_names is not None:
+            missing_metas = [missing_meta for repo_index_name, missing_meta in zip(missing_repo_index_names, missing_metas) if repo_index_name in repo_index_names]
     
         if check_interrupted(): raise SoftInterruption()
         
@@ -98,12 +98,12 @@ async def sync_missing_repometas(
             )
     
             # Create sync records
-            async def _task(repo_full_name):
-                repo_meta = RepoMeta.load(config, sl_name, repo_full_name) # Used to get the paths consistently
+            async def _task(repo_index_name):
+                repo_meta = RepoMeta.load(config, sl_name, repo_index_name) # Used to get the paths consistently
                 rec = await SyncRecord.rclone_read(config.rclone_config_path, sl_name, repo_meta.get_remote_sync_record_path(config, RepoPart.META))
                 await rec.rclone_save(config.rclone_config_path, "", repo_meta.get_local_sync_record_path(config, RepoPart.META))
             await async_throttler(
-                [_task(repo_full_name) for repo_full_name in missing_repo_full_names],
+                [_task(repo_index_name) for repo_index_name in missing_repo_index_names],
                 max_concurrency=max_concurrent_rclone_ops,
             )
         else:

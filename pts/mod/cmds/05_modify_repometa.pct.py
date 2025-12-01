@@ -16,7 +16,7 @@ import subprocess
 import os
 from typing import Literal, Any
 
-from repoyard._utils import get_repo_full_name_from_sub_path
+from repoyard._utils import get_repo_index_name_from_sub_path
 from repoyard.config import get_config, StorageType
 from repoyard import const
 
@@ -30,7 +30,7 @@ class RepoNameConflict(Exception): pass
 #|set_func_signature
 def modify_repometa(
     config_path: Path,
-    repo_full_name: str,
+    repo_index_name: str,
     modifications: dict[str, Any] = {},
 ):
     """
@@ -49,7 +49,7 @@ remote_name, remote_rclone_path, config, config_path, data_path = create_repoyar
 # Args (1/2)
 from repoyard.cmds import new_repo
 config_path = config_path
-repo_full_name = new_repo(config_path=config_path, repo_name="test_repo", storage_location="my_remote")
+repo_index_name = new_repo(config_path=config_path, repo_name="test_repo", storage_location="my_remote")
 modifications = {
     'groups' : ['group1', 'group2']
 }
@@ -67,7 +67,7 @@ config = get_config(config_path)
 # %%
 # Sync to remote
 from repoyard.cmds import sync_repo
-await sync_repo(config_path=config_path, repo_full_name=repo_full_name);
+await sync_repo(config_path=config_path, repo_index_name=repo_index_name);
 
 # %% [markdown]
 # Find the repo meta
@@ -77,10 +77,10 @@ await sync_repo(config_path=config_path, repo_full_name=repo_full_name);
 from repoyard._models import get_repoyard_meta, RepoMeta
 repoyard_meta = get_repoyard_meta(config)
 
-if repo_full_name not in repoyard_meta.by_full_name:
-    raise ValueError(f"Repo '{repo_full_name}' not found.")
+if repo_index_name not in repoyard_meta.by_index_name:
+    raise ValueError(f"Repo '{repo_index_name}' not found.")
 
-repo_meta = repoyard_meta.by_full_name[repo_full_name]
+repo_meta = repoyard_meta.by_index_name[repo_index_name]
 
 # %% [markdown]
 # Create modified repo meta
@@ -101,7 +101,7 @@ modified_repo_meta = RepoMeta(**{
 from repoyard._models import get_repo_group_configs
 
 # Construct modified repo_metas list
-_old_repo_meta = repoyard_meta.by_full_name[repo_full_name]
+_old_repo_meta = repoyard_meta.by_index_name[repo_index_name]
 _repo_metas = list(repoyard_meta.repo_metas)
 _repo_metas.remove(_old_repo_meta)
 _repo_metas.append(modified_repo_meta)
@@ -121,7 +121,7 @@ for g in modified_repo_meta.groups:
         duplicate_names = [(name, count) for name, count in name_counts.items() if count > 1]
         if duplicate_names:
             names_str = ", ".join(f"'{name}' (count: {count})" for name, count in duplicate_names)
-            raise RepoNameConflict(f"Error modifying repo meta for '{repo_full_name}':\n"
+            raise RepoNameConflict(f"Error modifying repo meta for '{repo_index_name}':\n"
                              f"Repo is in group '{g}' which requires unique names. After the modification, the following name(s) appear multiple times in this group: {names_str}.")
 
 
@@ -133,7 +133,7 @@ for g in modified_repo_meta.groups:
 modified_repo_meta.save(config)
 
 # %%
-(config.local_store_path / "my_remote" / repo_full_name / "repometa.toml").read_text()
+(config.local_store_path / "my_remote" / repo_index_name / "repometa.toml").read_text()
 
 # %% [markdown]
 # Refresh the repoyard meta file
@@ -150,6 +150,6 @@ refresh_repoyard_meta(config)
 import toml
 from repoyard.cmds import sync_repo
 from repoyard._models import RepoPart
-await sync_repo(config_path=config_path, repo_full_name=repo_full_name, sync_choices=[RepoPart.META])
-repometa_dump = toml.load(remote_rclone_path / "repoyard" / const.REMOTE_REPOS_REL_PATH / repo_full_name / const.REPO_METAFILE_REL_PATH)
+await sync_repo(config_path=config_path, repo_index_name=repo_index_name, sync_choices=[RepoPart.META])
+repometa_dump = toml.load(remote_rclone_path / "repoyard" / const.REMOTE_REPOS_REL_PATH / repo_index_name / const.REPO_METAFILE_REL_PATH)
 assert repometa_dump['groups'] == ['group1', 'group2']

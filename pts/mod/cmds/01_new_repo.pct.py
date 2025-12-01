@@ -47,7 +47,7 @@ def new_repo(
         verbose: Whether to print verbose output.
 
     Returns:
-        The full name of the new repository.
+        The index name of the new repository.
     """
     ...
 
@@ -184,8 +184,8 @@ from repoyard._models import refresh_repoyard_meta
 refresh_repoyard_meta(config)
 
 # %% [markdown]
-# Return repo full name
+# Return repo index name
 
 # %%
 #|func_return
-repo_meta.full_name;
+repo_meta.index_name;

@@ -9,7 +9,7 @@ from repoyard import const
 
 async def exclude_repo(
     config_path: Path,
-    repo_full_name: str,
+    repo_index_name: str,
     skip_sync: bool = False,
     soft_interruption_enabled: bool = True,
 ):
@@ -28,18 +28,18 @@ async def exclude_repo(
     from .._models import get_repoyard_meta
     repoyard_meta = get_repoyard_meta(config)
     
-    if repo_full_name not in repoyard_meta.by_full_name:
-        raise ValueError(f"Repo '{repo_full_name}' does not exist.")
+    if repo_index_name not in repoyard_meta.by_index_name:
+        raise ValueError(f"Repo '{repo_index_name}' does not exist.")
     
-    repo_meta = repoyard_meta.by_full_name[repo_full_name]
+    repo_meta = repoyard_meta.by_index_name[repo_index_name]
     
     if not repo_meta.check_included(config):
-        raise ValueError(f"Repo '{repo_full_name}' is already excluded.")
+        raise ValueError(f"Repo '{repo_index_name}' is already excluded.")
     
     # %% ../../../pts/mod/cmds/06_exclude_repo.pct.py 15
     from ..config import StorageType
     if repo_meta.get_storage_location_config(config).storage_type == StorageType.LOCAL:
-        raise ValueError(f"Repo '{repo_full_name}' in local storage location '{repo_meta.storage_location}' cannot be excluded.")
+        raise ValueError(f"Repo '{repo_index_name}' in local storage location '{repo_meta.storage_location}' cannot be excluded.")
     
     # %% ../../../pts/mod/cmds/06_exclude_repo.pct.py 17
     from . import sync_repo
@@ -47,7 +47,7 @@ async def exclude_repo(
     if not skip_sync:
         await sync_repo(
             config_path=config_path,
-            repo_full_name=repo_full_name,
+            repo_index_name=repo_index_name,
             sync_setting=SyncSetting.CAREFUL,
         )
     

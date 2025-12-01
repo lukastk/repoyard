@@ -22,7 +22,7 @@ from repoyard._utils import enable_soft_interruption
 #|set_func_signature
 async def delete_repo(
     config_path: Path,
-    repo_full_name: str,
+    repo_index_name: str,
     soft_interruption_enabled: bool = True,
 ):
     """
@@ -41,12 +41,12 @@ remote_name, remote_rclone_path, config, config_path, data_path = create_repoyar
 # Args
 from repoyard.cmds import new_repo
 config_path = config_path
-repo_full_name = new_repo(config_path=config_path, repo_name="test_repo", storage_location="my_remote")
+repo_index_name = new_repo(config_path=config_path, repo_name="test_repo", storage_location="my_remote")
 soft_interruption_enabled = True
 
 # %%
 from repoyard.cmds import sync_repo
-await sync_repo(config_path=config_path, repo_full_name=repo_full_name);
+await sync_repo(config_path=config_path, repo_index_name=repo_index_name);
 
 # %% [markdown]
 # # Function body
@@ -69,10 +69,10 @@ if soft_interruption_enabled:
 from repoyard._models import get_repoyard_meta
 repoyard_meta = get_repoyard_meta(config)
 
-if repo_full_name not in repoyard_meta.by_full_name:
-    raise ValueError(f"Repo '{repo_full_name}' does not exist.")
+if repo_index_name not in repoyard_meta.by_index_name:
+    raise ValueError(f"Repo '{repo_index_name}' does not exist.")
 
-repo_meta = repoyard_meta.by_full_name[repo_full_name]
+repo_meta = repoyard_meta.by_index_name[repo_index_name]
 
 # %%
 assert repo_meta.get_local_path(config).exists()
@@ -115,4 +115,4 @@ refresh_repoyard_meta(config)
 # %%
 from repoyard._models import get_repoyard_meta
 repoyard_meta = get_repoyard_meta(config)
-assert len(repoyard_meta.by_full_name) == 0
+assert len(repoyard_meta.by_index_name) == 0

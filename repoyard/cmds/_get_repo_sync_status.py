@@ -10,7 +10,7 @@ from repoyard import const
 
 async def get_repo_sync_status(
     config_path: Path,
-    repo_full_name: str,
+    repo_index_name: str,
 ) -> dict[RepoPart, SyncStatus]:
     """
     """
@@ -27,10 +27,10 @@ async def get_repo_sync_status(
     from .._models import get_repoyard_meta
     repoyard_meta = get_repoyard_meta(config)
     
-    if repo_full_name not in repoyard_meta.by_full_name:
-        raise ValueError(f"Repo '{repo_full_name}' not found.")
+    if repo_index_name not in repoyard_meta.by_index_name:
+        raise ValueError(f"Repo '{repo_index_name}' not found.")
     
-    repo_meta = repoyard_meta.by_full_name[repo_full_name]
+    repo_meta = repoyard_meta.by_index_name[repo_index_name]
     
     # %% ../../../pts/mod/cmds/02_get_repo_sync_status.pct.py 14
     from .._models import get_sync_status, RepoPart

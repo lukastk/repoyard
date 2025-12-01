@@ -6,7 +6,7 @@ import subprocess
 import os
 from typing import Literal, Any
 
-from repoyard._utils import get_repo_full_name_from_sub_path
+from repoyard._utils import get_repo_index_name_from_sub_path
 from repoyard.config import get_config, StorageType
 from repoyard import const
 
@@ -15,7 +15,7 @@ class RepoNameConflict(Exception): pass
 
 def modify_repometa(
     config_path: Path,
-    repo_full_name: str,
+    repo_index_name: str,
     modifications: dict[str, Any] = {},
 ):
     """
@@ -33,10 +33,10 @@ def modify_repometa(
     from .._models import get_repoyard_meta, RepoMeta
     repoyard_meta = get_repoyard_meta(config)
     
-    if repo_full_name not in repoyard_meta.by_full_name:
-        raise ValueError(f"Repo '{repo_full_name}' not found.")
+    if repo_index_name not in repoyard_meta.by_index_name:
+        raise ValueError(f"Repo '{repo_index_name}' not found.")
     
-    repo_meta = repoyard_meta.by_full_name[repo_full_name]
+    repo_meta = repoyard_meta.by_index_name[repo_index_name]
     
     # %% ../../../pts/mod/cmds/05_modify_repometa.pct.py 16
     modified_repo_meta = RepoMeta(**{
@@ -49,7 +49,7 @@ def modify_repometa(
     from .._models import get_repo_group_configs
     
     # Construct modified repo_metas list
-    _old_repo_meta = repoyard_meta.by_full_name[repo_full_name]
+    _old_repo_meta = repoyard_meta.by_index_name[repo_index_name]
     _repo_metas = list(repoyard_meta.repo_metas)
     _repo_metas.remove(_old_repo_meta)
     _repo_metas.append(modified_repo_meta)
@@ -69,7 +69,7 @@ def modify_repometa(
             duplicate_names = [(name, count) for name, count in name_counts.items() if count > 1]
             if duplicate_names:
                 names_str = ", ".join(f"'{name}' (count: {count})" for name, count in duplicate_names)
-                raise RepoNameConflict(f"Error modifying repo meta for '{repo_full_name}':\n"
+                raise RepoNameConflict(f"Error modifying repo meta for '{repo_index_name}':\n"
                                  f"Repo is in group '{g}' which requires unique names. After the modification, the following name(s) appear multiple times in this group: {names_str}.")
     
     # %% ../../../pts/mod/cmds/05_modify_repometa.pct.py 20

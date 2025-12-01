@@ -24,17 +24,17 @@ import repoyard.config
 
 # %%
 #|hide
-show_doc(this_module.get_repo_full_name_from_sub_path)
+show_doc(this_module.get_repo_index_name_from_sub_path)
 
 
 # %%
 #|export
-def get_repo_full_name_from_sub_path(
+def get_repo_index_name_from_sub_path(
     config: repoyard.config.Config,
     sub_path: str,
 ) -> Path|None:
     """
-    Get the full name of a synced repo from a path inside of the repo.
+    Get the index name of a synced repo from a path inside of the repo.
     """
     sub_path = Path(sub_path).expanduser().resolve() # Need to resolve to replace symlinks
     is_in_local_store_path = sub_path.is_relative_to(config.user_repos_path)
@@ -47,8 +47,8 @@ def get_repo_full_name_from_sub_path(
     if config.user_repos_path.as_posix() == sub_path.as_posix(): # The path is not inside a repo but is in the repo store root
         return None
     
-    repo_full_name = rel_path.parts[0]
-    return repo_full_name
+    repo_index_name = rel_path.parts[0]
+    return repo_index_name
 
 
 # %%

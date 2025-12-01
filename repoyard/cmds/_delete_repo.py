@@ -9,7 +9,7 @@ from repoyard._utils import enable_soft_interruption
 
 async def delete_repo(
     config_path: Path,
-    repo_full_name: str,
+    repo_index_name: str,
     soft_interruption_enabled: bool = True,
 ):
     """
@@ -30,10 +30,10 @@ async def delete_repo(
     from .._models import get_repoyard_meta
     repoyard_meta = get_repoyard_meta(config)
     
-    if repo_full_name not in repoyard_meta.by_full_name:
-        raise ValueError(f"Repo '{repo_full_name}' does not exist.")
+    if repo_index_name not in repoyard_meta.by_index_name:
+        raise ValueError(f"Repo '{repo_index_name}' does not exist.")
     
-    repo_meta = repoyard_meta.by_full_name[repo_full_name]
+    repo_meta = repoyard_meta.by_index_name[repo_index_name]
     
     # %% ../../../pts/mod/cmds/08_delete_repo.pct.py 16
     # Delete local repo

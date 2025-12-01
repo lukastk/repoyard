@@ -13,7 +13,7 @@ from repoyard import const
 
 async def sync_repo(
     config_path: Path,
-    repo_full_name: str,
+    repo_index_name: str,
     sync_direction: SyncDirection|None = None,
     sync_setting: SyncSetting = SyncSetting.CAREFUL,
     sync_choices: list[RepoPart]|None = None,
@@ -26,7 +26,7 @@ async def sync_repo(
     
     Args:
         config_path: Path to the repoyard config file.
-        repo_full_name: Full name of the repository to sync.
+        repo_index_name: Full name of the repository to sync.
         sync_direction: Direction of sync.
         sync_setting: SyncSetting option (SAFE, CAREFUL, FORCE).
         sync_choices: List of RepoPart specifying what to sync. If None, all parts are synced.
@@ -53,10 +53,10 @@ async def sync_repo(
     from .._models import get_repoyard_meta
     repoyard_meta = get_repoyard_meta(config)
     
-    if repo_full_name not in repoyard_meta.by_full_name:
-        raise ValueError(f"Repo '{repo_full_name}' not found.")
+    if repo_index_name not in repoyard_meta.by_index_name:
+        raise ValueError(f"Repo '{repo_index_name}' not found.")
     
-    repo_meta = repoyard_meta.by_full_name[repo_full_name]
+    repo_meta = repoyard_meta.by_index_name[repo_index_name]
     
     # %% ../../../pts/mod/cmds/03_sync_repo.pct.py 16
     if repo_meta.get_storage_location_config(config).storage_type == StorageType.LOCAL:
@@ -65,7 +65,7 @@ async def sync_repo(
     
     # %% ../../../pts/mod/cmds/03_sync_repo.pct.py 18
     if verbose:
-        print(f"Syncing repo {repo_full_name} at {repo_meta.storage_location}.")
+        print(f"Syncing repo {repo_index_name} at {repo_meta.storage_location}.")
     
     # %% ../../../pts/mod/cmds/03_sync_repo.pct.py 20
     sl_config = repo_meta.get_storage_location_config(config)

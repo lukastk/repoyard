@@ -22,7 +22,7 @@ from repoyard import const
 #|set_func_signature
 async def exclude_repo(
     config_path: Path,
-    repo_full_name: str,
+    repo_index_name: str,
     skip_sync: bool = False,
     soft_interruption_enabled: bool = True,
 ):
@@ -42,13 +42,13 @@ remote_name, remote_rclone_path, config, config_path, data_path = create_repoyar
 # Args (1/2)
 from repoyard.cmds import new_repo
 config_path = config_path
-repo_full_name = new_repo(config_path=config_path, repo_name="test_repo", storage_location="my_remote")
+repo_index_name = new_repo(config_path=config_path, repo_name="test_repo", storage_location="my_remote")
 skip_sync = True
 soft_interruption_enabled = True
 
 # %%
 from repoyard.cmds import sync_repo
-await sync_repo(config_path=config_path, repo_full_name=repo_full_name, soft_interruption_enabled=soft_interruption_enabled);
+await sync_repo(config_path=config_path, repo_index_name=repo_index_name, soft_interruption_enabled=soft_interruption_enabled);
 
 # %% [markdown]
 # # Function body
@@ -68,13 +68,13 @@ config = get_config(config_path)
 from repoyard._models import get_repoyard_meta
 repoyard_meta = get_repoyard_meta(config)
 
-if repo_full_name not in repoyard_meta.by_full_name:
-    raise ValueError(f"Repo '{repo_full_name}' does not exist.")
+if repo_index_name not in repoyard_meta.by_index_name:
+    raise ValueError(f"Repo '{repo_index_name}' does not exist.")
 
-repo_meta = repoyard_meta.by_full_name[repo_full_name]
+repo_meta = repoyard_meta.by_index_name[repo_index_name]
 
 if not repo_meta.check_included(config):
-    raise ValueError(f"Repo '{repo_full_name}' is already excluded.")
+    raise ValueError(f"Repo '{repo_index_name}' is already excluded.")
 
 # %% [markdown]
 # Check that the repo is not local
@@ -83,7 +83,7 @@ if not repo_meta.check_included(config):
 #|export
 from repoyard.config import StorageType
 if repo_meta.get_storage_location_config(config).storage_type == StorageType.LOCAL:
-    raise ValueError(f"Repo '{repo_full_name}' in local storage location '{repo_meta.storage_location}' cannot be excluded.")
+    raise ValueError(f"Repo '{repo_index_name}' in local storage location '{repo_meta.storage_location}' cannot be excluded.")
 
 # %% [markdown]
 # Sync any changes before removing locally
@@ -95,7 +95,7 @@ from repoyard.cmds import sync_repo
 if not skip_sync:
     await sync_repo(
         config_path=config_path,
-        repo_full_name=repo_full_name,
+        repo_index_name=repo_index_name,
         sync_setting=SyncSetting.CAREFUL,
     )
 
