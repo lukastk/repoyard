@@ -372,6 +372,9 @@ def cli_add_to_group(
     """
     from repoyard.cmds import modify_repometa
     from repoyard._models import get_repoyard_meta
+
+    if all([arg is None for arg in [repo_path, repo_full_name, repo_id, repo_name]]):
+        repo_path = Path.cwd()
     
     if repo_path is not None:
         from repoyard._utils import get_repo_full_name_from_sub_path
@@ -380,6 +383,9 @@ def cli_add_to_group(
             config=config,
             sub_path=repo_path,
         )
+        if repo_full_name is None:
+            typer.echo(f"Repository not found in `{repo_path}`.", err=True)
+            raise typer.Exit(code=1)
 
     repo_full_name = _get_full_repo_name(
         repo_name=repo_name,

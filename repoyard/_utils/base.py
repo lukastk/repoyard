@@ -2,7 +2,8 @@
 
 # %% auto 0
 __all__ = ['get_repo_full_name_from_sub_path', 'get_hostname', 'run_fzf', 'check_last_time_modified', 'run_cmd_async',
-           'async_throttler', 'is_in_event_loop', 'SoftInterruption', 'enable_soft_interruption', 'check_interrupted']
+           'async_throttler', 'is_in_event_loop', 'SoftInterruption', 'enable_soft_interruption', 'check_interrupted',
+           'count_files_in_dir']
 
 # %% ../../../pts/mod/_utils/00_base.pct.py 3
 import subprocess
@@ -25,17 +26,17 @@ def get_repo_full_name_from_sub_path(
     Get the full name of a synced repo from a path inside of the repo.
     """
     sub_path = Path(sub_path).expanduser().resolve() # Need to resolve to replace symlinks
-    is_in_local_store_path = sub_path.is_relative_to(config.local_store_path)
+    is_in_local_store_path = sub_path.is_relative_to(config.user_repos_path)
     
     if not is_in_local_store_path:
         return None
     
-    rel_path = sub_path.relative_to(config.local_store_path)
+    rel_path = sub_path.relative_to(config.user_repos_path)
     
-    if len(rel_path.parts) < 2: # The path is not inside a repo
+    if config.user_repos_path.as_posix() == sub_path.as_posix(): # The path is not inside a repo but is in the repo store root
         return None
     
-    repo_full_name = rel_path.parts[1]
+    repo_full_name = rel_path.parts[0]
     return repo_full_name
 
 # %% ../../../pts/mod/_utils/00_base.pct.py 7
@@ -207,3 +208,10 @@ def enable_soft_interruption():
 def check_interrupted():
     global _interrupted
     return _interrupted
+
+# %% ../../../pts/mod/_utils/00_base.pct.py 24
+def count_files_in_dir(path: Path) -> int:
+    num_files = 0
+    for path, dirs, filenames in os.walk(path):
+        num_files += len(filenames)
+    return num_files
