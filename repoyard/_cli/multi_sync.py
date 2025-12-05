@@ -71,6 +71,9 @@ def cli_multi_sync(
     if max_concurrent_rclone_ops is None:
         max_concurrent_rclone_ops = config.max_concurrent_rclone_ops
     
+    if sync_choices is None:
+        sync_choices = [part for part in RepoPart]
+    
     repoyard_meta = get_repoyard_meta(config)
     if repo_index_names is None:
         repo_metas = [repo_meta for repo_meta in repoyard_meta.repo_metas if repo_meta.storage_location in storage_locations]
@@ -138,7 +141,7 @@ def cli_multi_sync(
             dots = 1
     
         line = f"{left} {'.' * dots} {right}"
-        syncs_happened = [False if sync_results is None else sync_results[repo_part][1] for repo_part in RepoPart]
+        syncs_happened = [False if sync_results is None else sync_results[repo_part][1] for repo_part in sync_choices]
         lines.append(line)
     
         indent = "    "
@@ -146,7 +149,7 @@ def cli_multi_sync(
             lines.append(f"{indent}[red]{e}[/red]")
         elif sync_stat == "Success":
             line = []
-            for repo_part, synced in zip(RepoPart, syncs_happened):
+            for repo_part, synced in zip(sync_choices, syncs_happened):
                 line.append(f"[bold]{repo_part.value}:[/bold] {'[green]Synced[/green]' if synced else '[blue]Skipped[/blue]'}")
             lines.append(indent + f",{indent}".join(line))
         else:
@@ -164,7 +167,7 @@ def cli_multi_sync(
     
     def print_finished(repo_index_name: str):
         num, sync_stat, e, timestamp, sync_results = sync_stats[repo_index_name]
-        syncs_happened = [False if sync_results is None else sync_results[repo_part][1] for repo_part in RepoPart]
+        syncs_happened = [False if sync_results is None else sync_results[repo_part][1] for repo_part in sync_choices]
         if no_print_skipped and sync_stat == "Success" and not any(syncs_happened):
             return
         lines = get_status_lines(repo_index_name)
