@@ -69,7 +69,10 @@ class RepoMeta(const.StrictModel):
             else:
                 raise Exception(f"Invalid repo timestamp format: {config.repo_timestamp_format}")
         else:
-            creation_timestamp_utc = creation_timestamp_utc.strftime(const.REPO_TIMESTAMP_FORMAT)
+            if '_' in creation_timestamp_utc:
+                creation_timestamp_utc = creation_timestamp_utc.strftime(const.REPO_TIMESTAMP_FORMAT)
+            else:
+                creation_timestamp_utc = creation_timestamp_utc.strftime(const.REPO_TIMESTAMP_FORMAT_DATE_ONLY)
 
         return RepoMeta(
             creation_timestamp_utc=creation_timestamp_utc,
