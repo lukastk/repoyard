@@ -54,9 +54,9 @@ DEFAULT_REPO_SUBID_LENGTH = 5
 
 DEFAULT_MAX_CONCURRENT_RCLONE_OPS = 3
 
-# %% ../../pts/mod/const.pct.py 13
+# %% ../../pts/mod/const.pct.py 11
 ENV_VAR_REPOYARD_CONFIG_PATH = "REPOYARD_CONFIG_PATH"
 
-# %% ../../pts/mod/const.pct.py 15
+# %% ../../pts/mod/const.pct.py 13
 class StrictModel(BaseModel):
     model_config = ConfigDict(extra="forbid")

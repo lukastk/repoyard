@@ -65,30 +65,14 @@ DEFAULT_REPO_SUBID_LENGTH = 5
 DEFAULT_MAX_CONCURRENT_RCLONE_OPS = 3
 
 # %%
-from datetime import datetime, timezone
-
-d1 = datetime.now(timezone.utc).strftime(REPO_TIMESTAMP_FORMAT)
-d2 = datetime.now(timezone.utc).strftime(REPO_TIMESTAMP_FORMAT_DATE_ONLY)
-
-datetime.strptime(d1, REPO_TIMESTAMP_FORMAT)
-
-# %%
-d1
-
-# %%
 subid_num = len(DEFAULT_REPO_SUBID_CHARACTER_SET) ** DEFAULT_REPO_SUBID_LENGTH
 print(f"Number of possible subids: {subid_num/1e6} million.\n")
 
 p_no_collide = 1-(1/subid_num)
-print("Likelihood of collision if creating 100 repos with the same name per day:")
-print(f"  {1 - p_no_collide**100:.2e}")
-print("Likelihood of collision if creating 1000 repos with the same name per day:")
-print(f"  {1 - p_no_collide**1000:.2e}")
-print("Likelihood of collision if creating 10000 repos with the same name per day:")
-print(f"  {1 - p_no_collide**10000:.2e}")
-print("Likelihood of collision if creating 100000 repos with the same name per day:")
-print(f"  {1 - p_no_collide**100000:.2e}")
-
+for i in range(2, 7):
+    print(f"Likelihood of collision if creating 1e{i} repos with the same name per day:")
+    num = 10 ** i
+    print(f"  {1 - p_no_collide**num:.2e}")
 
 # %% [markdown]
 # Environment variables
