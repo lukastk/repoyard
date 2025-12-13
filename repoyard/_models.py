@@ -296,6 +296,7 @@ def create_user_repo_group_symlinks(
     _symlinks = []
     for group_name, group_config in groups.items():
         title_counter = defaultdict(int)
+        group_symlink_name = group_config.symlink_name or group_name
         for repo_meta in repo_metas:
             if not repo_meta.check_included(config): continue
             if isinstance(group_config, VirtualRepoGroupConfig):
@@ -307,7 +308,7 @@ def create_user_repo_group_symlinks(
             if title_counter[title] > 1:
                 title = f"{title} (CONFLICT {title_counter[title]})" # TODO this will break if the title contains a `(CONFLICT ...`
             title_counter[title] += 1
-            symlink_path = config.user_repo_groups_path / group_name / title   
+            symlink_path = config.user_repo_groups_path / group_symlink_name / title   
             _symlinks.append((dest_path, symlink_path))
 
     # Remove all existing symlinks that are not in the _symlinks list

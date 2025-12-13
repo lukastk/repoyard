@@ -46,10 +46,12 @@ class RepoGroupTitleMode(Enum):
     NAME = "name"
 
 class RepoGroupConfig(const.StrictModel):
+    symlink_name: str|None = None
     repo_title_mode: RepoGroupTitleMode = RepoGroupTitleMode.INDEX_NAME
     unique_repo_names: bool = False
 
 class VirtualRepoGroupConfig(const.StrictModel):
+    symlink_name: str|None = None
     repo_title_mode: RepoGroupTitleMode = RepoGroupTitleMode.INDEX_NAME
     filter_expr: str
 
