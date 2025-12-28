@@ -809,7 +809,7 @@ def cli_list_groups(
             if vg_config.is_in_group(repo_meta.groups):
                 repo_groups.append(vg)
 
-    for group_name in sorted(group_configs.keys()):
+    for group_name in sorted(repo_groups):
         typer.echo(group_name)
 
 # %% ../../../pts/mod/_cli/main.pct.py 42
