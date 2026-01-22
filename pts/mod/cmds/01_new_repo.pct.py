@@ -273,7 +273,7 @@ if initialise_git and git_clone_url is None and not (repo_data_path / ".git").ex
 #|export
 from repoyard._models import refresh_repoyard_meta
 
-refresh_repoyard_meta(config)
+refresh_repoyard_meta(config, _skip_lock=True)
 
 # %% [markdown]
 # Release the global lock

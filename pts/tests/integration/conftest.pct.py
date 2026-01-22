@@ -19,6 +19,7 @@
 import subprocess
 from pathlib import Path
 import tempfile
+import shutil
 import toml
 import inspect
 import pytest
@@ -28,7 +29,169 @@ from repoyard.config import get_config
 
 
 # ============================================================================
-# Fixtures for creating test repoyards
+# Fixture config paths
+# ============================================================================
+
+# Path to fixture configs in the repo
+# Generated conftest.py is at src/tests/integration/conftest.py
+# Fixtures are at tests/fixtures/configs/ (at repo root)
+# So we go up 4 levels to repo root, then into tests/fixtures/configs
+FIXTURE_CONFIGS_PATH = Path(__file__).parent.parent.parent.parent / "tests" / "fixtures" / "configs"
+
+
+# ============================================================================
+# New isolated test fixtures (recommended)
+# ============================================================================
+
+# %%
+#|export
+def _setup_repoyard_from_fixture(tmp_path: Path, config_name: str):
+    """
+    Set up an isolated test repoyard using configs from fixtures directory.
+
+    Args:
+        tmp_path: Pytest tmp_path for isolation
+        config_name: Name of config directory (e.g., "default_local", "default_remote")
+
+    Returns:
+        dict with config, config_path, data_path, remote_storage_path, etc.
+    """
+    fixture_config_dir = FIXTURE_CONFIGS_PATH / config_name
+
+    # Create test directory structure
+    test_config_dir = tmp_path / ".config" / "repoyard"
+    test_data_dir = tmp_path / ".repoyard"
+    test_local_store = tmp_path / "local_store"
+    test_remote_storage = tmp_path / "remote_storage"  # For rclone alias
+    test_user_repos = tmp_path / "repos"
+    test_user_groups = tmp_path / "repo-groups"
+
+    # Create directories that init_repoyard expects and tests need
+    test_local_store.mkdir(parents=True)
+    test_remote_storage.mkdir(parents=True)
+    test_user_repos.mkdir(parents=True)
+    test_user_groups.mkdir(parents=True)
+
+    # Run init_repoyard to set up proper structure (creates config_dir, data_dir, etc.)
+    config_path = test_config_dir / "config.toml"
+    init_repoyard(config_path=config_path, data_path=test_data_dir, verbose=False)
+
+    # Now customize config.toml with our fixture settings
+    config_data = toml.load(fixture_config_dir / "config.toml")
+
+    # Override paths to use temp directory
+    config_data["repoyard_data_path"] = str(test_data_dir)
+    config_data["user_repos_path"] = str(test_user_repos)
+    config_data["user_repo_groups_path"] = str(test_user_groups)
+
+    with open(config_path, "w") as f:
+        toml.dump(config_data, f)
+
+    # Copy and customize rclone config
+    rclone_config_path = test_config_dir / "repoyard_rclone.conf"
+    rclone_source = fixture_config_dir / "repoyard_rclone.conf"
+
+    if rclone_source.exists():
+        rclone_content = rclone_source.read_text()
+        # Replace placeholder paths with actual temp paths
+        rclone_content = rclone_content.replace(
+            "__REPLACED_AT_RUNTIME__",
+            str(test_remote_storage)
+        )
+        rclone_config_path.write_text(rclone_content)
+    else:
+        # No rclone config (will be populated by caller for remote tests)
+        rclone_config_path.write_text("")
+
+    # Copy exclude file
+    exclude_source = fixture_config_dir / "default.rclone_exclude"
+    if exclude_source.exists():
+        shutil.copy(exclude_source, test_config_dir / "default.rclone_exclude")
+
+    # Load config
+    config = get_config(config_path)
+
+    # Get the storage location name from config
+    storage_location_name = config_data.get("default_storage_location", "local_test")
+
+    return {
+        "config": config,
+        "config_path": config_path,
+        "data_path": test_data_dir,
+        "local_store": test_local_store,
+        "remote_storage": test_remote_storage,
+        "user_repos": test_user_repos,
+        "user_groups": test_user_groups,
+        "storage_location_name": storage_location_name,
+    }
+
+
+@pytest.fixture
+def test_repoyard_local(tmp_path):
+    """
+    Create an isolated test repoyard with local-only storage.
+
+    Uses configs from tests/fixtures/configs/default_local/.
+    All paths (including locks) are contained within tmp_path.
+
+    Returns:
+        dict: {
+            "config": Config object,
+            "config_path": Path to config.toml,
+            "data_path": Path to .repoyard data directory,
+            "local_store": Path to local storage,
+            "remote_storage": Path to rclone alias target (local dir),
+            "user_repos": Path to user repos symlinks,
+            "user_groups": Path to user repo groups symlinks,
+            "storage_location_name": Name of the storage location,
+        }
+    """
+    return _setup_repoyard_from_fixture(tmp_path, "default_local")
+
+
+@pytest.fixture
+def test_repoyard_remote(tmp_path):
+    """
+    Create an isolated test repoyard with real remote storage.
+
+    Uses configs from tests/fixtures/configs/default_remote/.
+
+    IMPORTANT: This fixture requires repoyard_rclone.conf to exist in
+    tests/fixtures/configs/default_remote/. If it doesn't exist, the test
+    is skipped with a helpful message.
+
+    The remote storage uses store_path="repoyard-test" to avoid polluting
+    your real repoyard data.
+
+    Returns:
+        Same as test_repoyard_local
+    """
+    fixture_config_dir = FIXTURE_CONFIGS_PATH / "default_remote"
+    rclone_conf_path = fixture_config_dir / "repoyard_rclone.conf"
+
+    if not rclone_conf_path.exists():
+        pytest.skip(
+            "Remote rclone config not found. "
+            "To run remote tests, copy repoyard_rclone.conf.template to "
+            "repoyard_rclone.conf in tests/fixtures/configs/default_remote/ "
+            "and add your credentials."
+        )
+
+    result = _setup_repoyard_from_fixture(tmp_path, "default_remote")
+
+    # Copy the actual rclone config (with credentials)
+    test_config_dir = result["config_path"].parent
+    shutil.copy(rclone_conf_path, test_config_dir / "repoyard_rclone.conf")
+
+    # Reload config to pick up rclone settings
+    result["config"] = get_config(result["config_path"])
+    result["has_remote"] = True
+
+    return result
+
+
+# ============================================================================
+# Legacy fixtures (for backwards compatibility)
 # ============================================================================
 
 # %%

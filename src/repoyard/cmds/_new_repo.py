@@ -183,7 +183,7 @@ def new_repo(
                 print("Warning: Failed to initialise git repository")
     from repoyard._models import refresh_repoyard_meta
     
-    refresh_repoyard_meta(config)
+    refresh_repoyard_meta(config, _skip_lock=True)
     if _global_lock.is_locked:
         _global_lock.release()
     return repo_meta.index_name

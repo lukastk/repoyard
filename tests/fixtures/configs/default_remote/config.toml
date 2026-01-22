@@ -1,0 +1,23 @@
+# Test configuration for remote sync tests
+# Paths are overwritten at runtime by test fixtures to use tmp directories
+#
+# IMPORTANT: store_path is set to "repoyard-test" to avoid polluting
+# your real repoyard data on the remote storage.
+
+default_storage_location = "test_remote"
+repoyard_data_path = "__REPLACED_AT_RUNTIME__"
+user_repos_path = "__REPLACED_AT_RUNTIME__"
+user_repo_groups_path = "__REPLACED_AT_RUNTIME__"
+repo_timestamp_format = "date_and_time"
+default_repo_groups = []
+repo_subid_character_set = "abcdefghijklmnopqrstuvwxyz0123456789"
+repo_subid_length = 5
+max_concurrent_rclone_ops = 10
+
+[storage_locations.test_remote]
+storage_type = "rclone"
+store_path = "repoyard-test"
+
+[repo_groups]
+
+[virtual_repo_groups]

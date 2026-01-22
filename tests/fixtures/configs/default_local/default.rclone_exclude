@@ -1,0 +1,7 @@
+# Default rclone exclude patterns for tests
+.venv/
+.pixi/
+.trunk/
+node_modules/
+__pycache__/
+.DS_Store

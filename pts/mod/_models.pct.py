@@ -329,11 +329,15 @@ def create_repoyard_meta(config: repoyard.config.Config) -> RepoyardMeta:
 #|export
 def refresh_repoyard_meta(
     config: repoyard.config.Config,
+    _skip_lock: bool = False,
 ) -> RepoyardMeta:
     from repoyard._utils.locking import RepoyardLockManager
+    from contextlib import nullcontext
 
     lock_manager = RepoyardLockManager(config.repoyard_data_path)
-    with lock_manager.global_lock():
+    lock_context = nullcontext() if _skip_lock else lock_manager.global_lock()
+
+    with lock_context:
         repoyard_meta = create_repoyard_meta(config)
         # Atomic write: temp file + rename
         tmp_path = config.repoyard_meta_path.with_suffix(".tmp")

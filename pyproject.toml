@@ -45,6 +45,7 @@ python_functions = ["test_*"]
 pythonpath = ["src"]
 markers = [
     "integration: marks tests as integration tests (require external resources like rclone)",
+    "remote: marks tests that require remote storage credentials (skipped if not configured)",
 ]
 
 [tool.ruff]
