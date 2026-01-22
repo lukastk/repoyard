@@ -4,7 +4,6 @@ from pathlib import Path
 
 from ..config import get_config
 
-
 async def include_repo(
     config_path: Path,
     repo_index_name: str,
@@ -13,20 +12,20 @@ async def include_repo(
     """ """
     config = get_config(config_path)
     from repoyard._models import get_repoyard_meta
-
+    
     repoyard_meta = get_repoyard_meta(config)
-
+    
     if repo_index_name not in repoyard_meta.by_index_name:
         raise ValueError(f"Repo '{repo_index_name}' does not exist.")
-
+    
     repo_meta = repoyard_meta.by_index_name[repo_index_name]
-
+    
     if repo_meta.check_included(config):
         raise ValueError(f"Repo '{repo_index_name}' is already included.")
     from repoyard.cmds import sync_repo
     from repoyard._models import RepoPart
     from repoyard._utils.sync_helper import SyncSetting, SyncDirection
-
+    
     # First force sync the data
     await sync_repo(
         config_path=config_path,
@@ -36,7 +35,7 @@ async def include_repo(
         sync_choices=[RepoPart.DATA],
         soft_interruption_enabled=soft_interruption_enabled,
     )
-
+    
     # Then sync the rest
     await sync_repo(
         config_path=config_path,

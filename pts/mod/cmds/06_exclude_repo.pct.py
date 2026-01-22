@@ -10,25 +10,22 @@
 # # _exclude_repo
 
 # %%
-# |default_exp cmds._exclude_repo
-# |export_as_func true
+#|default_exp cmds._exclude_repo
+#|export_as_func true
 
 # %%
-# |hide
-import nblite
-
-nblite.nbl_export()
+#|hide
+from nblite import nbl_export, show_doc; nbl_export();
 
 # %%
-# |top_export
+#|top_export
 from pathlib import Path
 
 from repoyard._utils.sync_helper import SyncSetting
 from repoyard.config import get_config
 
-
 # %%
-# |set_func_signature
+#|set_func_signature
 async def exclude_repo(
     config_path: Path,
     repo_index_name: str,
@@ -37,7 +34,6 @@ async def exclude_repo(
 ):
     """ """
     ...
-
 
 # %% [markdown]
 # Set up testing args
@@ -74,14 +70,14 @@ await sync_repo(
 # Process args
 
 # %%
-# |export
+#|export
 config = get_config(config_path)
 
 # %% [markdown]
 # Ensure that repo is included
 
 # %%
-# |export
+#|export
 from repoyard._models import get_repoyard_meta
 
 repoyard_meta = get_repoyard_meta(config)
@@ -98,7 +94,7 @@ if not repo_meta.check_included(config):
 # Check that the repo is not local
 
 # %%
-# |export
+#|export
 from repoyard.config import StorageType
 
 if repo_meta.get_storage_location_config(config).storage_type == StorageType.LOCAL:
@@ -110,7 +106,7 @@ if repo_meta.get_storage_location_config(config).storage_type == StorageType.LOC
 # Sync any changes before removing locally
 
 # %%
-# |export
+#|export
 from repoyard.cmds import sync_repo
 
 if not skip_sync:
@@ -124,7 +120,7 @@ if not skip_sync:
 # Exclude it
 
 # %%
-# |export
+#|export
 import shutil
 from repoyard._models import RepoPart
 

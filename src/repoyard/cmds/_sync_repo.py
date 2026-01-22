@@ -5,9 +5,12 @@ from pathlib import Path
 from .._utils.sync_helper import sync_helper, SyncSetting, SyncDirection
 from .._models import SyncStatus, RepoPart
 from ..config import get_config, StorageType
-from .._utils import check_interrupted, enable_soft_interruption, SoftInterruption
+from .._utils import (
+    check_interrupted,
+    enable_soft_interruption,
+    SoftInterruption,
+)
 from .. import const
-
 
 async def sync_repo(
     config_path: Path,
@@ -21,7 +24,7 @@ async def sync_repo(
 ) -> dict[RepoPart, SyncStatus]:
     """
     Syncs a repo with its remote.
-
+    
     Args:
         config_path: Path to the repoyard config file.
         repo_index_name: Full name of the repository to sync.
@@ -35,16 +38,16 @@ async def sync_repo(
     config = get_config(config_path)
     if sync_choices is None:
         sync_choices = [repo_part for repo_part in RepoPart]
-
+    
     if soft_interruption_enabled:
         enable_soft_interruption()
     from repoyard._models import get_repoyard_meta
-
+    
     repoyard_meta = get_repoyard_meta(config)
-
+    
     if repo_index_name not in repoyard_meta.by_index_name:
         raise ValueError(f"Repo '{repo_index_name}' not found.")
-
+    
     repo_meta = repoyard_meta.by_index_name[repo_index_name]
     if repo_meta.get_storage_location_config(config).storage_type == StorageType.LOCAL:
         pass
@@ -55,10 +58,10 @@ async def sync_repo(
     local_sync_backups_path = config.local_sync_backups_path
     remote_sync_backups_path = sl_config.store_path / const.REMOTE_BACKUP_REL_PATH
     sync_results = {}
-
+    
     if check_interrupted():
         raise SoftInterruption()
-
+    
     sync_part = RepoPart.META
     if sync_part in sync_choices:
         if verbose:
@@ -68,9 +71,7 @@ async def sync_repo(
             sync_direction=sync_direction,
             sync_setting=sync_setting,
             local_path=repo_meta.get_local_part_path(config, RepoPart.META),
-            local_sync_record_path=repo_meta.get_local_sync_record_path(
-                config, sync_part
-            ),
+            local_sync_record_path=repo_meta.get_local_sync_record_path(config, sync_part),
             remote=repo_meta.storage_location,
             remote_path=repo_meta.get_remote_part_path(config, RepoPart.META),
             remote_sync_record_path=repo_meta.get_remote_sync_record_path(
@@ -83,7 +84,7 @@ async def sync_repo(
         )
     if check_interrupted():
         raise SoftInterruption()
-
+    
     sync_part = RepoPart.CONF
     if sync_part in sync_choices:
         if verbose:
@@ -93,9 +94,7 @@ async def sync_repo(
             sync_direction=sync_direction,
             sync_setting=sync_setting,
             local_path=repo_meta.get_local_part_path(config, RepoPart.CONF),
-            local_sync_record_path=repo_meta.get_local_sync_record_path(
-                config, sync_part
-            ),
+            local_sync_record_path=repo_meta.get_local_sync_record_path(config, sync_part),
             remote=repo_meta.storage_location,
             remote_path=repo_meta.get_remote_part_path(config, RepoPart.CONF),
             remote_sync_record_path=repo_meta.get_remote_sync_record_path(
@@ -115,21 +114,17 @@ async def sync_repo(
     _rclone_filters_path = (
         repo_meta.get_local_part_path(config, RepoPart.CONF) / ".rclone_filters"
     )
-
-    _rclone_include_path = (
-        _rclone_include_path if _rclone_include_path.exists() else None
-    )
+    
+    _rclone_include_path = _rclone_include_path if _rclone_include_path.exists() else None
     _rclone_exclude_path = (
         _rclone_exclude_path
         if _rclone_exclude_path.exists()
         else config.default_rclone_exclude_path
     )
-    _rclone_filters_path = (
-        _rclone_filters_path if _rclone_filters_path.exists() else None
-    )
+    _rclone_filters_path = _rclone_filters_path if _rclone_filters_path.exists() else None
     if check_interrupted():
         raise SoftInterruption()
-
+    
     sync_part = RepoPart.DATA
     if sync_part in sync_choices:
         if verbose:
@@ -139,9 +134,7 @@ async def sync_repo(
             sync_direction=sync_direction,
             sync_setting=sync_setting,
             local_path=repo_meta.get_local_part_path(config, RepoPart.DATA),
-            local_sync_record_path=repo_meta.get_local_sync_record_path(
-                config, sync_part
-            ),
+            local_sync_record_path=repo_meta.get_local_sync_record_path(config, sync_part),
             remote=repo_meta.storage_location,
             remote_path=repo_meta.get_remote_part_path(config, RepoPart.DATA),
             remote_sync_record_path=repo_meta.get_remote_sync_record_path(
@@ -157,6 +150,6 @@ async def sync_repo(
         )
     if RepoPart.META in sync_choices:
         from repoyard._models import refresh_repoyard_meta
-
+    
         refresh_repoyard_meta(config)
     return sync_results

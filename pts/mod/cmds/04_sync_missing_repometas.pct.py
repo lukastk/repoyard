@@ -1,7 +1,7 @@
 # ---
 # jupyter:
 #   kernelspec:
-#     display_name: Python 3
+#     display_name: .venv
 #     language: python
 #     name: python3
 # ---
@@ -10,17 +10,15 @@
 # # _sync_missing_repometas
 
 # %%
-# |default_exp cmds._sync_missing_repometas
-# |export_as_func true
+#|default_exp cmds._sync_missing_repometas
+#|export_as_func true
 
 # %%
-# |hide
-import nblite
-
-nblite.nbl_export()
+#|hide
+from nblite import nbl_export, show_doc; nbl_export();
 
 # %%
-# |top_export
+#|top_export
 from pathlib import Path
 
 from repoyard.config import get_config, StorageType
@@ -39,9 +37,8 @@ from repoyard._utils import (
 )
 from repoyard import const
 
-
 # %%
-# |set_func_signature
+#|set_func_signature
 async def sync_missing_repometas(
     config_path: Path,
     max_concurrent_rclone_ops: int | None = None,
@@ -59,9 +56,9 @@ async def sync_missing_repometas(
         ]
     ],
 ]:
-    """ """
+    """
+    """
     ...
-
 
 # %% [markdown]
 # Set up testing args
@@ -88,7 +85,7 @@ soft_interruption_enabled = True
 # Process args
 
 # %%
-# |export
+#|export
 config = get_config(config_path)
 
 if repo_index_names is not None and storage_locations is not None:
@@ -119,7 +116,7 @@ await asyncio.gather(*[_task(i) for i in range(3)])
 # Sync remote repometas that have not been synced locally already (i.e. 'undiscovered' repometas)
 
 # %%
-# |export
+#|export
 if check_interrupted():
     raise SoftInterruption()
 
@@ -215,11 +212,11 @@ for sl_name, sl_config in config.storage_locations.items():
 # Refresh the repoyard meta file
 
 # %%
-# |export
+#|export
 from repoyard._models import refresh_repoyard_meta
 
 refresh_repoyard_meta(config)
 
 # %%
-# |func_return
+#|func_return
 missing_metas

@@ -164,7 +164,6 @@ def _create_mock_repo_meta(name: str, groups: list[str]) -> MagicMock:
     mock.groups = groups
     return mock
 
-
 # %%
 #|export
 class TestGetFilteredRepoMetas:

@@ -5,7 +5,6 @@ from pathlib import Path
 from .._utils.sync_helper import SyncSetting
 from ..config import get_config
 
-
 async def exclude_repo(
     config_path: Path,
     repo_index_name: str,
@@ -15,24 +14,24 @@ async def exclude_repo(
     """ """
     config = get_config(config_path)
     from repoyard._models import get_repoyard_meta
-
+    
     repoyard_meta = get_repoyard_meta(config)
-
+    
     if repo_index_name not in repoyard_meta.by_index_name:
         raise ValueError(f"Repo '{repo_index_name}' does not exist.")
-
+    
     repo_meta = repoyard_meta.by_index_name[repo_index_name]
-
+    
     if not repo_meta.check_included(config):
         raise ValueError(f"Repo '{repo_index_name}' is already excluded.")
     from repoyard.config import StorageType
-
+    
     if repo_meta.get_storage_location_config(config).storage_type == StorageType.LOCAL:
         raise ValueError(
             f"Repo '{repo_index_name}' in local storage location '{repo_meta.storage_location}' cannot be excluded."
         )
     from repoyard.cmds import sync_repo
-
+    
     if not skip_sync:
         await sync_repo(
             config_path=config_path,
@@ -41,6 +40,6 @@ async def exclude_repo(
         )
     import shutil
     from repoyard._models import RepoPart
-
+    
     shutil.rmtree(repo_meta.get_local_part_path(config, RepoPart.DATA))
     repo_meta.get_local_sync_record_path(config, RepoPart.DATA).unlink()

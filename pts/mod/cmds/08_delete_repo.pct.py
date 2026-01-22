@@ -10,25 +10,22 @@
 # # _delete_repo
 
 # %%
-# |default_exp cmds._delete_repo
-# |export_as_func true
+#|default_exp cmds._delete_repo
+#|export_as_func true
 
 # %%
-# |hide
-import nblite
-
-nblite.nbl_export()
+#|hide
+from nblite import nbl_export, show_doc; nbl_export();
 
 # %%
-# |top_export
+#|top_export
 from pathlib import Path
 
 from repoyard.config import get_config
 from repoyard._utils import enable_soft_interruption
 
-
 # %%
-# |set_func_signature
+#|set_func_signature
 async def delete_repo(
     config_path: Path,
     repo_index_name: str,
@@ -36,7 +33,6 @@ async def delete_repo(
 ):
     """ """
     ...
-
 
 # %% [markdown]
 # Set up testing args
@@ -68,7 +64,7 @@ await sync_repo(config_path=config_path, repo_index_name=repo_index_name)
 # Process args
 
 # %%
-# |export
+#|export
 config = get_config(config_path)
 
 if soft_interruption_enabled:
@@ -78,7 +74,7 @@ if soft_interruption_enabled:
 # Ensure that repo exists
 
 # %%
-# |export
+#|export
 from repoyard._models import get_repoyard_meta
 
 repoyard_meta = get_repoyard_meta(config)
@@ -96,7 +92,7 @@ assert (remote_rclone_path / repo_meta.get_remote_path(config)).exists()
 # Delete the repo
 
 # %%
-# |export
+#|export
 
 # Delete local repo
 import shutil
@@ -126,7 +122,7 @@ assert not (remote_rclone_path / repo_meta.get_remote_path(config)).exists()
 # Refresh the repoyard meta file
 
 # %%
-# |export
+#|export
 from repoyard._models import refresh_repoyard_meta
 
 refresh_repoyard_meta(config)

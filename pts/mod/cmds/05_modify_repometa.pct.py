@@ -10,32 +10,28 @@
 # # _modify_repometa
 
 # %%
-# |default_exp cmds._modify_repometa
-# |export_as_func true
+#|default_exp cmds._modify_repometa
+#|export_as_func true
 
 # %%
-# |hide
-import nblite
-
-nblite.nbl_export()
+#|hide
+from nblite import nbl_export, show_doc; nbl_export();
 
 # %%
-# |top_export
+#|top_export
 from pathlib import Path
 from typing import Any
 
 from repoyard.config import get_config
 from repoyard import const
 
-
 # %%
-# |top_export
+#|top_export
 class RepoNameConflict(Exception):
     pass
 
-
 # %%
-# |set_func_signature
+#|set_func_signature
 def modify_repometa(
     config_path: Path,
     repo_index_name: str,
@@ -43,7 +39,6 @@ def modify_repometa(
 ):
     """ """
     ...
-
 
 # %% [markdown]
 # Set up testing args
@@ -70,7 +65,7 @@ modifications = {"groups": ["group1", "group2"]}
 # Process args
 
 # %%
-# |export
+#|export
 config = get_config(config_path)
 
 # %%
@@ -83,7 +78,7 @@ await sync_repo(config_path=config_path, repo_index_name=repo_index_name)
 # Find the repo meta
 
 # %%
-# |export
+#|export
 from repoyard._models import get_repoyard_meta, RepoMeta
 
 repoyard_meta = get_repoyard_meta(config)
@@ -97,14 +92,14 @@ repo_meta = repoyard_meta.by_index_name[repo_index_name]
 # Create modified repo meta
 
 # %%
-# |export
+#|export
 modified_repo_meta = RepoMeta(**{**repo_meta.model_dump(), **modifications})
 
 # %% [markdown]
 # If the repo is in a group that requires unique names, check for conflicts
 
 # %%
-# |export
+#|export
 # TESTREF: test_modify_repometa_unique_names
 from repoyard._models import get_repo_group_configs
 
@@ -144,7 +139,7 @@ for g in modified_repo_meta.groups:
 # Save the modified repo meta
 
 # %%
-# |export
+#|export
 modified_repo_meta.save(config)
 
 # %%
@@ -154,7 +149,7 @@ modified_repo_meta.save(config)
 # Refresh the repoyard meta file
 
 # %%
-# |export
+#|export
 from repoyard._models import refresh_repoyard_meta
 
 refresh_repoyard_meta(config)

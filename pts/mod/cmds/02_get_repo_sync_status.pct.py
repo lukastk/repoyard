@@ -10,32 +10,28 @@
 # # _get_repo_sync_status
 
 # %%
-# |default_exp cmds._get_repo_sync_status
-# |export_as_func true
+#|default_exp cmds._get_repo_sync_status
+#|export_as_func true
 
 # %%
-# |hide
-import nblite
-
-nblite.nbl_export()
+#|hide
+from nblite import nbl_export, show_doc; nbl_export();
 
 # %%
-# |top_export
+#|top_export
 from pathlib import Path
 
 from repoyard.config import get_config
 from repoyard._models import SyncStatus, RepoPart
 
-
 # %%
-# |set_func_signature
+#|set_func_signature
 async def get_repo_sync_status(
     config_path: Path,
     repo_index_name: str,
 ) -> dict[RepoPart, SyncStatus]:
     """ """
     ...
-
 
 # %% [markdown]
 # Set up testing args
@@ -76,14 +72,14 @@ repo_index_name = new_repo(
 # Process args
 
 # %%
-# |export
+#|export
 config = get_config(config_path)
 
 # %% [markdown]
 # Find the repo meta
 
 # %%
-# |export
+#|export
 from repoyard._models import get_repoyard_meta
 
 repoyard_meta = get_repoyard_meta(config)
@@ -94,7 +90,7 @@ if repo_index_name not in repoyard_meta.by_index_name:
 repo_meta = repoyard_meta.by_index_name[repo_index_name]
 
 # %%
-# |export
+#|export
 from repoyard._models import get_sync_status, RepoPart
 import asyncio
 
@@ -124,5 +120,5 @@ for repo_part in RepoPart:
     assert repo_sync_status[repo_part].sync_condition == SyncCondition.NEEDS_PUSH
 
 # %%
-# |func_return
+#|func_return
 repo_sync_status

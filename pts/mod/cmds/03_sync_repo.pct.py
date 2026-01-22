@@ -10,17 +10,15 @@
 # # _sync_repo
 
 # %%
-# |default_exp cmds._sync_repo
-# |export_as_func true
+#|default_exp cmds._sync_repo
+#|export_as_func true
 
 # %%
-# |hide
-import nblite
-
-nblite.nbl_export()
+#|hide
+from nblite import nbl_export, show_doc; nbl_export();
 
 # %%
-# |top_export
+#|top_export
 from pathlib import Path
 
 from repoyard._utils.sync_helper import sync_helper, SyncSetting, SyncDirection
@@ -33,9 +31,8 @@ from repoyard._utils import (
 )
 from repoyard import const
 
-
 # %%
-# |set_func_signature
+#|set_func_signature
 async def sync_repo(
     config_path: Path,
     repo_index_name: str,
@@ -60,7 +57,6 @@ async def sync_repo(
         show_rclone_progress: Show rclone progress during sync.
     """
     ...
-
 
 # %% [markdown]
 # Set up testing args
@@ -107,7 +103,7 @@ soft_interruption_enabled = True
 # Process args
 
 # %%
-# |export
+#|export
 config = get_config(config_path)
 if sync_choices is None:
     sync_choices = [repo_part for repo_part in RepoPart]
@@ -127,7 +123,7 @@ remote = {remote_rclone_path}
 # Find the repo meta
 
 # %%
-# |export
+#|export
 from repoyard._models import get_repoyard_meta
 
 repoyard_meta = get_repoyard_meta(config)
@@ -141,16 +137,16 @@ repo_meta = repoyard_meta.by_index_name[repo_index_name]
 # Check if the repo is in a local storage location, in which case quit.
 
 # %%
-# |export
+#|export
 if repo_meta.get_storage_location_config(config).storage_type == StorageType.LOCAL:
     pass
-    # |func_return_line
+    #|func_return_line
 
 # %% [markdown]
 # Prints
 
 # %%
-# |export
+#|export
 if verbose:
     print(f"Syncing repo {repo_index_name} at {repo_meta.storage_location}.")
 
@@ -158,7 +154,7 @@ if verbose:
 # Get the backup locations
 
 # %%
-# |export
+#|export
 sl_config = repo_meta.get_storage_location_config(config)
 local_sync_backups_path = config.local_sync_backups_path
 remote_sync_backups_path = sl_config.store_path / const.REMOTE_BACKUP_REL_PATH
@@ -167,7 +163,7 @@ remote_sync_backups_path = sl_config.store_path / const.REMOTE_BACKUP_REL_PATH
 # Sync the repometa
 
 # %%
-# |export
+#|export
 sync_results = {}
 
 if check_interrupted():
@@ -209,7 +205,7 @@ assert "repometa.toml" in {f["Name"] for f in _lsjson}
 # Sync the repoconf
 
 # %%
-# |export
+#|export
 if check_interrupted():
     raise SoftInterruption()
 
@@ -249,7 +245,7 @@ assert _lsjson is None  # Empty by default
 # Get the now locally synced conf files for the sync of the repo data
 
 # %%
-# |export
+#|export
 _rclone_include_path = (
     repo_meta.get_local_part_path(config, RepoPart.CONF) / ".rclone_include"
 )
@@ -272,7 +268,7 @@ _rclone_filters_path = _rclone_filters_path if _rclone_filters_path.exists() els
 # Sync the repo data
 
 # %%
-# |export
+#|export
 if check_interrupted():
     raise SoftInterruption()
 
@@ -316,12 +312,12 @@ assert ".venv" not in {f["Name"] for f in _lsjson}
 # Refresh the repoyard meta file
 
 # %%
-# |export
+#|export
 if RepoPart.META in sync_choices:
     from repoyard._models import refresh_repoyard_meta
 
     refresh_repoyard_meta(config)
 
 # %%
-# |func_return
+#|func_return
 sync_results

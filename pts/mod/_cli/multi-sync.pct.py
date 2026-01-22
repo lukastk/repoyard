@@ -1,7 +1,7 @@
 # ---
 # jupyter:
 #   kernelspec:
-#     display_name: Python 3
+#     display_name: .venv
 #     language: python
 #     name: python3
 # ---
@@ -10,17 +10,15 @@
 # # multi_sync
 
 # %%
-# |default_exp _cli.multi_sync
-# |export_as_func true
+#|default_exp _cli.multi_sync
+#|export_as_func true
 
 # %%
-# |hide
-from nblite import nbl_export
-
-nbl_export()
+#|hide
+from nblite import nbl_export, show_doc; nbl_export();
 
 # %%
-# |top_export
+#|top_export
 import typer
 from typer import Option
 import asyncio
@@ -32,7 +30,7 @@ from repoyard._models import RepoPart
 from repoyard._cli.app import app, app_state
 
 # %%
-# |export
+#|export
 from repoyard._models import get_repoyard_meta
 from repoyard.cmds import sync_repo
 from rich.live import Live
@@ -41,9 +39,8 @@ from rich.console import Console
 from datetime import datetime
 import shutil
 
-
 # %%
-# |set_func_signature
+#|set_func_signature
 @app.command(name="multi-sync")
 def cli_multi_sync(
     repo_index_names: list[str] | None = Option(
@@ -87,7 +84,6 @@ def cli_multi_sync(
     """
     ...
 
-
 # %% [markdown]
 # Set up testing args
 
@@ -130,7 +126,7 @@ soft_interruption_enabled = True
 # Process args
 
 # %%
-# |export
+#|export
 if soft_interruption_enabled:
     enable_soft_interruption()
 
@@ -176,9 +172,8 @@ else:
 # %% [markdown]
 # Define syncing task
 
-
 # %%
-# |export
+#|export
 async def _task(num, repo_meta):
     sync_stats[repo_meta.index_name] = (num, "Syncing...", None, datetime.now(), None)
     try:
@@ -211,13 +206,12 @@ async def _task(num, repo_meta):
     if show_progress:
         print_finished(repo_meta.index_name)
 
-
 # %% [markdown]
 # Set up the progress printing (shown if `show_progress == True`)
 
 # %%
 
-# |export
+#|export
 sync_stats = {}
 
 finish_monitoring_event = asyncio.Event()
@@ -322,12 +316,11 @@ async def _progress_monitor_task():
             await asyncio.sleep(0.2)
         live.update(Text.from_markup("Finished. Final results:\n\n"))
 
-
 # %% [markdown]
 # Run multi-sync
 
 # %%
-# |export
+#|export
 _repo_metas = repo_metas
 if sync_recently_modified_first:
     from repoyard._utils import check_last_time_modified
@@ -353,12 +346,11 @@ async def _runner():
     else:
         await sync_task
 
-
 # %%
 await _runner()
 
 # %%
-# |export
+#|export
 from repoyard._utils import is_in_event_loop
 
 if not is_in_event_loop():

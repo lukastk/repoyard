@@ -7,23 +7,10 @@
 # ---
 
 # %% [markdown]
-# # CLI Remote Integration Tests
-#
-# Tests for the repoyard CLI with a real remote storage backend.
-#
-# These tests require environment variables:
-# - TEST_CONF_PATH: Path to the repoyard config file
-# - TEST_STORAGE_LOCATION_NAME: Name of the storage location to use
-# - TEST_STORAGE_LOCATION_STORE_PATH: Store path for the storage location
-#
-# Tests:
-# - Creating and syncing repos via CLI
-# - Concurrent sync operations
-# - Exclude/include via CLI
-# - Delete via CLI
+# # test_02_remote
 
 # %%
-#|default_exp integration.cmds.test_cli_remote
+#|default_exp test_02_remote
 #|export_as_func true
 
 # %%
@@ -40,23 +27,22 @@ from repoyard.cmds import *
 from repoyard._models import get_repoyard_meta, RepoPart
 from repoyard.config import get_config
 
-from tests.integration.conftest import run_cmd, run_cmd_in_background, CmdFailed
+from tests.utils import *
 
 from dotenv import load_dotenv
 
 # %%
 #|top_export
 @pytest.mark.integration
-def test_cli_remote():
-    """Test CLI commands with a real remote storage backend."""
-    asyncio.run(_test_cli_remote())
+def test_02_remote():
+    asyncio.run(_test_02_remote())
 
 # %%
 #|set_func_signature
-async def _test_cli_remote(): ...
+async def _test_02_remote(): ...
 
 # %% [markdown]
-# ## Load config from environment variables
+# Load config from env var. If it doesn't exist then skip test.
 
 # %%
 #|export
@@ -69,8 +55,7 @@ if (
     or "TEST_STORAGE_LOCATION_STORE_PATH" not in os.environ
 ):
     pytest.skip(
-        "Environment variable TEST_CONF_PATH or TEST_STORAGE_LOCATION_NAME or "
-        "TEST_STORAGE_LOCATION_STORE_PATH not set."
+        "Environment variable TEST_CONF_PATH or TEST_STORAGE_LOCATION_NAME or TEST_STORAGE_LOCATION_STORE_PATH not set."
     )
 else:
     config_path = Path(os.environ["TEST_CONF_PATH"]).expanduser().resolve()
@@ -79,17 +64,19 @@ else:
     sl_store_path = os.environ["TEST_STORAGE_LOCATION_STORE_PATH"]
 
 # %% [markdown]
-# ## Ensure repoyard CLI is installed
+# Ensure `repoyard` is installed
 
 # %%
 #|export
+from tests.utils import run_cmd, run_cmd_in_background, CmdFailed
+
 try:
     run_cmd("repoyard")
 except CmdFailed:
     pytest.skip("repoyard not installed")
 
 # %% [markdown]
-# ## Create repo and sync it
+# Create repo and sync it
 
 # %%
 #|export
@@ -99,7 +86,7 @@ repo_index_name1 = run_cmd(
 run_cmd(f"repoyard sync -r {repo_index_name1}", capture_output=True)
 
 # %% [markdown]
-# ## Test concurrent sync operations
+# Create two other repos and see they can both sync at the same time (i.e. test if simultaneous rclone commands can be run)
 
 # %%
 #|export
@@ -117,7 +104,7 @@ p1.wait()
 p2.wait()
 
 # %% [markdown]
-# ## Verify repos exist on remote
+# Verify that the repos are there on remote
 
 # %%
 #|export
@@ -139,7 +126,7 @@ for repo_meta in [repo_meta1, repo_meta2, repo_meta3]:
     )
 
 # %% [markdown]
-# ## Exclude repos
+# Exclude repos
 
 # %%
 #|export
@@ -164,7 +151,7 @@ await asyncio.gather(
 )
 
 # %% [markdown]
-# ## Re-include repos
+# Re-include repos
 
 # %%
 #|export
@@ -189,7 +176,7 @@ await asyncio.gather(
 )
 
 # %% [markdown]
-# ## Delete repos
+# Delete repos
 
 # %%
 #|export

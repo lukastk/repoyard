@@ -8,8 +8,7 @@ from ..config import get_config
 from .._utils import async_throttler, enable_soft_interruption, SoftInterruption
 from .._utils.sync_helper import SyncSetting, SyncDirection
 from .._models import RepoPart
-from .._cli.app import app_state
-
+from .._cli.app import app, app_state
 
 def cli_multi_sync(
     repo_index_names: list[str] | None = Option(
@@ -58,16 +57,15 @@ def cli_multi_sync(
     from rich.console import Console
     from datetime import datetime
     import shutil
-
     if soft_interruption_enabled:
         enable_soft_interruption()
-
+    
     if repo_index_names is not None and storage_locations is not None:
         typer.echo("Cannot provide both `--repo` and `--storage-location`.", err=True)
         raise typer.Exit(code=1)
-
+    
     config = get_config(app_state["config_path"])
-
+    
     if storage_locations is None and repo_index_names is None:
         storage_locations = list(config.storage_locations.keys())
     if storage_locations is not None and any(
@@ -75,13 +73,13 @@ def cli_multi_sync(
     ):
         typer.echo(f"Invalid storage location: {storage_locations}")
         raise typer.Exit(code=1)
-
+    
     if max_concurrent_rclone_ops is None:
         max_concurrent_rclone_ops = config.max_concurrent_rclone_ops
-
+    
     if sync_choices is None:
         sync_choices = [part for part in RepoPart]
-
+    
     repoyard_meta = get_repoyard_meta(config)
     if repo_index_names is None:
         repo_metas = [
@@ -100,15 +98,8 @@ def cli_multi_sync(
             repoyard_meta.by_index_name[repo_index_name]
             for repo_index_name in repo_index_names
         ]
-
     async def _task(num, repo_meta):
-        sync_stats[repo_meta.index_name] = (
-            num,
-            "Syncing...",
-            None,
-            datetime.now(),
-            None,
-        )
+        sync_stats[repo_meta.index_name] = (num, "Syncing...", None, datetime.now(), None)
         try:
             sync_results = await sync_repo(
                 config_path=app_state["config_path"],
@@ -134,61 +125,56 @@ def cli_multi_sync(
                 None,
             )
         except Exception as e:
-            sync_stats[repo_meta.index_name] = (
-                num,
-                "Error",
-                str(e),
-                datetime.now(),
-                None,
-            )
-
+            sync_stats[repo_meta.index_name] = (num, "Error", str(e), datetime.now(), None)
+    
         if show_progress:
             print_finished(repo_meta.index_name)
-
+    
     sync_stats = {}
-
+    
     finish_monitoring_event = asyncio.Event()
-
+    
+    
     def get_status_lines(repo_index_name):
         num, sync_stat, e, timestamp, sync_results = sync_stats[repo_index_name]
         lines = []
-
+    
         console_width = shutil.get_terminal_size((80, 20)).columns
-
+    
         status_color = {
             "Syncing": "yellow",
             "Success": "green",
             "Interrupted": "magenta",
             "Error": "red",
         }.get(sync_stat, "")
-
+    
         name_color = {
             "Success": "green",
             "Interrupted": "magenta",
             "Error": "red",
         }.get(sync_stat, "")
-
+    
         left = f"({num + 1}/{len(repo_metas)}) [bold {name_color}]{repo_index_name}[/bold {name_color}]"
         right = f"[bold {status_color}]{sync_stat}[/bold {status_color}]"
-
+    
         # Strip markup to compute the real visible lengths
         left_len = len(Text.from_markup(left).plain)
         right_len = len(Text.from_markup(right).plain)
-
+    
         # compute how many dots are needed
         dots = (
             console_width - left_len - right_len - 1 - 2
         )  # -2 for the space between dots and the left and right text
         if dots < 1:
             dots = 1
-
+    
         line = f"{left} {'.' * dots} {right}"
         syncs_happened = [
             False if sync_results is None else sync_results[repo_part][1]
             for repo_part in sync_choices
         ]
         lines.append(line)
-
+    
         indent = "    "
         if e:
             lines.append(f"{indent}[red]{e}[/red]")
@@ -201,9 +187,10 @@ def cli_multi_sync(
             lines.append(indent + f",{indent}".join(line))
         else:
             lines.append(f"{indent}[yellow]Results pending...[/yellow]")
-
+    
         return lines
-
+    
+    
     def get_sync_stat_board(finished: bool):
         console_width = shutil.get_terminal_size((80, 20)).columns
         lines = []
@@ -218,7 +205,8 @@ def cli_multi_sync(
                 continue
             lines.extend(get_status_lines(repo_index_name))
         return "\n".join(lines).strip()
-
+    
+    
     def print_finished(repo_index_name: str):
         num, sync_stat, e, timestamp, sync_results = sync_stats[repo_index_name]
         syncs_happened = [
@@ -229,36 +217,38 @@ def cli_multi_sync(
             return
         lines = get_status_lines(repo_index_name)
         console.print(Text.from_markup("\n".join(lines).strip()))
-
+    
+    
     console = Console()
-
+    
+    
     async def _progress_monitor_task():
         with Live(console=console, refresh_per_second=4) as live:
-
+    
             def _update_live(finished: bool):
                 rendered = Text.from_markup(get_sync_stat_board(finished=finished))
                 live.update(rendered)
-
+    
             while not finish_monitoring_event.is_set():
                 _update_live(False)
                 await asyncio.sleep(0.2)
             live.update(Text.from_markup("Finished. Final results:\n\n"))
-
     _repo_metas = repo_metas
     if sync_recently_modified_first:
         from repoyard._utils import check_last_time_modified
-
+    
         def get_last_modified(repo_meta):
             last_modified = check_last_time_modified(repo_meta.get_local_path(config))
             return last_modified.timestamp() if last_modified else 0
-
+    
         _repo_metas = sorted(_repo_metas, key=get_last_modified, reverse=True)
-
+    
     sync_task = async_throttler(
         [_task(num, repo_meta) for num, repo_meta in enumerate(_repo_metas)],
         max_concurrency=max_concurrent_rclone_ops,
     )
-
+    
+    
     async def _runner():
         if show_progress:
             monitor_task = asyncio.create_task(_progress_monitor_task())
@@ -267,17 +257,16 @@ def cli_multi_sync(
             await monitor_task
         else:
             await sync_task
-
     from repoyard._utils import is_in_event_loop
-
+    
     if not is_in_event_loop():
         asyncio.run(_runner())
-
+    
     final_sync_stat_board = get_sync_stat_board(finished=True)
     console = Console()
     console.print(final_sync_stat_board, markup=True)
-
+    
     if refresh_user_symlinks:
         from repoyard.cmds import create_user_symlinks
-
+    
         create_user_symlinks(config_path=app_state["config_path"])

@@ -10,24 +10,21 @@
 # # _create_user_symlinks
 
 # %%
-# |default_exp cmds._create_user_symlinks
-# |export_as_func true
+#|default_exp cmds._create_user_symlinks
+#|export_as_func true
 
 # %%
-# |hide
-import nblite
-
-nblite.nbl_export()
+#|hide
+from nblite import nbl_export, show_doc; nbl_export();
 
 # %%
-# |top_export
+#|top_export
 from pathlib import Path
 
 from repoyard.config import get_config
 
-
 # %%
-# |set_func_signature
+#|set_func_signature
 def create_user_symlinks(
     config_path: Path,
     user_repos_path: Path | None = None,
@@ -35,7 +32,6 @@ def create_user_symlinks(
 ):
     """ """
     ...
-
 
 # %% [markdown]
 # Set up testing args
@@ -102,7 +98,7 @@ except RepoNameConflict:
 # Process args
 
 # %%
-# |export
+#|export
 config = get_config(config_path)
 
 if user_repos_path is None:
@@ -114,7 +110,7 @@ if user_repo_groups_path is None:
 # Refresh the repoyard meta file
 
 # %%
-# |export
+#|export
 from repoyard._models import refresh_repoyard_meta
 
 refresh_repoyard_meta(config)
@@ -127,7 +123,7 @@ assert repo_index_name in ps
 # Create repo group symlinks
 
 # %%
-# |export
+#|export
 from repoyard._models import create_user_repo_group_symlinks
 
 create_user_repo_group_symlinks(

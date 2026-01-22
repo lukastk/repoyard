@@ -10,16 +10,14 @@
 # # _models
 
 # %%
-# |default_exp _models
+#|default_exp _models
 
 # %%
-# |hide
-import nblite
-
-nblite.nbl_export()
+#|hide
+from nblite import nbl_export, show_doc; nbl_export();
 
 # %%
-# |export
+#|export
 from pydantic import Field, model_validator
 from pathlib import Path
 import toml
@@ -34,23 +32,20 @@ from repoyard.config import RepoGroupConfig, RepoTimestampFormat
 # %% [markdown]
 # # `RepoMeta`
 
-
 # %%
-# |export
+#|export
 class RepoPart(Enum):
     DATA = "data"
     META = "meta"
     CONF = "conf"
 
-
 # %%
-# |exporti
+#|exporti
 def _create_repo_subid(character_set: str, length: int) -> str:
     return "".join(random.choices(character_set, k=length))
 
-
 # %%
-# |export
+#|export
 class RepoMeta(const.StrictModel):
     creation_timestamp_utc: str
     repo_subid: str
@@ -261,7 +256,6 @@ class RepoMeta(const.StrictModel):
 
         return self
 
-
 # %%
 from tests.utils import create_repoyards
 from repoyard.config import get_config
@@ -278,9 +272,8 @@ assert repo_meta.model_dump_json() == _repo_meta.model_dump_json()
 # %% [markdown]
 # # `RepoyardMeta`
 
-
 # %%
-# |export
+#|export
 class RepoyardMeta(const.StrictModel):
     repo_metas: list[RepoMeta]
 
@@ -314,9 +307,8 @@ class RepoyardMeta(const.StrictModel):
             }
         return self.__by_index_name
 
-
 # %%
-# |export
+#|export
 def create_repoyard_meta(config: repoyard.config.Config) -> RepoyardMeta:
     """Create a dict of all repo metas. To be saved in `config.repoyard_meta_path`."""
     repo_metas = []
@@ -330,9 +322,8 @@ def create_repoyard_meta(config: repoyard.config.Config) -> RepoyardMeta:
             )
     return RepoyardMeta(repo_metas=repo_metas)
 
-
 # %%
-# |export
+#|export
 def refresh_repoyard_meta(
     config: repoyard.config.Config,
 ) -> RepoyardMeta:
@@ -340,9 +331,8 @@ def refresh_repoyard_meta(
     config.repoyard_meta_path.write_text(repoyard_meta.model_dump_json())
     return repoyard_meta
 
-
 # %%
-# |export
+#|export
 def get_repoyard_meta(
     config: repoyard.config.Config,
     force_create: bool = False,
@@ -351,9 +341,8 @@ def get_repoyard_meta(
         refresh_repoyard_meta(config)
     return RepoyardMeta.model_validate_json(config.repoyard_meta_path.read_text())
 
-
 # %%
-# |export
+#|export
 def get_repo_group_configs(
     config: repoyard.config.Config,
     repo_metas: list[RepoMeta],
@@ -365,9 +354,8 @@ def get_repo_group_configs(
                 repo_group_configs[group_name] = RepoGroupConfig()
     return repo_group_configs, config.virtual_repo_groups
 
-
 # %%
-# |export
+#|export
 def create_user_repo_group_symlinks(
     config: repoyard.config.Config,
 ):
@@ -483,13 +471,11 @@ def create_user_repo_group_symlinks(
     for path in config.user_repo_groups_path.glob("*"):
         _remove_empty_non_group_folders(path)
 
-
 # %% [markdown]
 # # `SyncRecord`
 
-
 # %%
-# |export
+#|export
 class SyncRecord(const.StrictModel):
     ulid: ULID = Field(default_factory=ULID)
     timestamp: datetime | None = (
@@ -549,9 +535,8 @@ class SyncRecord(const.StrictModel):
             raise ValueError("`timestamp` should be set to the ULID's datetime.")
         return self
 
-
 # %%
-# |export
+#|export
 from typing import NamedTuple
 
 
@@ -574,9 +559,8 @@ class SyncStatus(NamedTuple):
     is_dir: bool
     error_message: str | None = None
 
-
 # %%
-# |export
+#|export
 async def get_sync_status(
     rclone_config_path: str,
     local_path: str,

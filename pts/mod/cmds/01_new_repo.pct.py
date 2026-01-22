@@ -10,24 +10,21 @@
 # # _new_repo
 
 # %%
-# |default_exp cmds._new_repo
-# |export_as_func true
+#|default_exp cmds._new_repo
+#|export_as_func true
 
 # %%
-# |hide
-import nblite
-
-nblite.nbl_export()
+#|hide
+from nblite import nbl_export, show_doc; nbl_export();
 
 # %%
-# |top_export
+#|top_export
 from pathlib import Path
 import subprocess
 from datetime import datetime
 
-
 # %%
-# |set_func_signature
+#|set_func_signature
 def new_repo(
     config_path: Path,
     storage_location: str | None = None,
@@ -58,7 +55,6 @@ def new_repo(
     """
     ...
 
-
 # %% [markdown]
 # Set up testing args
 
@@ -87,7 +83,7 @@ verbose = True
 # Process args
 
 # %%
-# |export
+#|export
 from repoyard.config import get_config
 
 config = get_config(config_path)
@@ -121,7 +117,7 @@ if creator_hostname is None:
 # Check if the `from_path` is a repo within the repoyard
 
 # %%
-# |export
+#|export
 from repoyard._models import get_repoyard_meta, RepoPart
 
 repoyard_meta = get_repoyard_meta(config)
@@ -142,7 +138,7 @@ if from_path is not None:
 # Create meta file
 
 # %%
-# |export
+#|export
 from repoyard._models import RepoMeta
 
 repo_meta = RepoMeta.create(
@@ -160,7 +156,7 @@ repo_meta.save(config)
 # Create the repo folder
 
 # %%
-# |export
+#|export
 from repoyard._models import RepoPart
 
 repo_path = repo_meta.get_local_path(config)
@@ -185,7 +181,7 @@ else:
 # Run `git init`
 
 # %%
-# |export
+#|export
 if initialise_git and not (repo_data_path / ".git").exists():
     if verbose:
         print("Initialising git repository")
@@ -204,7 +200,7 @@ if initialise_git and not (repo_data_path / ".git").exists():
 # Refresh the repoyard meta file
 
 # %%
-# |export
+#|export
 from repoyard._models import refresh_repoyard_meta
 
 refresh_repoyard_meta(config)
@@ -213,5 +209,5 @@ refresh_repoyard_meta(config)
 # Return repo index name
 
 # %%
-# |func_return
+#|func_return
 repo_meta.index_name

@@ -10,25 +10,22 @@
 # # _utils.logical_expressions
 
 # %%
-# |default_exp _utils.logical_expressions
+#|default_exp _utils.logical_expressions
 
 # %%
-# |hide
-import nblite
-from nblite import show_doc
-
-nblite.nbl_export()
+#|hide
+from nblite import nbl_export, show_doc; nbl_export();
 import repoyard._utils.logical_expressions as this_module
 
 # %%
-# |hide
+#|hide
 show_doc(this_module._tokenize_expression)
 
 # %%
 # "a".isalnum?
 
 # %%
-# |exporti
+#|exporti
 def _is_identifier_char(c: str) -> bool:
     """Check if a character can be part of an identifier (group name)."""
     return c.isalnum() or c in "_-/"
@@ -144,11 +141,11 @@ _tokenize_expression("group1 AND (group2 OR group3)")
 _tokenize_expression("group1 AND parent_group/child_group")
 
 # %%
-# |hide
+#|hide
 show_doc(this_module.get_group_filter_func)
 
 # %%
-# |export
+#|export
 def get_group_filter_func(expression: str) -> bool:
     """
     Get a function that evaluates a boolean expression against a set of repository groups.
@@ -194,7 +191,7 @@ def get_group_filter_func(expression: str) -> bool:
     return _filter_func
 
 # %%
-# |exporti
+#|exporti
 def _evaluate_group_expression(
     expression: str, repo_groups: set[str] | list[str]
 ) -> bool:

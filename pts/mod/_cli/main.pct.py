@@ -10,16 +10,14 @@
 # # main
 
 # %%
-# |default_exp _cli.main
+#|default_exp _cli.main
 
 # %%
-# |hide
-from nblite import nbl_export
-
-nbl_export()
+#|hide
+from nblite import nbl_export, show_doc; nbl_export();
 
 # %%
-# |export
+#|export
 import typer
 from typer import Option
 from typing import Literal
@@ -37,9 +35,8 @@ from repoyard._cli.app import app, app_state
 # %% [markdown]
 # ## Main command
 
-
 # %%
-# |export
+#|export
 @app.callback()
 def entrypoint(
     ctx: typer.Context,
@@ -56,16 +53,14 @@ def entrypoint(
         return
     typer.echo(ctx.get_help())
 
-
 # %%
 # !repoyard
 
 # %% [markdown]
 # # Helpers
 
-
 # %%
-# |exporti
+#|exporti
 def _is_subsequence_match(term: str, name: str) -> bool:
     j = 0
     m = len(term)
@@ -77,16 +72,14 @@ def _is_subsequence_match(term: str, name: str) -> bool:
                 return True
     return j == m
 
-
 # %%
 assert _is_subsequence_match("lukas", "lukastk")
 assert _is_subsequence_match("lukas", "I am lukastk")
 assert _is_subsequence_match("ad", "abcd")
 assert not _is_subsequence_match("acbd", "abcd")
 
-
 # %%
-# |exporti
+#|exporti
 class NameMatchMode(Enum):
     EXACT = "exact"
     CONTAINS = "contains"
@@ -206,13 +199,11 @@ def _get_repo_index_name(
 
     return repo_index_name
 
-
 # %% [markdown]
 # # `init`
 
-
 # %%
-# |export
+#|export
 @app.command(name="init")
 def cli_init(
     config_path: Path | None = Option(
@@ -237,13 +228,11 @@ def cli_init(
         verbose=True,
     )
 
-
 # %% [markdown]
 # # `new`
 
-
 # %%
-# |export
+#|export
 @app.command(name="new")
 def cli_new(
     storage_location: str | None = Option(
@@ -345,13 +334,11 @@ def cli_new(
 
     create_user_symlinks(config_path=app_state["config_path"])
 
-
 # %% [markdown]
 # # `sync`
 
-
 # %%
-# |export
+#|export
 @app.command(name="sync")
 def cli_sync(
     repo_path: Path | None = Option(
@@ -441,13 +428,11 @@ def cli_sync(
 
         create_user_symlinks(config_path=app_state["config_path"])
 
-
 # %% [markdown]
 # # `sync-missing-meta`
 
-
 # %%
-# |export
+#|export
 @app.command(name="sync-missing-meta")
 def cli_sync_missing_meta(
     repo_index_names: list[str] | None = Option(
@@ -503,13 +488,11 @@ def cli_sync_missing_meta(
 
         create_user_symlinks(config_path=app_state["config_path"])
 
-
 # %% [markdown]
 # # `add-to-group`
 
-
 # %%
-# |export
+#|export
 @app.command(name="add-to-group")
 def cli_add_to_group(
     repo_path: Path | None = Option(
@@ -618,13 +601,11 @@ def cli_add_to_group(
 
         create_user_symlinks(config_path=app_state["config_path"])
 
-
 # %% [markdown]
 # # `remove-from-group`
 
-
 # %%
-# |export
+#|export
 @app.command(name="remove-from-group")
 def cli_remove_from_group(
     repo_path: Path | None = Option(
@@ -731,13 +712,11 @@ def cli_remove_from_group(
 
         create_user_symlinks(config_path=app_state["config_path"])
 
-
 # %% [markdown]
 # # `include`
 
-
 # %%
-# |export
+#|export
 @app.command(name="include")
 def cli_include(
     repo_index_name: str | None = Option(
@@ -799,13 +778,11 @@ def cli_include(
 
         create_user_symlinks(config_path=app_state["config_path"])
 
-
 # %% [markdown]
 # # `exclude`
 
-
 # %%
-# |export
+#|export
 @app.command(name="exclude")
 def cli_exclude(
     repo_index_name: str | None = Option(
@@ -874,13 +851,11 @@ def cli_exclude(
 
         create_user_symlinks(config_path=app_state["config_path"])
 
-
 # %% [markdown]
 # # `delete`
 
-
 # %%
-# |export
+#|export
 @app.command(name="delete")
 def cli_delete(
     repo_index_name: str | None = Option(
@@ -943,13 +918,11 @@ def cli_delete(
 
         create_user_symlinks(config_path=app_state["config_path"])
 
-
 # %% [markdown]
 # # `repo-status`
 
-
 # %%
-# |exporti
+#|exporti
 def _dict_to_hierarchical_text(
     data: dict, indents: int = 0, lines: list[str] = None
 ) -> list[str]:
@@ -963,14 +936,12 @@ def _dict_to_hierarchical_text(
             lines.append(f"{' ' * 4 * indents}{k}: {v}")
     return lines
 
-
 # %%
 lines = _dict_to_hierarchical_text({"a": {"b": {"c": 1, "d": 2}, "e": 3}})
 print("\n".join(lines))
 
-
 # %%
-# |exporti
+#|exporti
 async def get_formatted_repo_status(config_path, repo_index_name):
     from repoyard.cmds import get_repo_sync_status
     from pydantic import BaseModel
@@ -993,9 +964,8 @@ async def get_formatted_repo_status(config_path, repo_index_name):
 
     return data
 
-
 # %%
-# |export
+#|export
 @app.command(name="repo-status")
 def cli_repo_status(
     repo_path: Path | None = Option(
@@ -1074,13 +1044,11 @@ def cli_repo_status(
     else:
         typer.echo("\n".join(_dict_to_hierarchical_text(sync_status_data)))
 
-
 # %% [markdown]
 # # `yard-status`
 
-
 # %%
-# |export
+#|export
 @app.command(name="yard-status")
 def cli_yard_status(
     storage_locations: list[str] | None = Option(
@@ -1149,13 +1117,11 @@ def cli_yard_status(
             )
             typer.echo("\n")
 
-
 # %% [markdown]
 # # `list`
 
-
 # %%
-# |exporti
+#|exporti
 def _get_filtered_repo_metas(repo_metas, include_groups, exclude_groups, group_filter):
     if include_groups:
         repo_metas = [
@@ -1178,9 +1144,8 @@ def _get_filtered_repo_metas(repo_metas, include_groups, exclude_groups, group_f
         ]
     return repo_metas
 
-
 # %%
-# |export
+#|export
 @app.command(name="list")
 def cli_list(
     storage_locations: list[str] | None = Option(
@@ -1235,13 +1200,11 @@ def cli_list(
         for repo_meta in repo_metas:
             typer.echo(repo_meta.index_name)
 
-
 # %% [markdown]
 # # `list-groups`
 
-
 # %%
-# |export
+#|export
 @app.command(name="list-groups")
 def cli_list_groups(
     repo_path: Path | None = Option(
@@ -1327,13 +1290,11 @@ def cli_list_groups(
     for group_name in sorted(repo_groups):
         typer.echo(group_name)
 
-
 # %% [markdown]
 # # `path`
 
-
 # %%
-# |export
+#|export
 @app.command(name="path")
 def cli_path(
     repo_index_name: str | None = Option(
@@ -1454,13 +1415,11 @@ def cli_path(
         typer.echo(f"Invalid path option: {path_option}")
         raise typer.Exit(code=1)
 
-
 # %% [markdown]
 # # `create-user-symlinks`
 
-
 # %%
-# |export
+#|export
 @app.command(name="create-user-symlinks")
 def cli_create_user_symlinks(
     user_repos_path: Path | None = Option(

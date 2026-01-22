@@ -10,24 +10,21 @@
 # # _include_repo
 
 # %%
-# |default_exp cmds._include_repo
-# |export_as_func true
+#|default_exp cmds._include_repo
+#|export_as_func true
 
 # %%
-# |hide
-import nblite
-
-nblite.nbl_export()
+#|hide
+from nblite import nbl_export, show_doc; nbl_export();
 
 # %%
-# |top_export
+#|top_export
 from pathlib import Path
 
 from repoyard.config import get_config
 
-
 # %%
-# |set_func_signature
+#|set_func_signature
 async def include_repo(
     config_path: Path,
     repo_index_name: str,
@@ -35,7 +32,6 @@ async def include_repo(
 ):
     """ """
     ...
-
 
 # %% [markdown]
 # Set up testing args
@@ -62,7 +58,7 @@ soft_interruption_enabled = True
 # Process args
 
 # %%
-# |export
+#|export
 config = get_config(config_path)
 
 # %%
@@ -77,7 +73,7 @@ await exclude_repo(config_path=config_path, repo_index_name=repo_index_name)
 # Check if repo is already included
 
 # %%
-# |export
+#|export
 from repoyard._models import get_repoyard_meta
 
 repoyard_meta = get_repoyard_meta(config)
@@ -94,7 +90,7 @@ if repo_meta.check_included(config):
 # Include it
 
 # %%
-# |export
+#|export
 from repoyard.cmds import sync_repo
 from repoyard._models import RepoPart
 from repoyard._utils.sync_helper import SyncSetting, SyncDirection

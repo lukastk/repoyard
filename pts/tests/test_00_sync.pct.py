@@ -7,16 +7,10 @@
 # ---
 
 # %% [markdown]
-# # Basic Sync Integration Tests
-#
-# Tests for basic repository sync operations:
-# - Creating repos
-# - Excluding repos
-# - Including repos
-# - Deleting repos
+# # test_00_sync
 
 # %%
-#|default_exp integration.sync.test_basic_sync
+#|default_exp test_00_sync
 #|export_as_func true
 
 # %%
@@ -28,43 +22,37 @@ from nblite import nbl_export, show_doc; nbl_export();
 import asyncio
 import pytest
 
-from repoyard.cmds import (
-    new_repo,
-    exclude_repo,
-    include_repo,
-    delete_repo,
-)
+from repoyard.cmds import *
 from repoyard._models import get_repoyard_meta
 
-from tests.integration.conftest import create_repoyards
+from tests.utils import *
 
 # %%
 #|top_export
 @pytest.mark.integration
-def test_basic_sync():
-    """Test basic sync operations: create, exclude, include, delete."""
-    asyncio.run(_test_basic_sync())
+def test_00_sync():
+    asyncio.run(_test_00_sync())
 
 # %%
 #|set_func_signature
-async def _test_basic_sync(): ...
+async def _test_00_sync(): ...
 
 # %% [markdown]
-# ## Parameters
+# Parameters
 
 # %%
 #|export
 num_test_repos = 5
 
 # %% [markdown]
-# ## Initialize repoyard
+# # Initialise using `init_repoyard`
 
 # %%
 #|export
 remote_name, remote_rclone_path, config, config_path, data_path = create_repoyards()
 
 # %% [markdown]
-# ## Create repos using `new_repo` and sync them
+# # Create some repos using `new_repo` and sync them using `sync_repo`
 
 # %%
 #|export
@@ -83,7 +71,7 @@ for repo_index_name in repo_index_names:
     assert repoyard_meta.by_index_name[repo_index_name].check_included(config)
 
 # %% [markdown]
-# ## Exclude all repos using `exclude_repo`
+# # Exclude all repos using `exclude_repo`
 
 # %%
 #|export
@@ -100,7 +88,7 @@ for repo_index_name in repo_index_names:
     assert not repoyard_meta.by_index_name[repo_index_name].check_included(config)
 
 # %% [markdown]
-# ## Include all repos using `include_repo`
+# # Include all repos using `include_repo`
 
 # %%
 #|export
@@ -117,7 +105,7 @@ for repo_index_name in repo_index_names:
     assert repoyard_meta.by_index_name[repo_index_name].check_included(config)
 
 # %% [markdown]
-# ## Delete all repos using `delete_repo`
+# # Delete all repos using `delete_repo`
 
 # %%
 #|export

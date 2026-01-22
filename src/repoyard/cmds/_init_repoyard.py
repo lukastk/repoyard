@@ -4,7 +4,6 @@ from pathlib import Path
 
 from .. import const
 
-
 def init_repoyard(
     config_path: Path | None = None,
     data_path: Path | None = None,
@@ -12,12 +11,12 @@ def init_repoyard(
 ):
     """
     Initialize repoyard.
-
+    
     Will create the necessary folders and files to start using repoyard.
     """
     config_path = config_path or const.DEFAULT_CONFIG_PATH
     data_path = data_path or const.DEFAULT_DATA_PATH
-
+    
     if (
         config_path.expanduser().as_posix()
         != const.DEFAULT_CONFIG_PATH.expanduser().as_posix()
@@ -26,9 +25,9 @@ def init_repoyard(
             print(
                 f"Using a non-default config path. Please set the environment variable {const.ENV_VAR_REPOYARD_CONFIG_PATH} to the given config path for repoyard to use it. "
             )
-    from repoyard.config import get_config, _get_default_config_dict
+    from repoyard.config import get_config, _get_default_config_dict, Config
     import toml
-
+    
     if not config_path.expanduser().exists():
         if verbose:
             print("Creating config file at:", config_path)
@@ -40,7 +39,7 @@ def init_repoyard(
             "config_path"
         ]  # Don't save the config path to the config file
         config_toml = toml.dumps(default_config_dict)
-
+    
         Path(config_path).expanduser().write_text(config_toml)
     config = get_config(config_path)
     if not config.default_rclone_exclude_path.exists():
@@ -49,14 +48,14 @@ def init_repoyard(
         config.repoyard_data_path,
         config.local_store_path,
     ]
-
+    
     for path in paths:
         if not path.exists():
             if verbose:
                 print(f"Creating folder: {path}")
             path.mkdir(parents=True, exist_ok=True)
     from repoyard.config import StorageType
-
+    
     for storage_location_name, storage_location in config.storage_locations.items():
         if storage_location.storage_type != StorageType.LOCAL.value:
             continue
@@ -67,7 +66,7 @@ def init_repoyard(
             storage_location.store_path
         )
     from repoyard.config import _default_rclone_config
-
+    
     if not config.rclone_config_path.exists():
         if verbose:
             print(f"Creating rclone config file at: {config.rclone_config_path}")

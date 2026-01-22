@@ -10,16 +10,14 @@
 # # config
 
 # %%
-# |default_exp config
+#|default_exp config
 
 # %%
-# |hide
-import nblite
-
-nblite.nbl_export()
+#|hide
+from nblite import nbl_export, show_doc; nbl_export();
 
 # %%
-# |export
+#|export
 from pydantic import model_validator
 from pathlib import Path
 import toml
@@ -30,9 +28,8 @@ from repoyard import const
 # %% [markdown]
 # # `config.json`
 
-
 # %%
-# |export
+#|export
 class StorageType(Enum):
     RCLONE = "rclone"
     LOCAL = "local"
@@ -151,18 +148,16 @@ class Config(const.StrictModel):
 
         return self
 
-
 # %%
-# |export
+#|export
 def get_config(path: Path | None = None) -> Config:
     if path is None:
         path = const.DEFAULT_CONFIG_PATH
     path = Path(path).expanduser()
     return Config(**{"config_path": path, **toml.load(path)})
 
-
 # %%
-# |export
+#|export
 def _get_default_config_dict(config_path=None, data_path=None) -> Config:
     if config_path is None:
         config_path = const.DEFAULT_CONFIG_PATH
@@ -193,11 +188,10 @@ def _get_default_config_dict(config_path=None, data_path=None) -> Config:
     )
     return config_dict
 
-
 # %% [markdown]
 # # `rclone.conf`
 
 # %%
-# |exporti
+#|exporti
 _default_rclone_config = """
 """

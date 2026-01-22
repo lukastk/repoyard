@@ -10,24 +10,21 @@
 # # _init_repoyard
 
 # %%
-# |default_exp cmds._init_repoyard
-# |export_as_func true
+#|default_exp cmds._init_repoyard
+#|export_as_func true
 
 # %%
-# |hide
-import nblite
-
-nblite.nbl_export()
+#|hide
+from nblite import nbl_export, show_doc; nbl_export();
 
 # %%
-# |top_export
+#|top_export
 from pathlib import Path
 
 from repoyard import const
 
-
 # %%
-# |set_func_signature
+#|set_func_signature
 def init_repoyard(
     config_path: Path | None = None,
     data_path: Path | None = None,
@@ -39,7 +36,6 @@ def init_repoyard(
     Will create the necessary folders and files to start using repoyard.
     """
     ...
-
 
 # %% [markdown]
 # Set up testing args
@@ -59,7 +55,7 @@ verbose = True
 # # Function body
 
 # %%
-# |export
+#|export
 config_path = config_path or const.DEFAULT_CONFIG_PATH
 data_path = data_path or const.DEFAULT_DATA_PATH
 
@@ -76,7 +72,7 @@ if (
 # Create a default config file if it doesn't exist
 
 # %%
-# |export
+#|export
 from repoyard.config import get_config, _get_default_config_dict, Config
 import toml
 
@@ -99,7 +95,7 @@ config = get_config(config_path)
 # Create the default `.rclone_exclude` file
 
 # %%
-# |export
+#|export
 if not config.default_rclone_exclude_path.exists():
     config.default_rclone_exclude_path.write_text(const.DEFAULT_RCLONE_EXCLUDE)
 
@@ -124,7 +120,7 @@ config = Config(
 # Create folders
 
 # %%
-# |export
+#|export
 paths = [
     config.repoyard_data_path,
     config.local_store_path,
@@ -140,7 +136,7 @@ for path in paths:
 # Set up symlinks for every storage location of type `local`
 
 # %%
-# |export
+#|export
 from repoyard.config import StorageType
 
 for storage_location_name, storage_location in config.storage_locations.items():
@@ -157,7 +153,7 @@ for storage_location_name, storage_location in config.storage_locations.items():
 # Create `repoyard_rclone.conf` if it doesn't exist
 
 # %%
-# |export
+#|export
 from repoyard.config import _default_rclone_config
 
 if not config.rclone_config_path.exists():
@@ -169,7 +165,7 @@ if not config.rclone_config_path.exists():
 # Done
 
 # %%
-# |export
+#|export
 if verbose:
     print("Done!\n")
     print("You can modify the config at:", config_path)

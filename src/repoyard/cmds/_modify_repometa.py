@@ -4,11 +4,10 @@ from pathlib import Path
 from typing import Any
 
 from ..config import get_config
-
+from .. import const
 
 class RepoNameConflict(Exception):
     pass
-
 
 def modify_repometa(
     config_path: Path,
@@ -18,35 +17,33 @@ def modify_repometa(
     """ """
     config = get_config(config_path)
     from repoyard._models import get_repoyard_meta, RepoMeta
-
+    
     repoyard_meta = get_repoyard_meta(config)
-
+    
     if repo_index_name not in repoyard_meta.by_index_name:
         raise ValueError(f"Repo '{repo_index_name}' not found.")
-
+    
     repo_meta = repoyard_meta.by_index_name[repo_index_name]
     modified_repo_meta = RepoMeta(**{**repo_meta.model_dump(), **modifications})
     # TESTREF: test_modify_repometa_unique_names
     from repoyard._models import get_repo_group_configs
-
+    
     # Construct modified repo_metas list
     _old_repo_meta = repoyard_meta.by_index_name[repo_index_name]
     _repo_metas = list(repoyard_meta.repo_metas)
     _repo_metas.remove(_old_repo_meta)
     _repo_metas.append(modified_repo_meta)
-
-    repo_group_configs, virtual_repo_groups = get_repo_group_configs(
-        config, _repo_metas
-    )
+    
+    repo_group_configs, virtual_repo_groups = get_repo_group_configs(config, _repo_metas)
     for g in modified_repo_meta.groups:
         if g in virtual_repo_groups:
             raise Exception(
                 f"Cannot add a repository to a virtual repo group (virtual repo group: '{g}')"
             )
-
+    
         repo_group_config = repo_group_configs[g]
         repo_metas_in_group = [rm for rm in _repo_metas if g in rm.groups]
-
+    
         if repo_group_config.unique_repo_names:
             name_counts = {repo_meta.name: 0 for repo_meta in repo_metas_in_group}
             for repo_meta in repo_metas_in_group:
@@ -64,5 +61,5 @@ def modify_repometa(
                 )
     modified_repo_meta.save(config)
     from repoyard._models import refresh_repoyard_meta
-
+    
     refresh_repoyard_meta(config)
