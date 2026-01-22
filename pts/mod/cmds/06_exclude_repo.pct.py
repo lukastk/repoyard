@@ -20,9 +20,12 @@ from nblite import nbl_export, show_doc; nbl_export();
 # %%
 #|top_export
 from pathlib import Path
+import asyncio
 
 from repoyard._utils.sync_helper import SyncSetting
 from repoyard.config import get_config
+from repoyard._utils.locking import RepoyardLockManager, LockAcquisitionError, REPO_SYNC_LOCK_TIMEOUT
+from filelock import Timeout
 
 # %%
 #|set_func_signature
@@ -103,6 +106,29 @@ if repo_meta.get_storage_location_config(config).storage_type == StorageType.LOC
     )
 
 # %% [markdown]
+# Acquire per-repo sync lock
+
+# %%
+#|export
+_lock_manager = RepoyardLockManager(config.repoyard_data_path)
+_lock_path = _lock_manager.repo_sync_lock_path(repo_index_name)
+_lock_manager._ensure_lock_dir(_lock_path)
+_sync_lock = __import__('filelock').FileLock(_lock_path, timeout=REPO_SYNC_LOCK_TIMEOUT)
+_loop = asyncio.get_event_loop()
+try:
+    await _loop.run_in_executor(None, _sync_lock.acquire)
+except Timeout:
+    raise LockAcquisitionError(
+        f"repo sync ({repo_index_name})",
+        _lock_path,
+        REPO_SYNC_LOCK_TIMEOUT,
+        message=(
+            f"Could not acquire sync lock for repo '{repo_index_name}' within {REPO_SYNC_LOCK_TIMEOUT}s. "
+            f"Another sync, include, exclude, or delete operation may be in progress on this repo."
+        )
+    )
+
+# %% [markdown]
 # Sync any changes before removing locally
 
 # %%
@@ -114,6 +140,7 @@ if not skip_sync:
         config_path=config_path,
         repo_index_name=repo_index_name,
         sync_setting=SyncSetting.CAREFUL,
+        soft_interruption_enabled=soft_interruption_enabled,
     )
 
 # %% [markdown]
@@ -126,6 +153,14 @@ from repoyard._models import RepoPart
 
 shutil.rmtree(repo_meta.get_local_part_path(config, RepoPart.DATA))
 repo_meta.get_local_sync_record_path(config, RepoPart.DATA).unlink()
+
+# %% [markdown]
+# Release the sync lock
+
+# %%
+#|export
+if _sync_lock.is_locked:
+    await _loop.run_in_executor(None, _sync_lock.release)
 
 # %%
 # Should now be included

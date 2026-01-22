@@ -20,9 +20,12 @@ from nblite import nbl_export, show_doc; nbl_export();
 # %%
 #|top_export
 from pathlib import Path
+import asyncio
 
 from repoyard.config import get_config
 from repoyard._utils import enable_soft_interruption
+from repoyard._utils.locking import RepoyardLockManager, LockAcquisitionError, REPO_SYNC_LOCK_TIMEOUT, acquire_lock_async
+from filelock import FileLock
 
 # %%
 #|set_func_signature
@@ -89,6 +92,22 @@ assert repo_meta.get_local_path(config).exists()
 assert (remote_rclone_path / repo_meta.get_remote_path(config)).exists()
 
 # %% [markdown]
+# Acquire per-repo sync lock
+
+# %%
+#|export
+_lock_manager = RepoyardLockManager(config.repoyard_data_path)
+_lock_path = _lock_manager.repo_sync_lock_path(repo_index_name)
+_lock_manager._ensure_lock_dir(_lock_path)
+_sync_lock = FileLock(_lock_path)
+await acquire_lock_async(
+    _sync_lock,
+    f"repo sync ({repo_index_name})",
+    _lock_path,
+    REPO_SYNC_LOCK_TIMEOUT
+)
+
+# %% [markdown]
 # Delete the repo
 
 # %%
@@ -126,6 +145,14 @@ assert not (remote_rclone_path / repo_meta.get_remote_path(config)).exists()
 from repoyard._models import refresh_repoyard_meta
 
 refresh_repoyard_meta(config)
+
+# %% [markdown]
+# Release the sync lock
+
+# %%
+#|export
+if _sync_lock.is_locked:
+    _sync_lock.release()
 
 # %%
 from repoyard._models import get_repoyard_meta

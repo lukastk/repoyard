@@ -5,6 +5,9 @@ import subprocess
 import re
 from datetime import datetime
 
+from .._utils.locking import RepoyardLockManager, LockAcquisitionError, GLOBAL_LOCK_TIMEOUT
+from filelock import Timeout
+
 def _extract_repo_name_from_git_url(url: str) -> str:
     """Extract repository name from a git URL (SSH or HTTPS)."""
     # Remove trailing .git if present
@@ -106,6 +109,22 @@ def new_repo(
             raise ValueError(
                 f"'{from_path}' is already a repoyard repository. Use `copy_from_path=True` to copy the contents of this repo into a new repo."
             )
+    _lock_manager = RepoyardLockManager(config.repoyard_data_path)
+    _lock_path = _lock_manager.global_lock_path
+    _lock_manager._ensure_lock_dir(_lock_path)
+    _global_lock = __import__('filelock').FileLock(_lock_path, timeout=GLOBAL_LOCK_TIMEOUT)
+    try:
+        _global_lock.acquire()
+    except Timeout:
+        raise LockAcquisitionError(
+            "global",
+            _lock_path,
+            GLOBAL_LOCK_TIMEOUT,
+            message=(
+                f"Could not acquire global lock within {GLOBAL_LOCK_TIMEOUT}s. "
+                f"Another repoyard operation may be in progress."
+            )
+        )
     from repoyard._models import RepoMeta
     
     repo_meta = RepoMeta.create(
@@ -165,4 +184,6 @@ def new_repo(
     from repoyard._models import refresh_repoyard_meta
     
     refresh_repoyard_meta(config)
+    if _global_lock.is_locked:
+        _global_lock.release()
     return repo_meta.index_name

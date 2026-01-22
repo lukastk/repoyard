@@ -14,10 +14,39 @@ from .. import const
 from ..config import get_config
 from .._utils import async_throttler
 from .._utils.sync_helper import SyncSetting, SyncDirection
+from .._utils.locking import LockAcquisitionError, auto_cleanup_stale_locks
 from .._models import RepoPart
 from .._cli.app import app, app_state
 
 # %% pts/mod/_cli/main.pct.py 5
+def _run_with_lock_handling(coro):
+    """Run an async coroutine and handle LockAcquisitionError gracefully."""
+    try:
+        return asyncio.run(coro)
+    except LockAcquisitionError as e:
+        typer.echo(f"Error: {e}", err=True)
+        typer.echo(
+            "Hint: If you believe this is a stale lock, you can manually remove the lock file "
+            f"at: {e.lock_path}",
+            err=True
+        )
+        raise typer.Exit(code=1)
+
+
+def _call_with_lock_handling(func, *args, **kwargs):
+    """Call a function and handle LockAcquisitionError gracefully."""
+    try:
+        return func(*args, **kwargs)
+    except LockAcquisitionError as e:
+        typer.echo(f"Error: {e}", err=True)
+        typer.echo(
+            "Hint: If you believe this is a stale lock, you can manually remove the lock file "
+            f"at: {e.lock_path}",
+            err=True
+        )
+        raise typer.Exit(code=1)
+
+# %% pts/mod/_cli/main.pct.py 7
 @app.callback()
 def entrypoint(
     ctx: typer.Context,
@@ -31,10 +60,17 @@ def entrypoint(
         config_path if config_path is not None else const.DEFAULT_CONFIG_PATH
     )
     if ctx.invoked_subcommand is not None:
+        # Auto-cleanup stale locks (older than 1 hour) on startup
+        try:
+            config = get_config(app_state["config_path"])
+            auto_cleanup_stale_locks(config.repoyard_data_path, max_age_hours=1.0)
+        except Exception:
+            # Don't fail if cleanup fails (e.g., config not yet initialized)
+            pass
         return
     typer.echo(ctx.get_help())
 
-# %% pts/mod/_cli/main.pct.py 8
+# %% pts/mod/_cli/main.pct.py 10
 def _is_subsequence_match(term: str, name: str) -> bool:
     j = 0
     m = len(term)
@@ -46,7 +82,7 @@ def _is_subsequence_match(term: str, name: str) -> bool:
                 return True
     return j == m
 
-# %% pts/mod/_cli/main.pct.py 10
+# %% pts/mod/_cli/main.pct.py 12
 class NameMatchMode(Enum):
     EXACT = "exact"
     CONTAINS = "contains"
@@ -166,7 +202,7 @@ def _get_repo_index_name(
 
     return repo_index_name
 
-# %% pts/mod/_cli/main.pct.py 12
+# %% pts/mod/_cli/main.pct.py 14
 @app.command(name="init")
 def cli_init(
     config_path: Path | None = Option(
@@ -191,7 +227,7 @@ def cli_init(
         verbose=True,
     )
 
-# %% pts/mod/_cli/main.pct.py 14
+# %% pts/mod/_cli/main.pct.py 16
 @app.command(name="new")
 def cli_new(
     storage_location: str | None = Option(
@@ -273,7 +309,8 @@ def cli_new(
                 typer.echo(f"Invalid creation timestamp: {creation_timestamp_utc}")
                 raise typer.Exit(code=1)
 
-    repo_index_name = new_repo(
+    repo_index_name = _call_with_lock_handling(
+        new_repo,
         config_path=app_state["config_path"],
         storage_location=storage_location,
         repo_name=repo_name,
@@ -303,7 +340,7 @@ def cli_new(
 
     create_user_symlinks(config_path=app_state["config_path"])
 
-# %% pts/mod/_cli/main.pct.py 16
+# %% pts/mod/_cli/main.pct.py 18
 @app.command(name="sync")
 def cli_sync(
     repo_path: Path | None = Option(
@@ -375,7 +412,7 @@ def cli_sync(
     if sync_choices is None:
         sync_choices = [repo_part for repo_part in RepoPart]
 
-    asyncio.run(
+    _run_with_lock_handling(
         sync_repo(
             config_path=app_state["config_path"],
             repo_index_name=repo_index_name,
@@ -393,7 +430,7 @@ def cli_sync(
 
         create_user_symlinks(config_path=app_state["config_path"])
 
-# %% pts/mod/_cli/main.pct.py 18
+# %% pts/mod/_cli/main.pct.py 20
 @app.command(name="sync-missing-meta")
 def cli_sync_missing_meta(
     repo_index_names: list[str] | None = Option(
@@ -449,7 +486,7 @@ def cli_sync_missing_meta(
 
         create_user_symlinks(config_path=app_state["config_path"])
 
-# %% pts/mod/_cli/main.pct.py 20
+# %% pts/mod/_cli/main.pct.py 22
 @app.command(name="add-to-group")
 def cli_add_to_group(
     repo_path: Path | None = Option(
@@ -558,7 +595,7 @@ def cli_add_to_group(
 
         create_user_symlinks(config_path=app_state["config_path"])
 
-# %% pts/mod/_cli/main.pct.py 22
+# %% pts/mod/_cli/main.pct.py 24
 @app.command(name="remove-from-group")
 def cli_remove_from_group(
     repo_path: Path | None = Option(
@@ -665,7 +702,7 @@ def cli_remove_from_group(
 
         create_user_symlinks(config_path=app_state["config_path"])
 
-# %% pts/mod/_cli/main.pct.py 24
+# %% pts/mod/_cli/main.pct.py 26
 @app.command(name="include")
 def cli_include(
     repo_index_name: str | None = Option(
@@ -714,7 +751,7 @@ def cli_include(
         typer.echo(f"Repository with index name `{repo_index_name}` not found.")
         raise typer.Exit(code=1)
 
-    asyncio.run(
+    _run_with_lock_handling(
         include_repo(
             config_path=app_state["config_path"],
             repo_index_name=repo_index_name,
@@ -727,7 +764,7 @@ def cli_include(
 
         create_user_symlinks(config_path=app_state["config_path"])
 
-# %% pts/mod/_cli/main.pct.py 26
+# %% pts/mod/_cli/main.pct.py 28
 @app.command(name="exclude")
 def cli_exclude(
     repo_index_name: str | None = Option(
@@ -782,7 +819,7 @@ def cli_exclude(
         typer.echo(f"Repository with index name `{repo_index_name}` not found.")
         raise typer.Exit(code=1)
 
-    asyncio.run(
+    _run_with_lock_handling(
         exclude_repo(
             config_path=app_state["config_path"],
             repo_index_name=repo_index_name,
@@ -796,7 +833,7 @@ def cli_exclude(
 
         create_user_symlinks(config_path=app_state["config_path"])
 
-# %% pts/mod/_cli/main.pct.py 28
+# %% pts/mod/_cli/main.pct.py 30
 @app.command(name="delete")
 def cli_delete(
     repo_index_name: str | None = Option(
@@ -846,7 +883,7 @@ def cli_delete(
         typer.echo(f"Repository with index name `{repo_index_name}` not found.")
         raise typer.Exit(code=1)
 
-    asyncio.run(
+    _run_with_lock_handling(
         delete_repo(
             config_path=app_state["config_path"],
             repo_index_name=repo_index_name,
@@ -859,7 +896,7 @@ def cli_delete(
 
         create_user_symlinks(config_path=app_state["config_path"])
 
-# %% pts/mod/_cli/main.pct.py 30
+# %% pts/mod/_cli/main.pct.py 32
 def _dict_to_hierarchical_text(
     data: dict, indents: int = 0, lines: list[str] = None
 ) -> list[str]:
@@ -873,7 +910,7 @@ def _dict_to_hierarchical_text(
             lines.append(f"{' ' * 4 * indents}{k}: {v}")
     return lines
 
-# %% pts/mod/_cli/main.pct.py 32
+# %% pts/mod/_cli/main.pct.py 34
 async def get_formatted_repo_status(config_path, repo_index_name):
     from ..cmds import get_repo_sync_status
     from pydantic import BaseModel
@@ -896,7 +933,7 @@ async def get_formatted_repo_status(config_path, repo_index_name):
 
     return data
 
-# %% pts/mod/_cli/main.pct.py 33
+# %% pts/mod/_cli/main.pct.py 35
 @app.command(name="repo-status")
 def cli_repo_status(
     repo_path: Path | None = Option(
@@ -975,7 +1012,7 @@ def cli_repo_status(
     else:
         typer.echo("\n".join(_dict_to_hierarchical_text(sync_status_data)))
 
-# %% pts/mod/_cli/main.pct.py 35
+# %% pts/mod/_cli/main.pct.py 37
 @app.command(name="yard-status")
 def cli_yard_status(
     storage_locations: list[str] | None = Option(
@@ -1044,7 +1081,7 @@ def cli_yard_status(
             )
             typer.echo("\n")
 
-# %% pts/mod/_cli/main.pct.py 37
+# %% pts/mod/_cli/main.pct.py 39
 def _get_filtered_repo_metas(repo_metas, include_groups, exclude_groups, group_filter):
     if include_groups:
         repo_metas = [
@@ -1067,7 +1104,7 @@ def _get_filtered_repo_metas(repo_metas, include_groups, exclude_groups, group_f
         ]
     return repo_metas
 
-# %% pts/mod/_cli/main.pct.py 38
+# %% pts/mod/_cli/main.pct.py 40
 @app.command(name="list")
 def cli_list(
     storage_locations: list[str] | None = Option(
@@ -1122,7 +1159,7 @@ def cli_list(
         for repo_meta in repo_metas:
             typer.echo(repo_meta.index_name)
 
-# %% pts/mod/_cli/main.pct.py 40
+# %% pts/mod/_cli/main.pct.py 42
 @app.command(name="list-groups")
 def cli_list_groups(
     repo_path: Path | None = Option(
@@ -1208,7 +1245,7 @@ def cli_list_groups(
     for group_name in sorted(repo_groups):
         typer.echo(group_name)
 
-# %% pts/mod/_cli/main.pct.py 42
+# %% pts/mod/_cli/main.pct.py 44
 @app.command(name="path")
 def cli_path(
     repo_index_name: str | None = Option(
@@ -1329,7 +1366,7 @@ def cli_path(
         typer.echo(f"Invalid path option: {path_option}")
         raise typer.Exit(code=1)
 
-# %% pts/mod/_cli/main.pct.py 44
+# %% pts/mod/_cli/main.pct.py 46
 @app.command(name="create-user-symlinks")
 def cli_create_user_symlinks(
     user_repos_path: Path | None = Option(

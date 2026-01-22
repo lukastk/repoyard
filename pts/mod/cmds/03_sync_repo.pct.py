@@ -20,6 +20,7 @@ from nblite import nbl_export, show_doc; nbl_export();
 # %%
 #|top_export
 from pathlib import Path
+import asyncio
 
 from repoyard._utils.sync_helper import sync_helper, SyncSetting, SyncDirection
 from repoyard._models import SyncStatus, RepoPart
@@ -29,7 +30,9 @@ from repoyard._utils import (
     enable_soft_interruption,
     SoftInterruption,
 )
+from repoyard._utils.locking import RepoyardLockManager, LockAcquisitionError, REPO_SYNC_LOCK_TIMEOUT
 from repoyard import const
+from filelock import Timeout
 
 # %%
 #|set_func_signature
@@ -141,6 +144,29 @@ repo_meta = repoyard_meta.by_index_name[repo_index_name]
 if repo_meta.get_storage_location_config(config).storage_type == StorageType.LOCAL:
     pass
     #|func_return_line
+
+# %% [markdown]
+# Acquire per-repo sync lock
+
+# %%
+#|export
+_lock_manager = RepoyardLockManager(config.repoyard_data_path)
+_lock_path = _lock_manager.repo_sync_lock_path(repo_index_name)
+_lock_manager._ensure_lock_dir(_lock_path)
+_sync_lock = __import__('filelock').FileLock(_lock_path, timeout=REPO_SYNC_LOCK_TIMEOUT)
+_loop = asyncio.get_event_loop()
+try:
+    await _loop.run_in_executor(None, _sync_lock.acquire)
+except Timeout:
+    raise LockAcquisitionError(
+        f"repo sync ({repo_index_name})",
+        _lock_path,
+        REPO_SYNC_LOCK_TIMEOUT,
+        message=(
+            f"Could not acquire sync lock for repo '{repo_index_name}' within {REPO_SYNC_LOCK_TIMEOUT}s. "
+            f"Another sync, include, exclude, or delete operation may be in progress on this repo."
+        )
+    )
 
 # %% [markdown]
 # Prints
@@ -317,6 +343,14 @@ if RepoPart.META in sync_choices:
     from repoyard._models import refresh_repoyard_meta
 
     refresh_repoyard_meta(config)
+
+# %% [markdown]
+# Release the sync lock
+
+# %%
+#|export
+if _sync_lock.is_locked:
+    await _loop.run_in_executor(None, _sync_lock.release)
 
 # %%
 #|func_return

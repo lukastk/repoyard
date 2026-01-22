@@ -167,7 +167,10 @@ class RepoMeta(const.StrictModel):
         del model_dump["creation_timestamp_utc"]
         del model_dump["repo_subid"]
         del model_dump["name"]
-        save_path.write_text(toml.dumps(model_dump))
+        # Atomic write: temp file + rename
+        tmp_path = save_path.with_suffix(".tmp")
+        tmp_path.write_text(toml.dumps(model_dump))
+        tmp_path.rename(save_path)
 
     @classmethod
     def load(
@@ -287,8 +290,15 @@ def create_repoyard_meta(config: repoyard.config.Config) -> RepoyardMeta:
 def refresh_repoyard_meta(
     config: repoyard.config.Config,
 ) -> RepoyardMeta:
-    repoyard_meta = create_repoyard_meta(config)
-    config.repoyard_meta_path.write_text(repoyard_meta.model_dump_json())
+    from ._utils.locking import RepoyardLockManager
+
+    lock_manager = RepoyardLockManager(config.repoyard_data_path)
+    with lock_manager.global_lock():
+        repoyard_meta = create_repoyard_meta(config)
+        # Atomic write: temp file + rename
+        tmp_path = config.repoyard_meta_path.with_suffix(".tmp")
+        tmp_path.write_text(repoyard_meta.model_dump_json())
+        tmp_path.rename(config.repoyard_meta_path)
     return repoyard_meta
 
 # %% pts/mod/_models.pct.py 13

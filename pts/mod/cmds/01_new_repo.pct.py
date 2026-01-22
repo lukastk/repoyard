@@ -24,6 +24,9 @@ import subprocess
 import re
 from datetime import datetime
 
+from repoyard._utils.locking import RepoyardLockManager, LockAcquisitionError, GLOBAL_LOCK_TIMEOUT
+from filelock import Timeout
+
 
 def _extract_repo_name_from_git_url(url: str) -> str:
     """Extract repository name from a git URL (SSH or HTTPS)."""
@@ -168,6 +171,28 @@ if from_path is not None:
         )
 
 # %% [markdown]
+# Acquire global lock for repo creation
+
+# %%
+#|export
+_lock_manager = RepoyardLockManager(config.repoyard_data_path)
+_lock_path = _lock_manager.global_lock_path
+_lock_manager._ensure_lock_dir(_lock_path)
+_global_lock = __import__('filelock').FileLock(_lock_path, timeout=GLOBAL_LOCK_TIMEOUT)
+try:
+    _global_lock.acquire()
+except Timeout:
+    raise LockAcquisitionError(
+        "global",
+        _lock_path,
+        GLOBAL_LOCK_TIMEOUT,
+        message=(
+            f"Could not acquire global lock within {GLOBAL_LOCK_TIMEOUT}s. "
+            f"Another repoyard operation may be in progress."
+        )
+    )
+
+# %% [markdown]
 # Create meta file
 
 # %%
@@ -249,6 +274,14 @@ if initialise_git and git_clone_url is None and not (repo_data_path / ".git").ex
 from repoyard._models import refresh_repoyard_meta
 
 refresh_repoyard_meta(config)
+
+# %% [markdown]
+# Release the global lock
+
+# %%
+#|export
+if _global_lock.is_locked:
+    _global_lock.release()
 
 # %% [markdown]
 # Return repo index name

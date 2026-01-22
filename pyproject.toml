@@ -5,6 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
+    "filelock>=3.12.0",
     "nblite>=1.1.7",
     "pydantic>=2.12.4",
     "python-ulid[pydantic]>=3.1.0",

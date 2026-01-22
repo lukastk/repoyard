@@ -29,8 +29,41 @@ from repoyard import const
 from repoyard.config import get_config
 from repoyard._utils import async_throttler
 from repoyard._utils.sync_helper import SyncSetting, SyncDirection
+from repoyard._utils.locking import LockAcquisitionError, auto_cleanup_stale_locks
 from repoyard._models import RepoPart
 from repoyard._cli.app import app, app_state
+
+# %% [markdown]
+# ## Helpers for lock error handling
+
+# %%
+#|exporti
+def _run_with_lock_handling(coro):
+    """Run an async coroutine and handle LockAcquisitionError gracefully."""
+    try:
+        return asyncio.run(coro)
+    except LockAcquisitionError as e:
+        typer.echo(f"Error: {e}", err=True)
+        typer.echo(
+            "Hint: If you believe this is a stale lock, you can manually remove the lock file "
+            f"at: {e.lock_path}",
+            err=True
+        )
+        raise typer.Exit(code=1)
+
+
+def _call_with_lock_handling(func, *args, **kwargs):
+    """Call a function and handle LockAcquisitionError gracefully."""
+    try:
+        return func(*args, **kwargs)
+    except LockAcquisitionError as e:
+        typer.echo(f"Error: {e}", err=True)
+        typer.echo(
+            "Hint: If you believe this is a stale lock, you can manually remove the lock file "
+            f"at: {e.lock_path}",
+            err=True
+        )
+        raise typer.Exit(code=1)
 
 # %% [markdown]
 # ## Main command
@@ -50,6 +83,13 @@ def entrypoint(
         config_path if config_path is not None else const.DEFAULT_CONFIG_PATH
     )
     if ctx.invoked_subcommand is not None:
+        # Auto-cleanup stale locks (older than 1 hour) on startup
+        try:
+            config = get_config(app_state["config_path"])
+            auto_cleanup_stale_locks(config.repoyard_data_path, max_age_hours=1.0)
+        except Exception:
+            # Don't fail if cleanup fails (e.g., config not yet initialized)
+            pass
         return
     typer.echo(ctx.get_help())
 
@@ -314,7 +354,8 @@ def cli_new(
                 typer.echo(f"Invalid creation timestamp: {creation_timestamp_utc}")
                 raise typer.Exit(code=1)
 
-    repo_index_name = new_repo(
+    repo_index_name = _call_with_lock_handling(
+        new_repo,
         config_path=app_state["config_path"],
         storage_location=storage_location,
         repo_name=repo_name,
@@ -420,7 +461,7 @@ def cli_sync(
     if sync_choices is None:
         sync_choices = [repo_part for repo_part in RepoPart]
 
-    asyncio.run(
+    _run_with_lock_handling(
         sync_repo(
             config_path=app_state["config_path"],
             repo_index_name=repo_index_name,
@@ -775,7 +816,7 @@ def cli_include(
         typer.echo(f"Repository with index name `{repo_index_name}` not found.")
         raise typer.Exit(code=1)
 
-    asyncio.run(
+    _run_with_lock_handling(
         include_repo(
             config_path=app_state["config_path"],
             repo_index_name=repo_index_name,
@@ -847,7 +888,7 @@ def cli_exclude(
         typer.echo(f"Repository with index name `{repo_index_name}` not found.")
         raise typer.Exit(code=1)
 
-    asyncio.run(
+    _run_with_lock_handling(
         exclude_repo(
             config_path=app_state["config_path"],
             repo_index_name=repo_index_name,
@@ -915,7 +956,7 @@ def cli_delete(
         typer.echo(f"Repository with index name `{repo_index_name}` not found.")
         raise typer.Exit(code=1)
 
-    asyncio.run(
+    _run_with_lock_handling(
         delete_repo(
             config_path=app_state["config_path"],
             repo_index_name=repo_index_name,

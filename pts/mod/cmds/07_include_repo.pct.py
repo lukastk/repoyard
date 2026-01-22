@@ -20,8 +20,11 @@ from nblite import nbl_export, show_doc; nbl_export();
 # %%
 #|top_export
 from pathlib import Path
+import asyncio
 
 from repoyard.config import get_config
+from repoyard._utils.locking import RepoyardLockManager, LockAcquisitionError, REPO_SYNC_LOCK_TIMEOUT, acquire_lock_async
+from filelock import FileLock
 
 # %%
 #|set_func_signature
@@ -87,6 +90,22 @@ if repo_meta.check_included(config):
     raise ValueError(f"Repo '{repo_index_name}' is already included.")
 
 # %% [markdown]
+# Acquire per-repo sync lock
+
+# %%
+#|export
+_lock_manager = RepoyardLockManager(config.repoyard_data_path)
+_lock_path = _lock_manager.repo_sync_lock_path(repo_index_name)
+_lock_manager._ensure_lock_dir(_lock_path)
+_sync_lock = FileLock(_lock_path)
+await acquire_lock_async(
+    _sync_lock,
+    f"repo sync ({repo_index_name})",
+    _lock_path,
+    REPO_SYNC_LOCK_TIMEOUT
+)
+
+# %% [markdown]
 # Include it
 
 # %%
@@ -114,6 +133,14 @@ await sync_repo(
     sync_choices=[RepoPart.META, RepoPart.CONF],
     soft_interruption_enabled=soft_interruption_enabled,
 )
+
+# %% [markdown]
+# Release the sync lock
+
+# %%
+#|export
+if _sync_lock.is_locked:
+    _sync_lock.release()
 
 # %%
 # Should now be included
