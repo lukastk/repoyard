@@ -1,0 +1,294 @@
+# ---
+# jupyter:
+#   kernelspec:
+#     display_name: Python 3
+#     language: python
+#     name: python3
+# ---
+
+# %% [markdown]
+# # Unit Tests for RepoGroupConfig and VirtualRepoGroupConfig
+
+# %%
+#|default_exp unit.config.test_group_config
+
+# %%
+#|export
+import pytest
+from pydantic import ValidationError
+
+from repoyard.config import RepoGroupConfig, VirtualRepoGroupConfig, RepoGroupTitleMode
+
+
+# ============================================================================
+# Tests for RepoGroupTitleMode enum
+# ============================================================================
+
+# %%
+#|export
+class TestRepoGroupTitleMode:
+    """Tests for the RepoGroupTitleMode enum."""
+
+    def test_title_mode_values(self):
+        """RepoGroupTitleMode has correct values."""
+        assert RepoGroupTitleMode.INDEX_NAME.value == "index_name"
+        assert RepoGroupTitleMode.DATETIME_AND_NAME.value == "datetime_and_name"
+        assert RepoGroupTitleMode.NAME.value == "name"
+
+    def test_title_mode_count(self):
+        """There are exactly 3 title modes."""
+        assert len(RepoGroupTitleMode) == 3
+
+
+# ============================================================================
+# Tests for RepoGroupConfig construction
+# ============================================================================
+
+# %%
+#|export
+class TestRepoGroupConfigConstruction:
+    """Tests for RepoGroupConfig construction."""
+
+    def test_default_values(self):
+        """RepoGroupConfig has correct defaults."""
+        config = RepoGroupConfig()
+
+        assert config.symlink_name is None
+        assert config.repo_title_mode == RepoGroupTitleMode.INDEX_NAME
+        assert config.unique_repo_names is False
+
+    def test_custom_symlink_name(self):
+        """Custom symlink_name can be set."""
+        config = RepoGroupConfig(symlink_name="my-custom-name")
+
+        assert config.symlink_name == "my-custom-name"
+
+    def test_title_mode_index_name(self):
+        """INDEX_NAME title mode can be set."""
+        config = RepoGroupConfig(repo_title_mode="index_name")
+
+        assert config.repo_title_mode == RepoGroupTitleMode.INDEX_NAME
+
+    def test_title_mode_datetime_and_name(self):
+        """DATETIME_AND_NAME title mode can be set."""
+        config = RepoGroupConfig(repo_title_mode="datetime_and_name")
+
+        assert config.repo_title_mode == RepoGroupTitleMode.DATETIME_AND_NAME
+
+    def test_title_mode_name(self):
+        """NAME title mode can be set."""
+        config = RepoGroupConfig(repo_title_mode="name")
+
+        assert config.repo_title_mode == RepoGroupTitleMode.NAME
+
+    def test_title_mode_from_enum(self):
+        """Title mode can be set from enum directly."""
+        config = RepoGroupConfig(repo_title_mode=RepoGroupTitleMode.NAME)
+
+        assert config.repo_title_mode == RepoGroupTitleMode.NAME
+
+    def test_invalid_title_mode(self):
+        """Invalid title mode raises error."""
+        with pytest.raises(ValidationError):
+            RepoGroupConfig(repo_title_mode="invalid")
+
+    def test_unique_repo_names_true(self):
+        """unique_repo_names can be set to True."""
+        config = RepoGroupConfig(unique_repo_names=True)
+
+        assert config.unique_repo_names is True
+
+    def test_full_config(self):
+        """Full config with all options."""
+        config = RepoGroupConfig(
+            symlink_name="projects",
+            repo_title_mode="name",
+            unique_repo_names=True,
+        )
+
+        assert config.symlink_name == "projects"
+        assert config.repo_title_mode == RepoGroupTitleMode.NAME
+        assert config.unique_repo_names is True
+
+
+# ============================================================================
+# Tests for VirtualRepoGroupConfig construction
+# ============================================================================
+
+# %%
+#|export
+class TestVirtualRepoGroupConfigConstruction:
+    """Tests for VirtualRepoGroupConfig construction."""
+
+    def test_minimal_config(self):
+        """Minimal VirtualRepoGroupConfig with just filter_expr."""
+        config = VirtualRepoGroupConfig(filter_expr="backend")
+
+        assert config.filter_expr == "backend"
+        assert config.symlink_name is None
+        assert config.repo_title_mode == RepoGroupTitleMode.INDEX_NAME
+
+    def test_full_config(self):
+        """Full VirtualRepoGroupConfig with all options."""
+        config = VirtualRepoGroupConfig(
+            symlink_name="active-projects",
+            repo_title_mode="datetime_and_name",
+            filter_expr="backend AND NOT archived",
+        )
+
+        assert config.symlink_name == "active-projects"
+        assert config.repo_title_mode == RepoGroupTitleMode.DATETIME_AND_NAME
+        assert config.filter_expr == "backend AND NOT archived"
+
+    def test_filter_expr_required(self):
+        """filter_expr is required."""
+        with pytest.raises(ValidationError):
+            VirtualRepoGroupConfig()
+
+
+# ============================================================================
+# Tests for VirtualRepoGroupConfig.is_in_group
+# ============================================================================
+
+# %%
+#|export
+class TestVirtualRepoGroupIsInGroup:
+    """Tests for VirtualRepoGroupConfig.is_in_group method."""
+
+    def test_simple_match(self):
+        """Simple group name matches."""
+        config = VirtualRepoGroupConfig(filter_expr="backend")
+
+        assert config.is_in_group(["backend", "api"]) is True
+        assert config.is_in_group(["frontend"]) is False
+
+    def test_and_expression(self):
+        """AND expression works correctly."""
+        config = VirtualRepoGroupConfig(filter_expr="backend AND python")
+
+        assert config.is_in_group(["backend", "python"]) is True
+        assert config.is_in_group(["backend"]) is False
+        assert config.is_in_group(["python"]) is False
+
+    def test_or_expression(self):
+        """OR expression works correctly."""
+        config = VirtualRepoGroupConfig(filter_expr="backend OR frontend")
+
+        assert config.is_in_group(["backend"]) is True
+        assert config.is_in_group(["frontend"]) is True
+        assert config.is_in_group(["backend", "frontend"]) is True
+        assert config.is_in_group(["mobile"]) is False
+
+    def test_not_expression(self):
+        """NOT expression works correctly."""
+        config = VirtualRepoGroupConfig(filter_expr="NOT archived")
+
+        assert config.is_in_group(["backend"]) is True
+        assert config.is_in_group(["archived"]) is False
+        assert config.is_in_group(["backend", "archived"]) is False
+
+    def test_complex_expression(self):
+        """Complex expression with multiple operators."""
+        config = VirtualRepoGroupConfig(
+            filter_expr="(backend OR frontend) AND NOT archived"
+        )
+
+        assert config.is_in_group(["backend"]) is True
+        assert config.is_in_group(["frontend"]) is True
+        assert config.is_in_group(["backend", "archived"]) is False
+        assert config.is_in_group(["mobile"]) is False
+
+    def test_filter_func_cached(self):
+        """Filter function is cached after first call."""
+        config = VirtualRepoGroupConfig(filter_expr="backend")
+
+        # First call
+        config.is_in_group(["backend"])
+
+        # Verify _filter_func is set
+        assert hasattr(config, "_filter_func")
+
+        # Second call should use cached function
+        result = config.is_in_group(["backend"])
+        assert result is True
+
+    def test_with_empty_groups(self):
+        """is_in_group works with empty group list."""
+        config = VirtualRepoGroupConfig(filter_expr="backend")
+
+        assert config.is_in_group([]) is False
+
+    def test_with_set_input(self):
+        """is_in_group accepts sets."""
+        config = VirtualRepoGroupConfig(filter_expr="backend")
+
+        # The underlying filter function should handle both lists and sets
+        assert config.is_in_group({"backend", "api"}) is True
+
+
+# ============================================================================
+# Tests for strict mode
+# ============================================================================
+
+# %%
+#|export
+class TestGroupConfigStrictMode:
+    """Tests for strict mode in group configs."""
+
+    def test_repo_group_config_extra_field(self):
+        """RepoGroupConfig rejects extra fields."""
+        with pytest.raises(ValidationError, match="extra"):
+            RepoGroupConfig(
+                symlink_name="test",
+                unknown_field="value",
+            )
+
+    def test_virtual_repo_group_config_extra_field(self):
+        """VirtualRepoGroupConfig rejects extra fields."""
+        with pytest.raises(ValidationError, match="extra"):
+            VirtualRepoGroupConfig(
+                filter_expr="backend",
+                unknown_field="value",
+            )
+
+
+# ============================================================================
+# Tests for edge cases
+# ============================================================================
+
+# %%
+#|export
+class TestGroupConfigEdgeCases:
+    """Tests for edge cases in group configs."""
+
+    def test_empty_symlink_name(self):
+        """Empty string symlink_name is allowed."""
+        config = RepoGroupConfig(symlink_name="")
+        assert config.symlink_name == ""
+
+    def test_symlink_name_with_special_chars(self):
+        """Symlink names can contain various characters."""
+        config = RepoGroupConfig(symlink_name="my-projects_2024")
+        assert config.symlink_name == "my-projects_2024"
+
+    def test_filter_expr_whitespace(self):
+        """Filter expressions with extra whitespace work."""
+        config = VirtualRepoGroupConfig(filter_expr="  backend  AND  api  ")
+
+        assert config.is_in_group(["backend", "api"]) is True
+
+    def test_filter_expr_case_insensitive_operators(self):
+        """Filter expressions work with different operator cases."""
+        config = VirtualRepoGroupConfig(filter_expr="backend and api")
+
+        assert config.is_in_group(["backend", "api"]) is True
+
+    def test_multiple_virtual_groups_independent(self):
+        """Multiple VirtualRepoGroupConfig instances are independent."""
+        config1 = VirtualRepoGroupConfig(filter_expr="backend")
+        config2 = VirtualRepoGroupConfig(filter_expr="frontend")
+
+        assert config1.is_in_group(["backend"]) is True
+        assert config1.is_in_group(["frontend"]) is False
+        assert config2.is_in_group(["backend"]) is False
+        assert config2.is_in_group(["frontend"]) is True
