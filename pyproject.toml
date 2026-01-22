@@ -40,6 +40,49 @@ repoyard = "repoyard._cli.app:app"
 [tool.pytest.ini_options]
 testpaths = ["src/tests"]
 python_files = ["test_*.py"]
+python_functions = ["test_*"]
+pythonpath = ["src"]
 markers = [
     "integration: marks tests as integration tests (require external resources like rclone)",
 ]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 120
+exclude = []
+extend-exclude = [
+    "__*.pct.py",
+    "*.ipynb", # ruff does not play nice with nblite
+] 
+
+[tool.ruff.lint]
+select = [
+    "E",      # pycodestyle errors
+    "W",      # pycodestyle warnings
+    "F",      # pyflakes
+    "I",      # isort
+    "B",      # flake8-bugbear
+    "C4",     # flake8-comprehensions
+    "UP",     # pyupgrade
+]
+ignore = [
+    "E501",   # line too long (handled by formatter)
+    "B008",   # do not perform function calls in argument defaults
+    "E402",   # Module level import not at top (module-level-import-not-at-top)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"*.pct.py" = [
+    "I001", # Unsorted imports
+    "E701", # Multiple statements on one line newline (no-multiple-statements)
+    "E702", # Multiple statements on one line semicolon (no-multiple-statements)
+    "E703", # useless-semicolon
+    "E265", # Block comment should start with '# ' (nblite uses #|directive)
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["nblite"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
