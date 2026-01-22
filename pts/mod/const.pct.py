@@ -1,3 +1,11 @@
+# ---
+# jupyter:
+#   kernelspec:
+#     display_name: Python 3
+#     language: python
+#     name: python3
+# ---
+
 # %% [markdown]
 # # const
 
@@ -6,7 +14,7 @@
 
 # %%
 #|hide
-import nblite; from nbdev.showdoc import show_doc; nblite.nbl_export()
+from nblite import nbl_export, show_doc; nbl_export();
 
 # %%
 #|export
@@ -80,7 +88,6 @@ for i in range(2, 7):
 # %%
 #|export
 ENV_VAR_REPOYARD_CONFIG_PATH = "REPOYARD_CONFIG_PATH"
-
 
 # %% [markdown]
 # Misc

@@ -1,3 +1,11 @@
+# ---
+# jupyter:
+#   kernelspec:
+#     display_name: Python 3
+#     language: python
+#     name: python3
+# ---
+
 # %% [markdown]
 # # test_00_sync
 
@@ -24,17 +32,14 @@ from repoyard._models import get_repoyard_meta
 
 from tests.utils import *
 
-
 # %%
 #|top_export
 def test_00_sync():
     asyncio.run(_test_00_sync())
 
-
 # %%
 #|set_func_signature
 async def _test_00_sync(): ...
-
 
 # %% [markdown]
 # Parameters

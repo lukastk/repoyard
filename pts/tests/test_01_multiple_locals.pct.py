@@ -1,3 +1,11 @@
+# ---
+# jupyter:
+#   kernelspec:
+#     display_name: Python 3
+#     language: python
+#     name: python3
+# ---
+
 # %% [markdown]
 # # test_01_multiple_locals
 
@@ -26,17 +34,14 @@ from repoyard._utils.sync_helper import SyncUnsafe
 
 from tests.utils import *
 
-
 # %%
 #|top_export
 def test_01_multiple_locals():
     asyncio.run(_test_01_multiple_locals())
 
-
 # %%
 #|set_func_signature
 async def _test_01_multiple_locals(): ...
-
 
 # %% [markdown]
 # Parameters
@@ -80,7 +85,6 @@ await sync_missing_repometas(
 repoyard_meta2 = get_repoyard_meta(config2)
 assert len(repoyard_meta2.repo_metas) == num_repos
 
-
 # %% [markdown]
 # Ensure that the repometa sync only synced the repometas, and that sync records exists
 
@@ -90,7 +94,6 @@ async def _task(repo_meta):
     assert not repo_meta.check_included(config2)
 
 await asyncio.gather(*[_task(repo_meta) for repo_meta in repoyard_meta2.repo_metas]);
-
 
 # %% [markdown]
 # Include them into repoyard 2
@@ -104,7 +107,6 @@ async def _task(repo_meta):
     )
 
 await asyncio.gather(*[_task(repo_meta) for repo_meta in repoyard_meta2.repo_metas]);
-
 
 # %% [markdown]
 # Modify repos in repoyard 2 and sync
@@ -141,7 +143,6 @@ await asyncio.gather(*[
 # %%
 for repo_meta in repoyard_meta1.repo_metas:
     assert (repo_meta.get_local_part_path(config1, RepoPart.DATA) / "hello.txt").exists()
-
 
 # %% [markdown]
 # Create a conflict and test that it raises an exception

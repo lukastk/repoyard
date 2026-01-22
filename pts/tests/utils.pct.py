@@ -1,3 +1,11 @@
+# ---
+# jupyter:
+#   kernelspec:
+#     display_name: Python 3
+#     language: python
+#     name: python3
+# ---
+
 # %% [markdown]
 # # utils
 
@@ -22,7 +30,6 @@ from repoyard import const
 from repoyard.cmds import *
 from repoyard._models import get_repoyard_meta
 from repoyard.config import get_config
-
 
 # %%
 #|export
@@ -69,7 +76,6 @@ def create_repoyards(remote_name="my_remote", num_repoyards=1):
     else:
         return remote_name, remote_rclone_path, repoyards
 
-
 # %%
 #|export
 class CmdFailed(Exception): pass
@@ -83,7 +89,6 @@ def run_cmd(cmd: str, capture_output: bool = True):
         raise CmdFailed(f"Command '{cmd}' failed with return code {res.returncode}. Stdout:\n{res.stdout}\n\nStderr:\n{res.stderr}")
     if capture_output:
         return res.stdout
-
 
 # %%
 #|export

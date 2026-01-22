@@ -1,9 +1,17 @@
+# ---
+# jupyter:
+#   kernelspec:
+#     display_name: .venv
+#     language: python
+#     name: python3
+# ---
+
 # %% [markdown]
 # # repoyard
 
 # %%
 #|hide
-import nblite; from nbdev.showdoc import show_doc; nblite.nbl_export()
+from nblite import nbl_export, show_doc; nbl_export();
 
 # %%
 #|hide

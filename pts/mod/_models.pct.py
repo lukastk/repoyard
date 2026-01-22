@@ -1,3 +1,11 @@
+# ---
+# jupyter:
+#   kernelspec:
+#     display_name: Python 3
+#     language: python
+#     name: python3
+# ---
+
 # %% [markdown]
 # # _models
 
@@ -23,7 +31,6 @@ import repoyard.config
 from repoyard import const
 from repoyard.config import RepoGroupConfig, RepoTimestampFormat
 
-
 # %% [markdown]
 # # `RepoMeta`
 
@@ -34,12 +41,10 @@ class RepoPart(Enum):
     META = "meta"
     CONF = "conf"
 
-
 # %%
 #|exporti
 def _create_repo_subid(character_set: str, length: int) -> str:
     return ''.join(random.choices(character_set, k=length))
-
 
 # %%
 #|export
@@ -148,7 +153,7 @@ class RepoMeta(const.StrictModel):
         save_path.write_text(toml.dumps(model_dump))
 
     @classmethod
-    def load(cls, config: repoyard.config.Config, storage_location_name: str, repo_index_name: str) -> None:
+    def load(cls, config: repoyard.config.Config, storage_location_name: str, repo_index_name: str) -> 'RepoMeta':
         repo_id, name = repo_index_name.split('__', 1)
         repo_id_parts = repo_id.split('_')
         if len(repo_id_parts) == 3:
@@ -201,7 +206,6 @@ class RepoMeta(const.StrictModel):
         
         return self
 
-
 # %%
 from tests.utils import create_repoyards
 from repoyard.config import get_config
@@ -215,7 +219,6 @@ _repo_meta = RepoMeta.load(config, sl_name, repo_meta.index_name)
 
 assert repo_meta.model_dump_json() == _repo_meta.model_dump_json()
 
-
 # %% [markdown]
 # # `RepoyardMeta`
 
@@ -227,14 +230,15 @@ class RepoyardMeta(const.StrictModel):
     @property
     def by_storage_location(self) -> dict[str, dict[str, RepoMeta]]:
         if not hasattr(self, '__by_storage_location'):
+            storage_location_names = set(rm.storage_location for rm in self.repo_metas)
             self.__by_storage_location = {
                 sl_name: {
                     repo_meta.index_name: repo_meta
                     for repo_meta in self.repo_metas
                     if repo_meta.storage_location == sl_name
+                }
+                for sl_name in storage_location_names
             }
-            for sl_name in self.by_storage_location
-        }
         return self.__by_storage_location
 
     @property
@@ -255,8 +259,6 @@ class RepoyardMeta(const.StrictModel):
             }
         return self.__by_index_name
 
-
-
 # %%
 #|export
 def create_repoyard_meta(
@@ -271,7 +273,6 @@ def create_repoyard_meta(
             repo_metas.append(RepoMeta.load(config, storage_location_name, repo_path.name))
     return RepoyardMeta(repo_metas=repo_metas)
 
-
 # %%
 #|export
 def refresh_repoyard_meta(
@@ -279,7 +280,7 @@ def refresh_repoyard_meta(
 ) -> RepoyardMeta:
     repoyard_meta = create_repoyard_meta(config)
     config.repoyard_meta_path.write_text(repoyard_meta.model_dump_json())
-
+    return repoyard_meta
 
 # %%
 #|export
@@ -290,7 +291,6 @@ def get_repoyard_meta(
     if not config.repoyard_meta_path.exists() or force_create:
         refresh_repoyard_meta(config)
     return RepoyardMeta.model_validate_json(config.repoyard_meta_path.read_text())
-
 
 # %%
 #|export
@@ -304,7 +304,6 @@ def get_repo_group_configs(
             if group_name not in repo_group_configs:
                 repo_group_configs[group_name] = RepoGroupConfig()
     return repo_group_configs, config.virtual_repo_groups
-
 
 # %%
 #|export
@@ -354,13 +353,13 @@ def create_user_repo_group_symlinks(
             _symlinks.append((dest_path, symlink_path))
 
     # Remove all existing symlinks that are not in the _symlinks list
+    _symlink_paths = [symlink_path for _, symlink_path in _symlinks]
     for path in config.user_repo_groups_path.glob('**/*'):
-        if path in _symlinks: continue
+        if path in _symlink_paths: continue
         if path.is_symlink():
             path.unlink()
 
     # Now check for any remaining debris
-    _symlink_paths = [symlink_path for _, symlink_path in _symlinks]
     def _inspect_folder(path: Path) -> None:
         if path.is_symlink(): return
         for p in path.iterdir():
@@ -399,7 +398,6 @@ def create_user_repo_group_symlinks(
             path.rmdir()
     for path in config.user_repo_groups_path.glob('*'):
         _remove_empty_non_group_folders(path)
-
 
 # %% [markdown]
 # # `SyncRecord`
@@ -456,7 +454,6 @@ class SyncRecord(const.StrictModel):
             raise ValueError("`timestamp` should be set to the ULID's datetime.")
         return self
 
-
 # %%
 #|export
 from typing import NamedTuple
@@ -479,7 +476,6 @@ class SyncStatus(NamedTuple):
     is_dir: bool
     error_message: str|None = None
 
-
 # %%
 #|export
 async def get_sync_status(
@@ -498,8 +494,9 @@ async def get_sync_status(
         source="",
         source_path=local_path,
     )
+    local_path_is_empty = True  # Default: treat as empty if doesn't exist or isn't a dir
     if local_path_is_dir and local_path_exists:
-        local_path_is_empty = len(list(local_path.iterdir())) == 0 # a bit hacky
+        local_path_is_empty = len(list(local_path.iterdir())) == 0
 
     remote_path_exists, remote_path_is_dir = await rclone_path_exists(
         rclone_config_path=rclone_config_path,

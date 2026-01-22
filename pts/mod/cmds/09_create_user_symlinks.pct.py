@@ -1,3 +1,11 @@
+# ---
+# jupyter:
+#   kernelspec:
+#     display_name: Python 3
+#     language: python
+#     name: python3
+# ---
+
 # %% [markdown]
 # # _create_user_symlinks
 
@@ -16,7 +24,6 @@ from pathlib import Path
 from repoyard.config import get_config
 from repoyard import const
 
-
 # %%
 #|set_func_signature
 def create_user_symlinks(
@@ -27,7 +34,6 @@ def create_user_symlinks(
     """
     """
     ...
-
 
 # %% [markdown]
 # Set up testing args

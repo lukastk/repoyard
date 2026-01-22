@@ -1,3 +1,11 @@
+# ---
+# jupyter:
+#   kernelspec:
+#     display_name: Python 3
+#     language: python
+#     name: python3
+# ---
+
 # %% [markdown]
 # # _new_repo
 
@@ -17,7 +25,6 @@ from datetime import datetime
 
 from repoyard import const
 from repoyard.config import StorageType
-
 
 # %%
 #|set_func_signature
@@ -50,7 +57,6 @@ def new_repo(
         The index name of the new repository.
     """
     ...
-
 
 # %% [markdown]
 # Set up testing args

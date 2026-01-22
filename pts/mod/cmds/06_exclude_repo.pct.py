@@ -1,3 +1,11 @@
+# ---
+# jupyter:
+#   kernelspec:
+#     display_name: Python 3
+#     language: python
+#     name: python3
+# ---
+
 # %% [markdown]
 # # _exclude_repo
 
@@ -17,7 +25,6 @@ from repoyard._utils.sync_helper import SyncSetting
 from repoyard.config import get_config
 from repoyard import const
 
-
 # %%
 #|set_func_signature
 async def exclude_repo(
@@ -29,7 +36,6 @@ async def exclude_repo(
     """
     """
     ...
-
 
 # %% [markdown]
 # Set up testing args

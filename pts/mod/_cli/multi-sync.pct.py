@@ -1,3 +1,11 @@
+# ---
+# jupyter:
+#   kernelspec:
+#     display_name: Python 3
+#     language: python
+#     name: python3
+# ---
+
 # %% [markdown]
 # # multi_sync
 
@@ -7,7 +15,7 @@
 
 # %%
 #|hide
-import nblite; from nbdev.showdoc import show_doc; nblite.nbl_export()
+from nblite import nbl_export, show_doc; nbl_export();
 
 # %%
 #|top_export
@@ -39,7 +47,6 @@ from rich.console import Console
 from datetime import datetime, timedelta
 import shutil
 
-
 # %%
 #|set_func_signature
 @app.command(name='multi-sync')
@@ -61,7 +68,6 @@ def cli_multi_sync(
     """
     ...
 
-
 # %% [markdown]
 # Set up testing args
 
@@ -74,7 +80,6 @@ remote_name, remote_rclone_path, config, config_path, data_path = create_repoyar
 from repoyard.cmds import new_repo
 for i in range(3):
     new_repo(config_path=config_path, repo_name=f"test_repo_{i}", storage_location=remote_name)
-
 
 # %%
 # Args
@@ -130,7 +135,6 @@ else:
         raise typer.Exit(code=1)
     repo_metas = [repoyard_meta.by_index_name[repo_index_name] for repo_index_name in repo_index_names]
 
-
 # %% [markdown]
 # Define syncing task
 
@@ -155,7 +159,6 @@ async def _task(num, repo_meta):
 
     if show_progress:
         print_finished(repo_meta.index_name)
-
 
 # %% [markdown]
 # Set up the progress printing (shown if `show_progress == True`)
@@ -243,7 +246,6 @@ async def _progress_monitor_task():
             await asyncio.sleep(0.2)
         live.update(Text.from_markup("Finished. Final results:\n\n"))
 
-
 # %% [markdown]
 # Run multi-sync
 
@@ -270,7 +272,6 @@ async def _runner():
         await monitor_task
     else:
         await sync_task
-
 
 # %%
 await _runner()

@@ -1,3 +1,11 @@
+# ---
+# jupyter:
+#   kernelspec:
+#     display_name: Python 3
+#     language: python
+#     name: python3
+# ---
+
 # %% [markdown]
 # # _get_repo_sync_status
 
@@ -18,7 +26,6 @@ from repoyard.config import get_config, StorageType
 from repoyard._models import SyncStatus, RepoPart
 from repoyard import const
 
-
 # %%
 #|set_func_signature
 async def get_repo_sync_status(
@@ -28,7 +35,6 @@ async def get_repo_sync_status(
     """
     """
     ...
-
 
 # %% [markdown]
 # Set up testing args

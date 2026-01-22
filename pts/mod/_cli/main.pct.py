@@ -1,3 +1,11 @@
+# ---
+# jupyter:
+#   kernelspec:
+#     display_name: Python 3
+#     language: python
+#     name: python3
+# ---
+
 # %% [markdown]
 # # main
 
@@ -6,7 +14,7 @@
 
 # %%
 #|hide
-import nblite; from nbdev.showdoc import show_doc; nblite.nbl_export()
+from nblite import nbl_export, show_doc; nbl_export();
 
 # %%
 #|export
@@ -28,7 +36,6 @@ from repoyard._utils.sync_helper import SyncSetting, SyncDirection
 from repoyard._models import RepoPart
 from repoyard._cli.app import app, app_state
 
-
 # %% [markdown]
 # ## Main command
 
@@ -42,7 +49,6 @@ def entrypoint(
     app_state['config_path'] = config_path if config_path is not None else const.DEFAULT_CONFIG_PATH
     if ctx.invoked_subcommand is not None: return
     typer.echo(ctx.get_help())
-
 
 # %%
 # !repoyard
@@ -63,13 +69,11 @@ def _is_subsequence_match(term: str, name: str) -> bool:
                 return True
     return j == m
 
-
 # %%
 assert _is_subsequence_match("lukas", "lukastk")
 assert _is_subsequence_match("lukas", "I am lukastk")
 assert _is_subsequence_match("ad", "abcd")
 assert not _is_subsequence_match("acbd", "abcd")
-
 
 # %%
 #|exporti
@@ -158,7 +162,6 @@ def _get_repo_index_name(
         
     return repo_index_name
 
-
 # %% [markdown]
 # # `init`
 
@@ -178,7 +181,6 @@ def cli_init(
         data_path=data_path,
         verbose=True,
     )
-
 
 # %% [markdown]
 # # `new`
@@ -251,7 +253,6 @@ def cli_new(
     from repoyard.cmds import create_user_symlinks
     create_user_symlinks(config_path=app_state['config_path'])
 
-
 # %% [markdown]
 # # `sync`
 
@@ -311,7 +312,6 @@ def cli_sync(
         from repoyard.cmds import create_user_symlinks
         create_user_symlinks(config_path=app_state['config_path'])
 
-
 # %% [markdown]
 # # `sync-missing-meta`
 
@@ -346,7 +346,6 @@ def cli_sync_missing_meta(
     if refresh_user_symlinks:
         from repoyard.cmds import create_user_symlinks
         create_user_symlinks(config_path=app_state['config_path'])
-
 
 # %% [markdown]
 # # `add-to-group`
@@ -416,7 +415,7 @@ def cli_add_to_group(
             from repoyard._models import RepoPart
             asyncio.run(sync_repo(
                 config_path=app_state['config_path'],
-                repo_index_names=repo_index_name,
+                repo_index_name=repo_index_name,
                 sync_setting=sync_setting,
                 sync_direction=SyncDirection.PUSH,
                 sync_choices=[RepoPart.REPO_META],
@@ -427,7 +426,6 @@ def cli_add_to_group(
     if refresh_user_symlinks:
         from repoyard.cmds import create_user_symlinks
         create_user_symlinks(config_path=app_state['config_path'])
-
 
 # %% [markdown]
 # # `remove-from-group`
@@ -479,7 +477,8 @@ def cli_remove_from_group(
         raise typer.Exit(code=1)
     repo_meta = repoyard_meta.by_index_name[repo_index_name]
     if group_name not in repo_meta.groups:
-        raise typer.echo(f"Repository `{repo_index_name}` not in group `{group_name}`.")
+        typer.echo(f"Repository `{repo_index_name}` not in group `{group_name}`.")
+        raise typer.Exit(code=1)
     else:
         modify_repometa(
             config_path=app_state['config_path'],
@@ -505,7 +504,6 @@ def cli_remove_from_group(
     if refresh_user_symlinks:
         from repoyard.cmds import create_user_symlinks
         create_user_symlinks(config_path=app_state['config_path'])
-
 
 # %% [markdown]
 # # `include`
@@ -550,7 +548,6 @@ def cli_include(
     if refresh_user_symlinks:
         from repoyard.cmds import create_user_symlinks
         create_user_symlinks(config_path=app_state['config_path'])
-
 
 # %% [markdown]
 # # `exclude`
@@ -598,7 +595,6 @@ def cli_exclude(
         from repoyard.cmds import create_user_symlinks
         create_user_symlinks(config_path=app_state['config_path'])
 
-
 # %% [markdown]
 # # `delete`
 
@@ -644,7 +640,6 @@ def cli_delete(
         from repoyard.cmds import create_user_symlinks
         create_user_symlinks(config_path=app_state['config_path'])
 
-
 # %% [markdown]
 # # `repo-status`
 
@@ -661,7 +656,6 @@ def _dict_to_hierarchical_text(data: dict, indents: int=0, lines: list[str]=None
             lines.append(f"{' ' *4*indents}{k}: {v}")
     return lines
 
-
 # %%
 lines = _dict_to_hierarchical_text({
     'a': {
@@ -673,7 +667,6 @@ lines = _dict_to_hierarchical_text({
     }
 })
 print("\n".join(lines))
-
 
 # %%
 #|exporti
@@ -697,7 +690,6 @@ async def get_formatted_repo_status(config_path, repo_index_name):
         data[repo_part.value] = part_sync_status_dump
 
     return data
-
 
 # %%
 #|export
@@ -749,8 +741,6 @@ def cli_repo_status(
     else:
        typer.echo("\n".join(_dict_to_hierarchical_text(sync_status_data)))
 
-
-
 # %% [markdown]
 # # `yard-status`
 
@@ -799,7 +789,6 @@ def cli_yard_status(
             typer.echo("\n".join(_dict_to_hierarchical_text(repo_sync_statuses, indents=1)))
             typer.echo("\n")
 
-
 # %% [markdown]
 # # `list`
 
@@ -815,7 +804,6 @@ def _get_filtered_repo_metas(repo_metas, include_groups, exclude_groups, group_f
         _filter_func = get_group_filter_func(group_filter)
         repo_metas = [repo_meta for repo_meta in repo_metas if _filter_func(repo_meta.groups)]
     return repo_metas
-
 
 # %%
 #|export
@@ -848,8 +836,6 @@ def cli_list(
     else:
         for repo_meta in repo_metas:
             typer.echo(repo_meta.index_name)
-
-
 
 # %% [markdown]
 # # `list-groups`
@@ -900,7 +886,7 @@ def cli_list_groups(
             raise typer.Exit(code=1)
 
     if repo_index_name is None:
-        typer.echo("Must provied repo full namae.")
+        typer.echo("Must provide repo full name.")
         raise typer.Exit(code=1)
     
     if repo_index_name not in repoyard_meta.by_index_name:
@@ -908,7 +894,7 @@ def cli_list_groups(
         raise typer.Exit(code=1)
     repo_meta = repoyard_meta.by_index_name[repo_index_name]
     repo_groups = repo_meta.groups
-    group_configs, virtual_repo_group_configs = get_repo_group_configs(config, [repo_meta])\
+    group_configs, virtual_repo_group_configs = get_repo_group_configs(config, [repo_meta])
 
     if include_virtual:
         for vg, vg_config in virtual_repo_group_configs.items():
@@ -919,7 +905,6 @@ def cli_list_groups(
 
     for group_name in sorted(repo_groups):
         typer.echo(group_name)
-
 
 # %% [markdown]
 # # `path`
@@ -992,7 +977,7 @@ def cli_path(
     elif path_option == 'conf':
         typer.echo(repo_meta.get_local_part_path(config, RepoPart.CONF).as_posix())
     elif path_option == 'root':
-        typer.echo(config.get_local_path(config).as_posix())
+        typer.echo(repo_meta.get_local_path(config).as_posix())
     elif path_option == 'sync-record-data':
         typer.echo(repo_meta.get_local_sync_record_path(config, RepoPart.DATA).as_posix())
     elif path_option == 'sync-record-meta':
@@ -1002,7 +987,6 @@ def cli_path(
     else:
         typer.echo(f"Invalid path option: {path_option}")
         raise typer.Exit(code=1)
-
 
 # %% [markdown]
 # # `create-user-symlinks`

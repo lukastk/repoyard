@@ -1,3 +1,11 @@
+# ---
+# jupyter:
+#   kernelspec:
+#     display_name: Python 3
+#     language: python
+#     name: python3
+# ---
+
 # %% [markdown]
 # # _delete_repo
 
@@ -17,7 +25,6 @@ from repoyard.config import get_config
 from repoyard import const
 from repoyard._utils import enable_soft_interruption
 
-
 # %%
 #|set_func_signature
 async def delete_repo(
@@ -28,7 +35,6 @@ async def delete_repo(
     """
     """
     ...
-
 
 # %% [markdown]
 # Set up testing args

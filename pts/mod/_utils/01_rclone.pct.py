@@ -1,3 +1,11 @@
+# ---
+# jupyter:
+#   kernelspec:
+#     display_name: Python 3
+#     language: python
+#     name: python3
+# ---
+
 # %% [markdown]
 # # _utils.rclone
 
@@ -49,11 +57,9 @@ def setup_test_folder(rel_path):
     
     return full_path
 
-
 # %%
 #|hide
 show_doc(this_module._rclone_cmd_helper)
-
 
 # %%
 #|exporti
@@ -103,7 +109,6 @@ def _rclone_cmd_helper(
         cmd.append("--progress")
     return cmd
 
-
 # %%
 #|hide
 show_doc(this_module._remove_ansi_escape)
@@ -130,14 +135,12 @@ ansi_escape = re.compile(r'''
 def _remove_ansi_escape(text: str) -> str:
     return ansi_escape.sub('', text)
 
-
 # %%
 _remove_ansi_escape("Hello \x1B[31mWorld\x1B[0m")
 
 # %%
 #|hide
 show_doc(this_module.rclone_copy)
-
 
 # %%
 #|export
@@ -168,7 +171,6 @@ async def rclone_copy(
     else:
         return shlex.join(cmd)
 
-
 # %%
 _path = setup_test_folder('copy')
 
@@ -197,7 +199,6 @@ assert "file2.txt" in ls
 #|hide
 show_doc(this_module.rclone_copyto)
 
-
 # %%
 #|export
 async def rclone_copyto(
@@ -224,7 +225,6 @@ async def rclone_copyto(
     else:
         return shlex.join(cmd)
 
-
 # %%
 _path = setup_test_folder('copyto')
 
@@ -245,7 +245,6 @@ assert "file1_copied.txt" in ls
 # %%
 #|hide
 show_doc(this_module.rclone_sync)
-
 
 # %%
 #|export
@@ -280,7 +279,6 @@ async def rclone_sync(
     else:
         return shlex.join(cmd)
 
-
 # %%
 _path = setup_test_folder('sync')
 
@@ -308,7 +306,6 @@ assert "file2.txt" in ls
 # %%
 #|hide
 show_doc(this_module.rclone_bisync)
-
 
 # %%
 #|export
@@ -360,11 +357,9 @@ async def rclone_bisync(
     else:
         return shlex.join([c.as_posix() if type(c) == Path else str(c) for c in cmd])
 
-
 # %%
 #|hide
 show_doc(this_module.rclone_mkdir)
-
 
 # %%
 #|export
@@ -382,11 +377,9 @@ async def rclone_mkdir(
     if ret_code != 0:
         raise Exception(stderr)
 
-
 # %%
 #|hide
 show_doc(this_module.rclone_lsjson)
-
 
 # %%
 #|export
@@ -420,11 +413,9 @@ async def rclone_lsjson(
         return None
     return json.loads(stdout)
 
-
 # %%
 #|hide
 show_doc(this_module.rclone_path_exists)
-
 
 # %%
 #|export
@@ -453,7 +444,6 @@ async def rclone_path_exists(
     is_dir = ls[Path(source_path).name]["IsDir"] if exists else False
     return (exists, is_dir)
 
-
 # %%
 assert await rclone_path_exists(
     _path / "rclone.conf",
@@ -464,7 +454,6 @@ assert await rclone_path_exists(
 # %%
 #|hide
 show_doc(this_module.rclone_purge)
-
 
 # %%
 #|export
@@ -478,7 +467,6 @@ async def rclone_purge(
     ret_code, stdout, stderr = await run_cmd_async(cmd)
     return ret_code == 0
 
-
 # %%
 _path = setup_test_folder('purge')
 
@@ -491,7 +479,6 @@ assert await rclone_purge(
 # %%
 #|hide
 show_doc(this_module.rclone_cat)
-
 
 # %%
 #|export
@@ -507,7 +494,6 @@ async def rclone_cat(
         return True, stdout
     else:
         return False, None
-
 
 # %%
 _path = setup_test_folder('cat')
@@ -541,7 +527,6 @@ assert content == "Hello, world!"
 #|hide
 show_doc(this_module.rclone_move)
 
-
 # %%
 #|export
 async def rclone_move(
@@ -559,7 +544,6 @@ async def rclone_move(
         return True, stdout
     else:
         return False, stderr
-
 
 # %%
 _path = setup_test_folder('move')

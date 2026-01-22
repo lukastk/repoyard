@@ -1,3 +1,11 @@
+# ---
+# jupyter:
+#   kernelspec:
+#     display_name: Python 3
+#     language: python
+#     name: python3
+# ---
+
 # %% [markdown]
 # # test_02_remote
 
@@ -28,17 +36,14 @@ from tests.utils import *
 
 from dotenv import load_dotenv
 
-
 # %%
 #|top_export
 def test_02_remote():
     asyncio.run(_test_02_remote())
 
-
 # %%
 #|set_func_signature
 async def _test_02_remote(): ...
-
 
 # %% [markdown]
 # Load config from env var. If it doesn't exist then skip test.
@@ -118,7 +123,6 @@ for repo_meta in [repo_meta1, repo_meta2, repo_meta3]:
 for repo_meta in [repo_meta1, repo_meta2, repo_meta3]:
     run_cmd(f"repoyard exclude -r {repo_meta.index_name}")
 
-
 # %%
 #|export
 async def _task(repo_meta):
@@ -138,7 +142,6 @@ await asyncio.gather(*[_task(repo_meta) for repo_meta in [repo_meta1, repo_meta2
 for repo_meta in [repo_meta1, repo_meta2, repo_meta3]:
     run_cmd(f"repoyard include -r {repo_meta.index_name}")
 
-
 # %%
 #|export
 async def _task(repo_meta):
@@ -157,7 +160,6 @@ await asyncio.gather(*[_task(repo_meta) for repo_meta in [repo_meta1, repo_meta2
 #|export
 for repo_meta in [repo_meta1, repo_meta2, repo_meta3]:
     run_cmd(f"repoyard delete -r {repo_meta.index_name}")
-
 
 # %%
 #|export

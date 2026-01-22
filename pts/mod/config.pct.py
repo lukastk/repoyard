@@ -1,3 +1,11 @@
+# ---
+# jupyter:
+#   kernelspec:
+#     display_name: Python 3
+#     language: python
+#     name: python3
+# ---
+
 # %% [markdown]
 # # config
 
@@ -19,7 +27,6 @@ import toml, json
 from enum import Enum
 
 from repoyard import const
-
 
 # %% [markdown]
 # # `config.json`
@@ -98,7 +105,7 @@ class Config(const.StrictModel):
         return Path(self.config_path).parent / "repoyard_rclone.conf"
     
     @property
-    def default_rclone_exclude_path(self) -> str:
+    def default_rclone_exclude_path(self) -> Path:
         return self.config_path.parent / "default.rclone_exclude"
     
     @model_validator(mode='after')
@@ -127,7 +134,6 @@ class Config(const.StrictModel):
         
         return self
 
-
 # %%
 #|export
 def get_config(path: Path|None = None) -> Config:
@@ -137,7 +143,6 @@ def get_config(path: Path|None = None) -> Config:
         'config_path' : path,
         **toml.load(path)
     })
-
 
 # %%
 #|export
@@ -168,7 +173,6 @@ def _get_default_config_dict(config_path=None, data_path=None) -> Config:
         max_concurrent_rclone_ops = const.DEFAULT_MAX_CONCURRENT_RCLONE_OPS,
     )
     return config_dict
-
 
 # %% [markdown]
 # # `rclone.conf`

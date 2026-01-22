@@ -1,3 +1,11 @@
+# ---
+# jupyter:
+#   kernelspec:
+#     display_name: Python 3
+#     language: python
+#     name: python3
+# ---
+
 # %% [markdown]
 # # _sync_missing_repometas
 
@@ -18,7 +26,6 @@ from repoyard._utils.sync_helper import SyncFailed, SyncUnsafe, InvalidRemotePat
 from repoyard._utils import check_interrupted, enable_soft_interruption, SoftInterruption
 from repoyard import const
 
-
 # %%
 #|set_func_signature
 async def sync_missing_repometas(
@@ -34,7 +41,6 @@ async def sync_missing_repometas(
     """
     """
     ...
-
 
 # %% [markdown]
 # Set up testing args

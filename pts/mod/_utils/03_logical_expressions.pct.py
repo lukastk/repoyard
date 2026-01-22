@@ -1,3 +1,11 @@
+# ---
+# jupyter:
+#   kernelspec:
+#     display_name: Python 3
+#     language: python
+#     name: python3
+# ---
+
 # %% [markdown]
 # # _utils.logical_expressions
 
@@ -12,7 +20,6 @@ import repoyard._utils.logical_expressions as this_module
 # %%
 #|hide
 show_doc(this_module._tokenize_expression)
-
 
 # %%
 # "a".isalnum?
@@ -110,7 +117,6 @@ def _parse_not_expression(tokens: list[str], pos: list[int], repo_groups: set[st
     pos[0] += 1
     return group_name in repo_groups
 
-
 # %%
 _tokenize_expression("group1 AND (group2 OR group3)")
 
@@ -120,7 +126,6 @@ _tokenize_expression("group1 AND parent_group/child_group")
 # %%
 #|hide
 show_doc(this_module.get_group_filter_func)
-
 
 # %%
 #|export
@@ -168,13 +173,11 @@ def get_group_filter_func(expression: str) -> bool:
     
     return _filter_func
 
-
 # %%
 #|exporti
 def _evaluate_group_expression(expression: str, repo_groups: set[str] | list[str]) -> bool:
     _filter_func = get_group_filter_func(expression)
     return _filter_func(repo_groups)
-
 
 # %%
 # Example usage:

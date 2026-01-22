@@ -1,3 +1,11 @@
+# ---
+# jupyter:
+#   kernelspec:
+#     display_name: .venv
+#     language: python
+#     name: python3
+# ---
+
 # %% [markdown]
 # # _init_repoyard
 
@@ -15,7 +23,6 @@ from pathlib import Path
 
 from repoyard import const
 
-
 # %%
 #|set_func_signature
 def init_repoyard(
@@ -29,7 +36,6 @@ def init_repoyard(
     Will create the necessary folders and files to start using repoyard.
     """
     ...
-
 
 # %% [markdown]
 # Set up testing args

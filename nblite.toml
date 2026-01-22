@@ -9,7 +9,8 @@ docs_cl="nbs"
 docs_title="repoyard"
 
 [cl.lib]
-path="repoyard"
+path="src/repoyard"
+format="module"
 
 [cl.nbs]
 format="ipynb"
@@ -28,5 +29,5 @@ path="pts/tests"
 format="percent"
 
 [cl.tests]
-path="tests"
+path="src/tests"
 format="module"

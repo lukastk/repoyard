@@ -1,3 +1,11 @@
+# ---
+# jupyter:
+#   kernelspec:
+#     display_name: Python 3
+#     language: python
+#     name: python3
+# ---
+
 # %% [markdown]
 # # _include_repo
 
@@ -16,7 +24,6 @@ from pathlib import Path
 from repoyard.config import get_config
 from repoyard import const
 
-
 # %%
 #|set_func_signature
 async def include_repo(
@@ -27,7 +34,6 @@ async def include_repo(
     """
     """
     ...
-
 
 # %% [markdown]
 # Set up testing args

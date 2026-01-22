@@ -1,3 +1,11 @@
+# ---
+# jupyter:
+#   kernelspec:
+#     display_name: Python 3
+#     language: python
+#     name: python3
+# ---
+
 # %% [markdown]
 # # sync_helper
 
@@ -43,13 +51,11 @@ class SyncDirection(Enum):
     PUSH = "push" # local -> remote
     PULL = "pull" # remote -> local
 
-
 # %%
 #|top_export
 class SyncFailed(Exception): pass
 class SyncUnsafe(Exception): pass
 class InvalidRemotePath(Exception): pass
-
 
 # %%
 #|set_func_signature
@@ -81,7 +87,6 @@ async def sync_helper(
     Returns a tuple of the sync status and a boolean indicating if the sync took place.
     """
     ...
-
 
 # %% [markdown]
 # Set up testing args
@@ -175,7 +180,6 @@ assert not remote_path_exists
 assert local_sync_record is None
 assert remote_sync_record is None
 
-
 # %%
 #|export
 def _raise_unsafe():
@@ -190,7 +194,7 @@ def _raise_unsafe():
 
 if sync_setting != SyncSetting.FORCE and sync_condition == SyncCondition.SYNCED:
     if verbose: print("Sync not needed.")
-    sync_status, False #|return_line
+    sync_status, False #|func_return_line
 
 if sync_direction is None: # auto
     if sync_condition == SyncCondition.NEEDS_PUSH:
@@ -199,7 +203,7 @@ if sync_direction is None: # auto
         sync_direction = SyncDirection.PULL
     elif sync_condition == SyncCondition.EXCLUDED:
         if verbose: print("Sync not needed as the repo is excluded.")
-        sync_status, False #|return_line
+        sync_status, False #|func_return_line
     elif sync_condition == SyncCondition.SYNC_INCOMPLETE:
         _raise_unsafe()
     else:
@@ -261,7 +265,6 @@ async def _sync(
         verbose=False,
         progress=show_rclone_progress,
     )
-
 
 # %%
 #|export

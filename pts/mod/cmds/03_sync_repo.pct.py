@@ -1,3 +1,11 @@
+# ---
+# jupyter:
+#   kernelspec:
+#     display_name: Python 3
+#     language: python
+#     name: python3
+# ---
+
 # %% [markdown]
 # # _sync_repo
 
@@ -20,7 +28,6 @@ from repoyard.config import get_config, StorageType
 from repoyard._utils import async_throttler
 from repoyard._utils import check_interrupted, enable_soft_interruption, SoftInterruption
 from repoyard import const
-
 
 # %%
 #|set_func_signature
@@ -48,7 +55,6 @@ async def sync_repo(
         show_rclone_progress: Show rclone progress during sync.
     """
     ...
-
 
 # %% [markdown]
 # Set up testing args
@@ -117,7 +123,7 @@ repo_meta = repoyard_meta.by_index_name[repo_index_name]
 #|export
 if repo_meta.get_storage_location_config(config).storage_type == StorageType.LOCAL:
     pass
-    #|return_line
+    #|func_return_line
 
 # %% [markdown]
 # Prints

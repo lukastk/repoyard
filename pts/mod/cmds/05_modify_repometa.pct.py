@@ -1,3 +1,11 @@
+# ---
+# jupyter:
+#   kernelspec:
+#     display_name: Python 3
+#     language: python
+#     name: python3
+# ---
+
 # %% [markdown]
 # # _modify_repometa
 
@@ -20,11 +28,9 @@ from repoyard._utils import get_repo_index_name_from_sub_path
 from repoyard.config import get_config, StorageType
 from repoyard import const
 
-
 # %%
 #|top_export
 class RepoNameConflict(Exception): pass
-
 
 # %%
 #|set_func_signature
@@ -36,7 +42,6 @@ def modify_repometa(
     """
     """
     ...
-
 
 # %% [markdown]
 # Set up testing args
@@ -112,7 +117,7 @@ for g in modified_repo_meta.groups:
         raise Exception(f"Cannot add a repository to a virtual repo group (virtual repo group: '{g}')")
 
     repo_group_config = repo_group_configs[g]
-    repo_metas_in_group = [rm for rm in _repo_metas if g in modified_repo_meta.groups]
+    repo_metas_in_group = [rm for rm in _repo_metas if g in rm.groups]
 
     if repo_group_config.unique_repo_names:
         name_counts = {repo_meta.name: 0 for repo_meta in repo_metas_in_group}
@@ -123,7 +128,6 @@ for g in modified_repo_meta.groups:
             names_str = ", ".join(f"'{name}' (count: {count})" for name, count in duplicate_names)
             raise RepoNameConflict(f"Error modifying repo meta for '{repo_index_name}':\n"
                              f"Repo is in group '{g}' which requires unique names. After the modification, the following name(s) appear multiple times in this group: {names_str}.")
-
 
 # %% [markdown]
 # Save the modified repo meta

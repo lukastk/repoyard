@@ -1,3 +1,11 @@
+# ---
+# jupyter:
+#   kernelspec:
+#     display_name: Python 3
+#     language: python
+#     name: python3
+# ---
+
 # %% [markdown]
 # # _utils.base
 
@@ -26,7 +34,6 @@ import repoyard.config
 #|hide
 show_doc(this_module.get_repo_index_name_from_sub_path)
 
-
 # %%
 #|export
 def get_repo_index_name_from_sub_path(
@@ -49,7 +56,6 @@ def get_repo_index_name_from_sub_path(
     
     repo_index_name = rel_path.parts[0]
     return repo_index_name
-
 
 # %%
 #|hide
@@ -74,11 +80,9 @@ def get_hostname():
         hostname = platform.node()
     return hostname
 
-
 # %%
 #|hide
 show_doc(this_module.run_fzf)
-
 
 # %%
 #|export
@@ -118,11 +122,9 @@ def run_fzf(terms: list[str], disp_terms: list[str]|None=None):
     except FileNotFoundError:
         raise RuntimeError("fzf is not installed or not found in PATH.")
 
-
 # %%
 #|hide
 show_doc(this_module.check_last_time_modified)
-
 
 # %%
 #|export
@@ -157,11 +159,9 @@ def check_last_time_modified(path: str | Path) -> float | None:
     
     return datetime.fromtimestamp(max_mtime, tz=timezone.utc) if max_mtime is not None else None
 
-
 # %%
 #|hide
 show_doc(this_module.run_cmd_async)
-
 
 # %%
 #|export
@@ -176,14 +176,12 @@ async def run_cmd_async(cmd: list[str]) -> subprocess.Popen:
     stderr = stderr.decode('utf-8')
     return proc.returncode, stdout, stderr
 
-
 # %%
 await run_cmd_async(['echo', 'hello', 'world'])
 
 # %%
 #|hide
 show_doc(this_module.async_throttler)
-
 
 # %%
 #|export
@@ -217,7 +215,6 @@ async def async_throttler(
             raise r
     return res
 
-
 # %%
 async def test_task():
     await asyncio.sleep(0.1)
@@ -229,7 +226,6 @@ res = await async_throttler(coros, max_concurrency=2)
 #|hide
 show_doc(this_module.is_in_event_loop)
 
-
 # %%
 #|export
 def is_in_event_loop():
@@ -238,7 +234,6 @@ def is_in_event_loop():
         return True
     except RuntimeError:
         return False
-
 
 # %%
 #|hide
@@ -277,7 +272,6 @@ def check_interrupted():
     global _interrupted
     return _interrupted
 
-
 # %%
 p = Path("/Users/lukastk/dev/20251109_000000_7GfJI__repoyard")
 
@@ -293,7 +287,6 @@ print(len(files))
 # %%
 #|hide
 show_doc(this_module.count_files_in_dir)
-
 
 # %%
 #|export

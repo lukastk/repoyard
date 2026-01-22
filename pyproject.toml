@@ -5,6 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
+    "nblite>=1.1.7",
     "pydantic>=2.12.4",
     "python-ulid[pydantic]>=3.1.0",
     "rich>=14.2.0",
@@ -18,8 +19,8 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build]
 ignore-vcs = true
-packages = ["repoyard"]
-include = ["repoyard/static/**"]
+packages = ["src/repoyard", "src/tests"]
+include = ["src/repoyard/static/**"]
 
 [dependency-groups]
 dev = [
