@@ -30,6 +30,9 @@ jobs:
       - name: Install dependencies
         run: uv sync --all-extras
 
+      - name: Generate test files
+        run: uv run nbl export
+
       - name: Run tests
         run: uv run pytest -v -m "not integration"
 
