@@ -200,7 +200,36 @@ assert remote_sync_record is None
 
 # %%
 #|export
-def _raise_unsafe():
+def _can_safely_retry_incomplete(sync_cond, sync_dir, local_rec, remote_rec):
+    """Check if this machine can safely retry an incomplete sync.
+
+    For SYNC_FROM_REMOTE_INCOMPLETE (pull was interrupted):
+        - Local is incomplete, this machine owns it
+        - Safe to retry pull
+
+    For SYNC_TO_REMOTE_INCOMPLETE (push was interrupted):
+        - Remote is incomplete
+        - Only safe if this machine started it (matching incomplete ULIDs on both sides)
+    """
+    if sync_cond == SyncCondition.SYNC_FROM_REMOTE_INCOMPLETE:
+        # Local is incomplete - this machine owns it
+        # Safe to retry pull (or auto-direction which will choose pull)
+        return sync_dir in (SyncDirection.PULL, None)
+
+    if sync_cond == SyncCondition.SYNC_TO_REMOTE_INCOMPLETE:
+        # Remote is incomplete - only safe if this machine started it
+        if (local_rec and remote_rec and
+            not local_rec.sync_complete and not remote_rec.sync_complete and
+            local_rec.ulid == remote_rec.ulid):
+            # Matching incomplete ULIDs = this machine started it
+            return sync_dir in (SyncDirection.PUSH, None)
+
+    return False
+
+
+def _raise_unsafe(message=None):
+    if message:
+        raise SyncUnsafe(message)
     raise SyncUnsafe(
         inspect.cleandoc(f"""
         Sync is unsafe. Info:
@@ -227,22 +256,47 @@ if sync_direction is None:  # auto
         if verbose:
             print("Sync not needed as the repo is excluded.")
         sync_status, False  #|func_return_line
-    elif sync_condition == SyncCondition.SYNC_INCOMPLETE:
-        _raise_unsafe()
+    elif sync_condition == SyncCondition.SYNC_FROM_REMOTE_INCOMPLETE:
+        # Local is incomplete from interrupted pull - this machine can safely retry pull
+        if _can_safely_retry_incomplete(sync_condition, SyncDirection.PULL, local_sync_record, remote_sync_record):
+            sync_direction = SyncDirection.PULL
+        else:
+            _raise_unsafe()
+    elif sync_condition == SyncCondition.SYNC_TO_REMOTE_INCOMPLETE:
+        # Remote is incomplete from interrupted push
+        # Only safe to retry if this machine started it (matching incomplete ULIDs)
+        if _can_safely_retry_incomplete(sync_condition, SyncDirection.PUSH, local_sync_record, remote_sync_record):
+            sync_direction = SyncDirection.PUSH
+        else:
+            _raise_unsafe(
+                "Remote has an incomplete sync from another machine. "
+                "Use --sync-setting force to override, or sync from the original machine."
+            )
     else:
         _raise_unsafe()  # In the case where the sync status is SYNCED, 'auto'-mode should not reach this, as it should have already returned (as auto can only be used in CAREFUL mode)
 
 if sync_setting == SyncSetting.CAREFUL:
-    if sync_direction == SyncDirection.PUSH and sync_condition not in [
-        SyncCondition.NEEDS_PUSH,
-        SyncCondition.SYNCED,
-    ]:
-        _raise_unsafe()
-    elif sync_direction == SyncDirection.PULL and sync_condition not in [
-        SyncCondition.NEEDS_PULL,
-        SyncCondition.SYNCED,
-    ]:
-        _raise_unsafe()
+    if sync_direction == SyncDirection.PUSH:
+        if sync_condition in [SyncCondition.NEEDS_PUSH, SyncCondition.SYNCED]:
+            pass  # Safe to push
+        elif sync_condition == SyncCondition.SYNC_TO_REMOTE_INCOMPLETE:
+            # Check if this machine can safely retry the interrupted push
+            if not _can_safely_retry_incomplete(sync_condition, sync_direction, local_sync_record, remote_sync_record):
+                _raise_unsafe(
+                    "Remote has an incomplete sync from another machine. "
+                    "Use --sync-setting force to override, or sync from the original machine."
+                )
+        else:
+            _raise_unsafe()
+    elif sync_direction == SyncDirection.PULL:
+        if sync_condition in [SyncCondition.NEEDS_PULL, SyncCondition.SYNCED]:
+            pass  # Safe to pull
+        elif sync_condition == SyncCondition.SYNC_FROM_REMOTE_INCOMPLETE:
+            # Local is incomplete from interrupted pull - this machine can safely retry
+            if not _can_safely_retry_incomplete(sync_condition, sync_direction, local_sync_record, remote_sync_record):
+                _raise_unsafe()  # This shouldn't happen, but just in case
+        else:
+            _raise_unsafe()
 
 # %% [markdown]
 # Sync
@@ -335,8 +389,11 @@ if sync_direction == SyncDirection.PULL:
         await rec.rclone_save(rclone_config_path, "", local_sync_record_path)
 
 elif sync_direction == SyncDirection.PUSH:
-    # Save the sync record on remote to signify an ongoing sync
+    # Save the incomplete sync record on BOTH local and remote to signify an ongoing sync
+    # This creates a "sync session" marker - if interrupted, both sides have the same incomplete ULID,
+    # proving this machine owns the interrupted sync and can safely retry
     await rec.rclone_save(rclone_config_path, remote, remote_sync_record_path)
+    await rec.rclone_save(rclone_config_path, "", local_sync_record_path)
 
     backup_remote = remote
     backup_path = Path(remote_sync_backups_path) / backup_name

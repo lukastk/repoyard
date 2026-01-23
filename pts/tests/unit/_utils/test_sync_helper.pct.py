@@ -19,6 +19,7 @@ import asyncio
 from pathlib import Path
 from unittest.mock import MagicMock, patch, AsyncMock
 from datetime import datetime, timezone
+from ulid import ULID
 
 from repoyard._utils.sync_helper import (
     SyncSetting,
@@ -473,15 +474,24 @@ class TestSyncHelperAutoDirection:
 
         asyncio.run(_test())
 
-    def test_auto_direction_sync_incomplete_raises_unsafe(self):
-        """Auto direction with SYNC_INCOMPLETE raises SyncUnsafe."""
+    def test_auto_direction_sync_to_remote_incomplete_from_another_machine_raises_unsafe(self):
+        """Auto direction with SYNC_TO_REMOTE_INCOMPLETE from another machine raises SyncUnsafe."""
         async def _test():
+            # Remote is incomplete, but local is complete (different ULIDs) - another machine's interrupted push
+            local_record = MagicMock(spec=SyncRecord)
+            local_record.ulid = ULID()
+            local_record.sync_complete = True
+
+            remote_record = MagicMock(spec=SyncRecord)
+            remote_record.ulid = ULID()  # Different ULID
+            remote_record.sync_complete = False  # Incomplete
+
             mock_status = SyncStatus(
-                sync_condition=SyncCondition.SYNC_INCOMPLETE,
+                sync_condition=SyncCondition.SYNC_TO_REMOTE_INCOMPLETE,
                 local_path_exists=True,
                 remote_path_exists=True,
-                local_sync_record=MagicMock(spec=SyncRecord),
-                remote_sync_record=MagicMock(spec=SyncRecord),
+                local_sync_record=local_record,
+                remote_sync_record=remote_record,
                 is_dir=True,
                 error_message=None,
             )
@@ -490,7 +500,7 @@ class TestSyncHelperAutoDirection:
                 "repoyard._models.get_sync_status",
                 new=AsyncMock(return_value=mock_status),
             ):
-                with pytest.raises(SyncUnsafe):
+                with pytest.raises(SyncUnsafe, match="another machine"):
                     await sync_helper(
                         rclone_config_path="/config",
                         sync_direction=None,  # Auto
@@ -503,6 +513,153 @@ class TestSyncHelperAutoDirection:
                         local_sync_backups_path="/backups",
                         remote_sync_backups_path="remote/backups",
                     )
+
+        asyncio.run(_test())
+
+    def test_auto_direction_sync_to_remote_incomplete_matching_ulids_allows_retry(self):
+        """Auto direction with SYNC_TO_REMOTE_INCOMPLETE and matching ULIDs allows retry push."""
+        async def _test():
+            shared_ulid = ULID()
+
+            # Both incomplete with same ULID - this machine's interrupted push
+            local_record = MagicMock(spec=SyncRecord)
+            local_record.ulid = shared_ulid
+            local_record.sync_complete = False
+
+            remote_record = MagicMock(spec=SyncRecord)
+            remote_record.ulid = shared_ulid  # Same ULID
+            remote_record.sync_complete = False
+            remote_record.rclone_save = AsyncMock()
+
+            mock_status = SyncStatus(
+                sync_condition=SyncCondition.SYNC_TO_REMOTE_INCOMPLETE,
+                local_path_exists=True,
+                remote_path_exists=True,
+                local_sync_record=local_record,
+                remote_sync_record=remote_record,
+                is_dir=True,
+                error_message=None,
+            )
+
+            with (
+                patch(
+                    "repoyard._models.get_sync_status",
+                    new=AsyncMock(return_value=mock_status),
+                ),
+                patch(
+                    "repoyard._utils.sync_helper.check_interrupted",
+                    return_value=False,
+                ),
+                patch(
+                    "repoyard._utils.rclone_sync",
+                    new=AsyncMock(return_value=(True, "", "")),
+                ),
+                patch(
+                    "repoyard._utils.rclone_mkdir",
+                    new=AsyncMock(),
+                ),
+                patch(
+                    "repoyard._utils.rclone_purge",
+                    new=AsyncMock(),
+                ),
+                patch.object(
+                    SyncRecord,
+                    "create",
+                    return_value=MagicMock(
+                        ulid=MagicMock(__str__=lambda x: "test-ulid"),
+                        rclone_save=AsyncMock(),
+                    ),
+                ),
+            ):
+                status, synced = await sync_helper(
+                    rclone_config_path="/config",
+                    sync_direction=None,  # Auto - should choose PUSH
+                    sync_setting=SyncSetting.CAREFUL,
+                    local_path="/local",
+                    local_sync_record_path="/local/.sync",
+                    remote="myremote",
+                    remote_path="/remote",
+                    remote_sync_record_path="remote/.sync",
+                    local_sync_backups_path="/backups",
+                    remote_sync_backups_path="remote/backups",
+                )
+
+            assert synced is True
+
+        asyncio.run(_test())
+
+    def test_auto_direction_sync_from_remote_incomplete_allows_retry(self):
+        """Auto direction with SYNC_FROM_REMOTE_INCOMPLETE allows retry pull."""
+        async def _test():
+            # Local incomplete, remote complete - this machine's interrupted pull
+            local_record = MagicMock(spec=SyncRecord)
+            local_record.ulid = ULID()
+            local_record.sync_complete = False
+
+            remote_record = MagicMock(spec=SyncRecord)
+            remote_record.ulid = ULID()
+            remote_record.sync_complete = True
+            remote_record.rclone_save = AsyncMock()
+
+            mock_status = SyncStatus(
+                sync_condition=SyncCondition.SYNC_FROM_REMOTE_INCOMPLETE,
+                local_path_exists=True,
+                remote_path_exists=True,
+                local_sync_record=local_record,
+                remote_sync_record=remote_record,
+                is_dir=True,
+                error_message=None,
+            )
+
+            with (
+                patch(
+                    "repoyard._models.get_sync_status",
+                    new=AsyncMock(return_value=mock_status),
+                ),
+                patch(
+                    "repoyard._utils.sync_helper.check_interrupted",
+                    return_value=False,
+                ),
+                patch(
+                    "repoyard._utils.rclone_sync",
+                    new=AsyncMock(return_value=(True, "", "")),
+                ),
+                patch(
+                    "repoyard._utils.rclone_mkdir",
+                    new=AsyncMock(),
+                ),
+                patch(
+                    "repoyard._utils.rclone_purge",
+                    new=AsyncMock(),
+                ),
+                patch.object(
+                    SyncRecord,
+                    "create",
+                    return_value=MagicMock(
+                        ulid=MagicMock(__str__=lambda x: "test-ulid"),
+                        rclone_save=AsyncMock(),
+                    ),
+                ),
+                patch.object(
+                    SyncRecord,
+                    "rclone_read",
+                    new=AsyncMock(return_value=remote_record),
+                ),
+            ):
+                status, synced = await sync_helper(
+                    rclone_config_path="/config",
+                    sync_direction=None,  # Auto - should choose PULL
+                    sync_setting=SyncSetting.CAREFUL,
+                    local_path="/local",
+                    local_sync_record_path="/local/.sync",
+                    remote="myremote",
+                    remote_path="/remote",
+                    remote_sync_record_path="remote/.sync",
+                    local_sync_backups_path="/backups",
+                    remote_sync_backups_path="remote/backups",
+                )
+
+            assert synced is True
 
         asyncio.run(_test())
 

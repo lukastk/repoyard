@@ -428,10 +428,10 @@ class TestGetSyncStatusConflict:
 
 # %% pts/tests/unit/models/test_get_sync_status.pct.py 9
 class TestGetSyncStatusIncomplete:
-    """Tests for SYNC_INCOMPLETE condition."""
+    """Tests for SYNC_TO_REMOTE_INCOMPLETE and SYNC_FROM_REMOTE_INCOMPLETE conditions."""
 
-    def test_incomplete_when_local_sync_incomplete(self, tmp_path):
-        """Returns SYNC_INCOMPLETE when local sync record is incomplete."""
+    def test_sync_from_remote_incomplete_when_local_sync_incomplete(self, tmp_path):
+        """Returns SYNC_FROM_REMOTE_INCOMPLETE when local sync record is incomplete (pull interrupted)."""
         async def _test():
             local_dir = tmp_path / "local_repo"
             local_dir.mkdir()
@@ -473,12 +473,12 @@ class TestGetSyncStatusIncomplete:
                     remote_sync_record_path="/remote/.sync",
                 )
 
-            assert status.sync_condition == SyncCondition.SYNC_INCOMPLETE
+            assert status.sync_condition == SyncCondition.SYNC_FROM_REMOTE_INCOMPLETE
 
         asyncio.run(_test())
 
-    def test_incomplete_when_remote_sync_incomplete(self, tmp_path):
-        """Returns SYNC_INCOMPLETE when remote sync record is incomplete."""
+    def test_sync_to_remote_incomplete_when_remote_sync_incomplete(self, tmp_path):
+        """Returns SYNC_TO_REMOTE_INCOMPLETE when remote sync record is incomplete (push interrupted)."""
         async def _test():
             local_dir = tmp_path / "local_repo"
             local_dir.mkdir()
@@ -520,7 +520,106 @@ class TestGetSyncStatusIncomplete:
                     remote_sync_record_path="/remote/.sync",
                 )
 
-            assert status.sync_condition == SyncCondition.SYNC_INCOMPLETE
+            assert status.sync_condition == SyncCondition.SYNC_TO_REMOTE_INCOMPLETE
+
+        asyncio.run(_test())
+
+    def test_sync_to_remote_incomplete_when_both_incomplete_matching_ulids(self, tmp_path):
+        """Returns SYNC_TO_REMOTE_INCOMPLETE when both are incomplete with matching ULIDs (push interrupted from this machine)."""
+        async def _test():
+            local_dir = tmp_path / "local_repo"
+            local_dir.mkdir()
+
+            shared_ulid = ULID()
+
+            local_record = MagicMock(spec=SyncRecord)
+            local_record.ulid = shared_ulid
+            local_record.sync_complete = False  # Incomplete!
+            local_record.timestamp = datetime.now(timezone.utc)
+
+            remote_record = MagicMock(spec=SyncRecord)
+            remote_record.ulid = shared_ulid  # Same ULID
+            remote_record.sync_complete = False  # Also incomplete!
+            remote_record.timestamp = datetime.now(timezone.utc)
+
+            with (
+                patch(
+                    "repoyard._utils.rclone_path_exists",
+                    new=AsyncMock(side_effect=[
+                        (True, True),  # local exists, is dir
+                        (True, True),  # remote exists, is dir
+                    ]),
+                ),
+                patch(
+                    "repoyard._utils.check_last_time_modified",
+                    return_value=datetime.now(timezone.utc),
+                ),
+                patch.object(
+                    SyncRecord,
+                    "rclone_read",
+                    new=AsyncMock(side_effect=[local_record, remote_record]),
+                ),
+            ):
+                status = await get_sync_status(
+                    rclone_config_path="/config",
+                    local_path=local_dir,
+                    local_sync_record_path="/local/.sync",
+                    remote="myremote",
+                    remote_path="/remote/path",
+                    remote_sync_record_path="/remote/.sync",
+                )
+
+            assert status.sync_condition == SyncCondition.SYNC_TO_REMOTE_INCOMPLETE
+
+        asyncio.run(_test())
+
+    def test_error_when_both_incomplete_different_ulids(self, tmp_path):
+        """Returns ERROR when both are incomplete with different ULIDs (inconsistent state)."""
+        async def _test():
+            local_dir = tmp_path / "local_repo"
+            local_dir.mkdir()
+
+            local_record = MagicMock(spec=SyncRecord)
+            local_record.ulid = ULID()
+            local_record.sync_complete = False  # Incomplete!
+            local_record.timestamp = datetime.now(timezone.utc)
+
+            import time
+            time.sleep(0.002)
+            remote_record = MagicMock(spec=SyncRecord)
+            remote_record.ulid = ULID()  # Different ULID
+            remote_record.sync_complete = False  # Also incomplete!
+            remote_record.timestamp = datetime.now(timezone.utc)
+
+            with (
+                patch(
+                    "repoyard._utils.rclone_path_exists",
+                    new=AsyncMock(side_effect=[
+                        (True, True),  # local exists, is dir
+                        (True, True),  # remote exists, is dir
+                    ]),
+                ),
+                patch(
+                    "repoyard._utils.check_last_time_modified",
+                    return_value=datetime.now(timezone.utc),
+                ),
+                patch.object(
+                    SyncRecord,
+                    "rclone_read",
+                    new=AsyncMock(side_effect=[local_record, remote_record]),
+                ),
+            ):
+                status = await get_sync_status(
+                    rclone_config_path="/config",
+                    local_path=local_dir,
+                    local_sync_record_path="/local/.sync",
+                    remote="myremote",
+                    remote_path="/remote/path",
+                    remote_sync_record_path="/remote/.sync",
+                )
+
+            assert status.sync_condition == SyncCondition.ERROR
+            assert "inconsistent incomplete records" in status.error_message.lower()
 
         asyncio.run(_test())
 

@@ -624,7 +624,8 @@ from typing import NamedTuple
 
 class SyncCondition(Enum):
     SYNCED = "synced"
-    SYNC_INCOMPLETE = "sync_incomplete"
+    SYNC_TO_REMOTE_INCOMPLETE = "sync_to_remote_incomplete"  # Push was interrupted, remote is corrupted
+    SYNC_FROM_REMOTE_INCOMPLETE = "sync_from_remote_incomplete"  # Pull was interrupted, local is corrupted
     CONFLICT = "conflict"
     NEEDS_PUSH = "needs_push"
     NEEDS_PULL = "needs_pull"
@@ -732,8 +733,25 @@ async def get_sync_status(
             )
             return SyncStatus(**sync_status)
 
-    if local_sync_incomplete or remote_sync_incomplete:
-        sync_condition = SyncCondition.SYNC_INCOMPLETE
+    if local_sync_incomplete and remote_sync_incomplete:
+        if local_sync_record.ulid == remote_sync_record.ulid:
+            # Same sync session - both sides marked by same operation
+            # This is an interrupted PUSH from THIS machine (PUSH saves incomplete to both sides)
+            sync_condition = SyncCondition.SYNC_TO_REMOTE_INCOMPLETE
+        else:
+            # Different ULIDs - inconsistent state, shouldn't happen in normal operation
+            sync_status["error_message"] = (
+                f"Inconsistent incomplete records (different ULIDs). "
+                f"Local ULID: {local_sync_record.ulid}, Remote ULID: {remote_sync_record.ulid}"
+            )
+            sync_status["sync_condition"] = SyncCondition.ERROR
+            return SyncStatus(**sync_status)
+    elif remote_sync_incomplete:
+        # Only remote is incomplete - push was interrupted (possibly from another machine)
+        sync_condition = SyncCondition.SYNC_TO_REMOTE_INCOMPLETE
+    elif local_sync_incomplete:
+        # Only local is incomplete - pull was interrupted from THIS machine
+        sync_condition = SyncCondition.SYNC_FROM_REMOTE_INCOMPLETE
     else:
         if sync_records_match:
             if (

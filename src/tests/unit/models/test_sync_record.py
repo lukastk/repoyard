@@ -219,7 +219,8 @@ class TestSyncCondition:
     def test_all_conditions_have_values(self):
         """All SyncCondition members have string values."""
         assert SyncCondition.SYNCED.value == "synced"
-        assert SyncCondition.SYNC_INCOMPLETE.value == "sync_incomplete"
+        assert SyncCondition.SYNC_TO_REMOTE_INCOMPLETE.value == "sync_to_remote_incomplete"
+        assert SyncCondition.SYNC_FROM_REMOTE_INCOMPLETE.value == "sync_from_remote_incomplete"
         assert SyncCondition.CONFLICT.value == "conflict"
         assert SyncCondition.NEEDS_PUSH.value == "needs_push"
         assert SyncCondition.NEEDS_PULL.value == "needs_pull"
@@ -227,8 +228,8 @@ class TestSyncCondition:
         assert SyncCondition.ERROR.value == "error"
 
     def test_condition_count(self):
-        """There are exactly 8 sync conditions."""
-        assert len(SyncCondition) == 8
+        """There are exactly 9 sync conditions."""
+        assert len(SyncCondition) == 9
 
     def test_conditions_are_unique(self):
         """All condition values are unique."""
@@ -421,15 +422,15 @@ class TestSyncScenarios:
 
         assert status.sync_condition == SyncCondition.EXCLUDED
 
-    def test_sync_incomplete_scenario(self):
-        """SYNC_INCOMPLETE: a sync is in progress."""
+    def test_sync_to_remote_incomplete_scenario(self):
+        """SYNC_TO_REMOTE_INCOMPLETE: a push is in progress or was interrupted."""
         incomplete_record = SyncRecord(
             sync_complete=False,  # Not complete
             syncer_hostname="host",
         )
 
         status = SyncStatus(
-            sync_condition=SyncCondition.SYNC_INCOMPLETE,
+            sync_condition=SyncCondition.SYNC_TO_REMOTE_INCOMPLETE,
             local_path_exists=True,
             remote_path_exists=True,
             local_sync_record=incomplete_record,
@@ -437,8 +438,32 @@ class TestSyncScenarios:
             is_dir=True,
         )
 
-        assert status.sync_condition == SyncCondition.SYNC_INCOMPLETE
+        assert status.sync_condition == SyncCondition.SYNC_TO_REMOTE_INCOMPLETE
         assert status.local_sync_record.sync_complete is False
+
+    def test_sync_from_remote_incomplete_scenario(self):
+        """SYNC_FROM_REMOTE_INCOMPLETE: a pull is in progress or was interrupted."""
+        incomplete_record = SyncRecord(
+            sync_complete=False,  # Not complete
+            syncer_hostname="host",
+        )
+        complete_record = SyncRecord(
+            sync_complete=True,
+            syncer_hostname="host",
+        )
+
+        status = SyncStatus(
+            sync_condition=SyncCondition.SYNC_FROM_REMOTE_INCOMPLETE,
+            local_path_exists=True,
+            remote_path_exists=True,
+            local_sync_record=incomplete_record,
+            remote_sync_record=complete_record,
+            is_dir=True,
+        )
+
+        assert status.sync_condition == SyncCondition.SYNC_FROM_REMOTE_INCOMPLETE
+        assert status.local_sync_record.sync_complete is False
+        assert status.remote_sync_record.sync_complete is True
 
 
 # ============================================================================
