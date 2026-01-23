@@ -51,9 +51,6 @@ async def rename_repo(
     repo_id = RepoMeta.extract_repo_id(repo_index_name)
     storage_location = repo_meta.storage_location
     
-    # Validate new name
-    RepoMeta.validate_repo_name(new_name)
-    
     # Compute new index name
     new_index_name = f"{repo_id}__{new_name}"
     

@@ -163,8 +163,21 @@ if _is_tombstoned:
     if _tombstone:
         _tombstone_msg += f" by {_tombstone.deleted_by_hostname} at {_tombstone.deleted_at_utc}"
     print(f"Warning: {_tombstone_msg}. Skipping sync.")
-    sync_results = {part: SyncStatus(condition=SyncCondition.TOMBSTONED) for part in sync_choices}
-    #|func_return_line
+    from repoyard._models import SyncRecord
+    _dummy_sync_record = SyncRecord.create(sync_complete=False)
+    sync_results = {
+        part: SyncStatus(
+            sync_condition=SyncCondition.TOMBSTONED,
+            local_path_exists=False,
+            remote_path_exists=False,
+            local_sync_record=_dummy_sync_record,
+            remote_sync_record=_dummy_sync_record,
+            is_dir=True,
+            error_message=_tombstone_msg,
+        )
+        for part in sync_choices
+    }
+    return sync_results
 
 # %% [markdown]
 # Find the remote repo by ID (names may differ between local and remote)
@@ -243,7 +256,7 @@ try:
     if sync_part in sync_choices:
         if verbose:
             print(f"Syncing {sync_part.value}.")
-        sync_results[RepoPart.META] = await sync_helper(
+        sync_results[RepoPart.META], _ = await sync_helper(
             rclone_config_path=config.rclone_config_path,
             sync_direction=sync_direction,
             sync_setting=sync_setting,
@@ -268,7 +281,7 @@ try:
     if sync_part in sync_choices:
         if verbose:
             print("Syncing", sync_part.value)
-        sync_results[sync_part] = await sync_helper(
+        sync_results[sync_part], _ = await sync_helper(
             rclone_config_path=config.rclone_config_path,
             sync_direction=sync_direction,
             sync_setting=sync_setting,
@@ -312,7 +325,7 @@ try:
     if sync_part in sync_choices:
         if verbose:
             print("Syncing", sync_part.value)
-        sync_results[sync_part] = await sync_helper(
+        sync_results[sync_part], _ = await sync_helper(
             rclone_config_path=config.rclone_config_path,
             sync_direction=sync_direction,
             sync_setting=sync_setting,
