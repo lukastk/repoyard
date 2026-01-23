@@ -23,9 +23,11 @@ from pathlib import Path
 import subprocess
 import re
 from datetime import datetime
+import asyncio
 
 from repoyard._utils.locking import RepoyardLockManager, LockAcquisitionError, GLOBAL_LOCK_TIMEOUT
 from filelock import Timeout
+from repoyard._models import generate_unique_repo_id
 
 
 def _extract_repo_name_from_git_url(url: str) -> str:
@@ -63,6 +65,7 @@ def new_repo(
     initialise_git: bool = True,
     verbose: bool = False,
     git_clone_url: str | None = None,
+    sync_first: bool | None = None,
 ):
     """
     Create a new repoyard repository.
@@ -78,6 +81,8 @@ def new_repo(
         initialise_git: Whether to initialise a git repository in the new repository.
         verbose: Whether to print verbose output.
         git_clone_url: Git URL (SSH or HTTPS) to clone as the new repository.
+        sync_first: If True, sync all repometas before creating to check for ID collisions
+                   on remote. If None, uses config.sync_before_new_repo setting.
 
     Returns:
         The index name of the new repository.
@@ -105,6 +110,7 @@ creation_timestamp_utc = None
 initialise_git = True
 verbose = True
 git_clone_url = None
+sync_first = None
 
 # %% [markdown]
 # # Function body
@@ -148,6 +154,23 @@ from repoyard._utils import get_hostname
 
 if creator_hostname is None:
     creator_hostname = get_hostname()
+
+# Resolve sync_first from config if not specified
+if sync_first is None:
+    sync_first = config.sync_before_new_repo
+
+# %% [markdown]
+# Optionally sync all repometas first to check for remote ID collisions
+
+# %%
+#|export
+if sync_first:
+    from repoyard.cmds import sync_repometas
+    if verbose:
+        print("Syncing repometas before creating new repo...")
+    asyncio.get_event_loop().run_until_complete(
+        sync_repometas(config_path=config_path, verbose=verbose)
+    )
 
 # %% [markdown]
 # Check if the `from_path` is a repo within the repoyard
@@ -193,19 +216,34 @@ except Timeout:
     )
 
 # %% [markdown]
-# Create meta file
+# Create meta file with unique ID
 
 # %%
 #|export
 from repoyard._models import RepoMeta
 
-repo_meta = RepoMeta.create(
-    config,
+# Collect all existing repo IDs to prevent collisions
+existing_ids = {rm.repo_id for rm in repoyard_meta.repo_metas}
+
+# Generate unique timestamp and subid
+creation_timestamp, repo_subid = generate_unique_repo_id(config, existing_ids)
+
+# If user provided a timestamp, use it (but still use the unique subid)
+if creation_timestamp_utc is not None:
+    from repoyard.config import RepoTimestampFormat
+    from repoyard import const
+    if config.repo_timestamp_format == RepoTimestampFormat.DATE_AND_TIME:
+        creation_timestamp = creation_timestamp_utc.strftime(const.REPO_TIMESTAMP_FORMAT)
+    else:
+        creation_timestamp = creation_timestamp_utc.strftime(const.REPO_TIMESTAMP_FORMAT_DATE_ONLY)
+
+repo_meta = RepoMeta(
+    creation_timestamp_utc=creation_timestamp,
+    repo_subid=repo_subid,
     name=repo_name,
-    storage_location_name=storage_location,
-    groups=config.default_repo_groups,
+    storage_location=storage_location,
     creator_hostname=creator_hostname,
-    creation_timestamp_utc=creation_timestamp_utc,
+    groups=config.default_repo_groups,
 )
 
 repo_meta.save(config)

@@ -628,3 +628,129 @@ assert res
 
 assert not (_path / "my_remote" / "folder1").exists()
 assert (_path / "my_remote" / "folder2").exists()
+
+# %%
+#|hide
+show_doc(this_module.rclone_moveto)
+
+# %%
+#|export
+async def rclone_moveto(
+    rclone_config_path: str,
+    source: str,
+    source_path: str,
+    dest: str,
+    dest_path: str,
+) -> tuple[bool, str | None]:
+    """
+    Move/rename a single file or directory.
+    Unlike rclone_move, this renames the source to the exact dest path.
+    """
+    source_str = f"{source}:{source_path}" if source else source_path
+    dest_str = f"{dest}:{dest_path}" if dest else dest_path
+    cmd = ["rclone", "moveto", "--config", rclone_config_path, source_str, dest_str]
+    ret_code, stdout, stderr = await run_cmd_async(cmd)
+    if ret_code == 0:
+        return True, stdout
+    else:
+        return False, stderr
+
+# %%
+_path = setup_test_folder("moveto")
+(_path / "my_remote" / "old_name").mkdir(parents=True, exist_ok=True)
+(_path / "my_remote" / "old_name" / "file.txt").write_text("test")
+
+res, _ = await rclone_moveto(
+    _path / "rclone.conf",
+    source="my_remote",
+    source_path="old_name",
+    dest="my_remote",
+    dest_path="new_name",
+)
+assert res
+
+assert not (_path / "my_remote" / "old_name").exists()
+assert (_path / "my_remote" / "new_name").exists()
+assert (_path / "my_remote" / "new_name" / "file.txt").read_text() == "test"
+
+# %%
+#|hide
+show_doc(this_module.rclone_write)
+
+# %%
+#|export
+async def rclone_write(
+    rclone_config_path: str,
+    dest: str,
+    dest_path: str,
+    content: str,
+) -> bool:
+    """
+    Write content to a remote file.
+    Creates parent directories if they don't exist.
+    """
+    import tempfile
+
+    # Write to temp file first, then copy
+    with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.tmp') as f:
+        f.write(content)
+        temp_path = f.name
+
+    try:
+        success, _, _ = await rclone_copyto(
+            rclone_config_path=rclone_config_path,
+            source="",
+            source_path=temp_path,
+            dest=dest,
+            dest_path=dest_path,
+        )
+        return success
+    finally:
+        Path(temp_path).unlink(missing_ok=True)
+
+# %%
+_path = setup_test_folder("write")
+
+res = await rclone_write(
+    _path / "rclone.conf",
+    dest="my_remote",
+    dest_path="written_file.txt",
+    content="Hello from rclone_write!",
+)
+assert res
+
+content = (_path / "my_remote" / "written_file.txt").read_text()
+assert content == "Hello from rclone_write!"
+
+# %%
+#|hide
+show_doc(this_module.rclone_delete)
+
+# %%
+#|export
+async def rclone_delete(
+    rclone_config_path: str,
+    dest: str,
+    dest_path: str,
+) -> bool:
+    """
+    Delete a single remote file.
+    """
+    dest_str = f"{dest}:{dest_path}" if dest else dest_path
+    cmd = ["rclone", "deletefile", "--config", rclone_config_path, dest_str]
+    ret_code, stdout, stderr = await run_cmd_async(cmd)
+    return ret_code == 0
+
+# %%
+_path = setup_test_folder("delete")
+(_path / "my_remote" / "to_delete.txt").write_text("delete me")
+
+assert (_path / "my_remote" / "to_delete.txt").exists()
+
+res = await rclone_delete(
+    _path / "rclone.conf",
+    dest="my_remote",
+    dest_path="to_delete.txt",
+)
+assert res
+assert not (_path / "my_remote" / "to_delete.txt").exists()

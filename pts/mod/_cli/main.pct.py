@@ -1489,3 +1489,173 @@ def cli_create_user_symlinks(
         user_repos_path=user_repos_path,
         user_repo_groups_path=user_repo_groups_path,
     )
+
+# %% [markdown]
+# # `rename`
+
+# %%
+#|export
+from repoyard.cmds._rename_repo import RenameScope
+
+@app.command(name="rename")
+def cli_rename(
+    repo_index_name: str | None = Option(
+        None,
+        "--repo",
+        "-r",
+        help="The index name of the repository to rename.",
+    ),
+    repo_id: str | None = Option(
+        None, "--repo-id", "-i", help="The id of the repository to rename."
+    ),
+    repo_name: str | None = Option(
+        None, "--repo-name", "-n", help="The name of the repository to rename."
+    ),
+    new_name: str = Option(
+        ..., "--new-name", "-N", help="The new name for the repository."
+    ),
+    scope: RenameScope = Option(
+        RenameScope.BOTH,
+        "--scope",
+        "-s",
+        help="Where to rename: local, remote, or both.",
+    ),
+    name_match_mode: NameMatchMode | None = Option(
+        None,
+        "--name-match-mode",
+        "-m",
+        help="The mode to use for matching the repository name.",
+    ),
+    name_match_case: bool = Option(
+        False,
+        "--name-match-case",
+        "-c",
+        help="Whether to match the repository name case-sensitively.",
+    ),
+    refresh_user_symlinks: bool = Option(True, help="Refresh the user symlinks."),
+):
+    """
+    Rename a repository locally, on remote, or both.
+    """
+    from repoyard.cmds._rename_repo import rename_repo
+    from repoyard._models import get_repoyard_meta
+
+    repo_index_name = _get_repo_index_name(
+        repo_name=repo_name,
+        repo_id=repo_id,
+        repo_index_name=repo_index_name,
+        name_match_mode=name_match_mode,
+        name_match_case=name_match_case,
+        allow_no_args=False,
+    )
+
+    repoyard_meta = get_repoyard_meta(get_config(app_state["config_path"]))
+    if repo_index_name not in repoyard_meta.by_index_name:
+        typer.echo(f"Repository with index name `{repo_index_name}` not found.")
+        raise typer.Exit(code=1)
+
+    new_index_name = _run_with_lock_handling(
+        rename_repo(
+            config_path=app_state["config_path"],
+            repo_index_name=repo_index_name,
+            new_name=new_name,
+            scope=scope,
+            verbose=True,
+        )
+    )
+
+    typer.echo(f"Renamed to: {new_index_name}")
+
+    if refresh_user_symlinks:
+        from repoyard.cmds import create_user_symlinks
+
+        create_user_symlinks(config_path=app_state["config_path"])
+
+# %% [markdown]
+# # `sync-name`
+
+# %%
+#|export
+from repoyard.cmds._sync_name import SyncNameDirection
+
+@app.command(name="sync-name")
+def cli_sync_name(
+    repo_index_name: str | None = Option(
+        None,
+        "--repo",
+        "-r",
+        help="The index name of the repository.",
+    ),
+    repo_id: str | None = Option(
+        None, "--repo-id", "-i", help="The id of the repository."
+    ),
+    repo_name: str | None = Option(
+        None, "--repo-name", "-n", help="The name of the repository."
+    ),
+    to_local: bool = Option(
+        False,
+        "--to-local",
+        help="Sync name from remote to local.",
+    ),
+    to_remote: bool = Option(
+        False,
+        "--to-remote",
+        help="Sync name from local to remote.",
+    ),
+    name_match_mode: NameMatchMode | None = Option(
+        None,
+        "--name-match-mode",
+        "-m",
+        help="The mode to use for matching the repository name.",
+    ),
+    name_match_case: bool = Option(
+        False,
+        "--name-match-case",
+        "-c",
+        help="Whether to match the repository name case-sensitively.",
+    ),
+    refresh_user_symlinks: bool = Option(True, help="Refresh the user symlinks."),
+):
+    """
+    Sync the repo name between local and remote.
+
+    Must specify either --to-local or --to-remote (but not both).
+    """
+    from repoyard.cmds._sync_name import sync_name
+    from repoyard._models import get_repoyard_meta
+
+    if to_local == to_remote:
+        typer.echo("Error: Must specify exactly one of --to-local or --to-remote.", err=True)
+        raise typer.Exit(code=1)
+
+    direction = SyncNameDirection.TO_LOCAL if to_local else SyncNameDirection.TO_REMOTE
+
+    repo_index_name = _get_repo_index_name(
+        repo_name=repo_name,
+        repo_id=repo_id,
+        repo_index_name=repo_index_name,
+        name_match_mode=name_match_mode,
+        name_match_case=name_match_case,
+        allow_no_args=False,
+    )
+
+    repoyard_meta = get_repoyard_meta(get_config(app_state["config_path"]))
+    if repo_index_name not in repoyard_meta.by_index_name:
+        typer.echo(f"Repository with index name `{repo_index_name}` not found.")
+        raise typer.Exit(code=1)
+
+    result_index_name = _run_with_lock_handling(
+        sync_name(
+            config_path=app_state["config_path"],
+            repo_index_name=repo_index_name,
+            direction=direction,
+            verbose=True,
+        )
+    )
+
+    typer.echo(f"Result: {result_index_name}")
+
+    if refresh_user_symlinks:
+        from repoyard.cmds import create_user_symlinks
+
+        create_user_symlinks(config_path=app_state["config_path"])

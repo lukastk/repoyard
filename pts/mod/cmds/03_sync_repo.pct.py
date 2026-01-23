@@ -23,7 +23,7 @@ from pathlib import Path
 import asyncio
 
 from repoyard._utils.sync_helper import sync_helper, SyncSetting, SyncDirection
-from repoyard._models import SyncStatus, RepoPart
+from repoyard._models import SyncStatus, RepoPart, RepoMeta, SyncCondition
 from repoyard.config import get_config, StorageType
 from repoyard._utils import (
     check_interrupted,
@@ -32,6 +32,8 @@ from repoyard._utils import (
 )
 from repoyard._utils.locking import RepoyardLockManager, LockAcquisitionError, REPO_SYNC_LOCK_TIMEOUT, acquire_lock_async
 from repoyard import const
+from repoyard._tombstones import is_tombstoned, get_tombstone
+from repoyard._remote_index import find_remote_repo_by_id, update_remote_index_cache
 
 # %%
 #|set_func_signature
@@ -147,6 +149,63 @@ if repo_meta.get_storage_location_config(config).storage_type == StorageType.LOC
     #|func_return_line
 
 # %% [markdown]
+# Check if repo has been tombstoned (deleted on remote by another machine)
+
+# %%
+#|export
+repo_id = RepoMeta.extract_repo_id(repo_index_name)
+storage_location = repo_meta.storage_location
+
+_is_tombstoned = await is_tombstoned(config, storage_location, repo_id)
+if _is_tombstoned:
+    _tombstone = await get_tombstone(config, storage_location, repo_id)
+    _tombstone_msg = f"Repo '{repo_index_name}' was deleted"
+    if _tombstone:
+        _tombstone_msg += f" by {_tombstone.deleted_by_hostname} at {_tombstone.deleted_at_utc}"
+    print(f"Warning: {_tombstone_msg}. Skipping sync.")
+    sync_results = {part: SyncStatus(condition=SyncCondition.TOMBSTONED) for part in sync_choices}
+    #|func_return_line
+
+# %% [markdown]
+# Find the remote repo by ID (names may differ between local and remote)
+
+# %%
+#|export
+remote_index_name = await find_remote_repo_by_id(config, storage_location, repo_id)
+
+# If remote doesn't exist, this is a new repo - use local index_name for remote
+# If remote exists with different name, use that name for remote paths
+if remote_index_name is None:
+    remote_index_name = repo_index_name
+
+# Precompute remote paths using the remote_index_name (which may differ from local)
+def _get_remote_path_for_index(idx_name: str) -> Path:
+    return (
+        config.storage_locations[storage_location].store_path
+        / const.REMOTE_REPOS_REL_PATH
+        / idx_name
+    )
+
+def _get_remote_part_path_for_index(idx_name: str, part: RepoPart) -> Path:
+    base = _get_remote_path_for_index(idx_name)
+    if part == RepoPart.DATA:
+        return base / const.REPO_DATA_REL_PATH
+    elif part == RepoPart.META:
+        return base / const.REPO_METAFILE_REL_PATH
+    elif part == RepoPart.CONF:
+        return base / const.REPO_CONF_REL_PATH
+    raise ValueError(f"Invalid repo part: {part}")
+
+def _get_remote_sync_record_path_for_index(idx_name: str, part: RepoPart) -> Path:
+    sl_conf = config.storage_locations[storage_location]
+    return (
+        sl_conf.store_path
+        / const.SYNC_RECORDS_REL_PATH
+        / idx_name
+        / f"{part.value}.rec"
+    )
+
+# %% [markdown]
 # Acquire per-repo sync lock
 
 # %%
@@ -191,9 +250,9 @@ try:
             local_path=repo_meta.get_local_part_path(config, RepoPart.META),
             local_sync_record_path=repo_meta.get_local_sync_record_path(config, sync_part),
             remote=repo_meta.storage_location,
-            remote_path=repo_meta.get_remote_part_path(config, RepoPart.META),
-            remote_sync_record_path=repo_meta.get_remote_sync_record_path(
-                config, sync_part
+            remote_path=_get_remote_part_path_for_index(remote_index_name, RepoPart.META),
+            remote_sync_record_path=_get_remote_sync_record_path_for_index(
+                remote_index_name, sync_part
             ),
             local_sync_backups_path=local_sync_backups_path,
             remote_sync_backups_path=remote_sync_backups_path,
@@ -216,9 +275,9 @@ try:
             local_path=repo_meta.get_local_part_path(config, RepoPart.CONF),
             local_sync_record_path=repo_meta.get_local_sync_record_path(config, sync_part),
             remote=repo_meta.storage_location,
-            remote_path=repo_meta.get_remote_part_path(config, RepoPart.CONF),
-            remote_sync_record_path=repo_meta.get_remote_sync_record_path(
-                config, sync_part
+            remote_path=_get_remote_part_path_for_index(remote_index_name, RepoPart.CONF),
+            remote_sync_record_path=_get_remote_sync_record_path_for_index(
+                remote_index_name, sync_part
             ),
             local_sync_backups_path=local_sync_backups_path,
             remote_sync_backups_path=remote_sync_backups_path,
@@ -260,9 +319,9 @@ try:
             local_path=repo_meta.get_local_part_path(config, RepoPart.DATA),
             local_sync_record_path=repo_meta.get_local_sync_record_path(config, sync_part),
             remote=repo_meta.storage_location,
-            remote_path=repo_meta.get_remote_part_path(config, RepoPart.DATA),
-            remote_sync_record_path=repo_meta.get_remote_sync_record_path(
-                config, sync_part
+            remote_path=_get_remote_part_path_for_index(remote_index_name, RepoPart.DATA),
+            remote_sync_record_path=_get_remote_sync_record_path_for_index(
+                remote_index_name, sync_part
             ),
             local_sync_backups_path=local_sync_backups_path,
             remote_sync_backups_path=remote_sync_backups_path,
@@ -272,6 +331,9 @@ try:
             verbose=verbose,
             show_rclone_progress=show_rclone_progress,
         )
+
+    # Update remote index cache
+    update_remote_index_cache(config, storage_location, repo_id, remote_index_name)
 
     # Refresh the repoyard meta file
     if RepoPart.META in sync_choices:

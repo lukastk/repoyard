@@ -227,8 +227,8 @@ class TestSyncCondition:
         assert SyncCondition.ERROR.value == "error"
 
     def test_condition_count(self):
-        """There are exactly 7 sync conditions."""
-        assert len(SyncCondition) == 7
+        """There are exactly 8 sync conditions."""
+        assert len(SyncCondition) == 8
 
     def test_conditions_are_unique(self):
         """All condition values are unique."""

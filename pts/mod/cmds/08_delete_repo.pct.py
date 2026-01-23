@@ -25,6 +25,8 @@ import asyncio
 from repoyard.config import get_config
 from repoyard._utils import enable_soft_interruption
 from repoyard._utils.locking import RepoyardLockManager, LockAcquisitionError, REPO_SYNC_LOCK_TIMEOUT, acquire_lock_async
+from repoyard._tombstones import create_tombstone
+from repoyard._remote_index import remove_from_remote_index_cache
 
 # %%
 #|set_func_signature
@@ -96,7 +98,7 @@ assert (remote_rclone_path / repo_meta.get_remote_path(config)).exists()
 # %%
 #|export
 import shutil
-from repoyard._models import RepoPart, refresh_repoyard_meta
+from repoyard._models import RepoPart, refresh_repoyard_meta, RepoMeta
 from repoyard._utils import rclone_purge
 from repoyard.config import StorageType
 
@@ -111,6 +113,19 @@ await acquire_lock_async(
     REPO_SYNC_LOCK_TIMEOUT,
 )
 try:
+    # Extract repo_id for tombstone and cache operations
+    repo_id = RepoMeta.extract_repo_id(repo_index_name)
+    storage_location = repo_meta.storage_location
+
+    # Create tombstone BEFORE deleting remote (so other machines can see it)
+    if repo_meta.get_storage_location_config(config).storage_type != StorageType.LOCAL:
+        await create_tombstone(
+            config=config,
+            storage_location=storage_location,
+            repo_id=repo_id,
+            last_known_name=repo_meta.name,
+        )
+
     # Delete local repo
     shutil.rmtree(
         repo_meta.get_local_part_path(config, RepoPart.DATA)
@@ -121,9 +136,12 @@ try:
     if repo_meta.get_storage_location_config(config).storage_type != StorageType.LOCAL:
         await rclone_purge(
             config.rclone_config_path,
-            source=repo_meta.storage_location,
+            source=storage_location,
             source_path=repo_meta.get_remote_path(config),
         )
+
+    # Remove from remote index cache
+    remove_from_remote_index_cache(config, storage_location, repo_id)
 
     # Refresh the repoyard meta file
     refresh_repoyard_meta(config)

@@ -73,6 +73,9 @@ class Config(const.StrictModel):
     repo_subid_length: int
     max_concurrent_rclone_ops: int
 
+    # New repo creation settings
+    sync_before_new_repo: bool = False  # If True, sync repometas before creating new repo to check for ID collisions on remote
+
     @property
     def local_store_path(self) -> Path:
         return self.repoyard_data_path / "local_store"
@@ -92,6 +95,11 @@ class Config(const.StrictModel):
     @property
     def default_rclone_exclude_path(self) -> Path:
         return self.config_path.parent / "default.rclone_exclude"
+
+    @property
+    def remote_indexes_path(self) -> Path:
+        """Path to cached remote index lookups (repo_id -> remote index_name)."""
+        return self.repoyard_data_path / "remote_indexes"
 
     @model_validator(mode="after")
     def validate_config(self):
@@ -164,6 +172,7 @@ def _get_default_config_dict(config_path=None, data_path=None) -> Config:
         repo_subid_character_set=const.DEFAULT_REPO_SUBID_CHARACTER_SET,
         repo_subid_length=const.DEFAULT_REPO_SUBID_LENGTH,
         max_concurrent_rclone_ops=const.DEFAULT_MAX_CONCURRENT_RCLONE_OPS,
+        sync_before_new_repo=False,
     )
     return config_dict
 

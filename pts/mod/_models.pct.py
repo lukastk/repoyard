@@ -46,6 +46,56 @@ def _create_repo_subid(character_set: str, length: int) -> str:
 
 # %%
 #|export
+def generate_unique_repo_id(
+    config: repoyard.config.Config,
+    existing_ids: set[str],
+    max_attempts: int = 100,
+) -> tuple[str, str]:
+    """
+    Generate a repo ID that doesn't collide with existing IDs.
+
+    Args:
+        config: Repoyard config (for timestamp format and subid settings)
+        existing_ids: Set of existing repo IDs to check against
+        max_attempts: Maximum generation attempts before raising error
+
+    Returns:
+        Tuple of (creation_timestamp, repo_subid)
+
+    Raises:
+        RuntimeError: If unable to generate unique ID after max_attempts
+    """
+    from repoyard.config import RepoTimestampFormat
+
+    for _ in range(max_attempts):
+        if config.repo_timestamp_format == RepoTimestampFormat.DATE_AND_TIME:
+            creation_timestamp = datetime.now(timezone.utc).strftime(
+                const.REPO_TIMESTAMP_FORMAT
+            )
+        elif config.repo_timestamp_format == RepoTimestampFormat.DATE_ONLY:
+            creation_timestamp = datetime.now(timezone.utc).strftime(
+                const.REPO_TIMESTAMP_FORMAT_DATE_ONLY
+            )
+        else:
+            raise Exception(
+                f"Invalid repo timestamp format: {config.repo_timestamp_format}"
+            )
+
+        repo_subid = _create_repo_subid(
+            config.repo_subid_character_set, config.repo_subid_length
+        )
+        repo_id = f"{creation_timestamp}_{repo_subid}"
+
+        if repo_id not in existing_ids:
+            return creation_timestamp, repo_subid
+
+    raise RuntimeError(
+        f"Failed to generate unique repo ID after {max_attempts} attempts. "
+        f"This should be extremely rare - please report this issue."
+    )
+
+# %%
+#|export
 class RepoMeta(const.StrictModel):
     creation_timestamp_utc: str
     repo_subid: str
@@ -116,6 +166,19 @@ class RepoMeta(const.StrictModel):
     @property
     def index_name(self) -> str:
         return f"{self.repo_id}__{self.name}"
+
+    @classmethod
+    def parse_index_name(cls, index_name: str) -> tuple[str, str]:
+        """Parse index_name into (repo_id, name)."""
+        parts = index_name.split("__", 1)
+        if len(parts) != 2:
+            raise ValueError(f"Invalid index_name format: {index_name}")
+        return parts[0], parts[1]
+
+    @classmethod
+    def extract_repo_id(cls, index_name: str) -> str:
+        """Extract just the repo_id from an index_name."""
+        return cls.parse_index_name(index_name)[0]
 
     def get_storage_location_config(
         self, config: repoyard.config.StorageConfig
@@ -301,6 +364,11 @@ class RepoyardMeta(const.StrictModel):
                 repo_meta.repo_id: repo_meta for repo_meta in self.repo_metas
             }
         return self.__by_id
+
+    @property
+    def by_repo_id(self) -> dict[str, RepoMeta]:
+        """Alias for by_id for clarity."""
+        return self.by_id
 
     @property
     def by_index_name(self) -> dict[str, RepoMeta]:
@@ -562,6 +630,7 @@ class SyncCondition(Enum):
     NEEDS_PULL = "needs_pull"
     EXCLUDED = "excluded"
     ERROR = "error"
+    TOMBSTONED = "tombstoned"  # Repo was deleted on remote
 
 
 class SyncStatus(NamedTuple):
