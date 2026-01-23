@@ -367,7 +367,7 @@ async def acquire_lock_async(
 # # Tests
 
 # %%
-from tests.utils import create_repoyards
+from tests.integration.conftest import create_repoyards
 
 sl_name, _, config, config_path, data_path = create_repoyards()
 

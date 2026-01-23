@@ -89,7 +89,7 @@ def cli_multi_sync(
 
 # %%
 # Set up test environment
-from tests.utils import create_repoyards
+from tests.integration.conftest import create_repoyards
 
 remote_name, remote_rclone_path, config, config_path, data_path = create_repoyards()
 

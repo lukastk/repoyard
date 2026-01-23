@@ -68,7 +68,7 @@ async def rename_repo(
 # Set up testing args
 
 # %%
-from tests.utils import *
+from tests.integration.conftest import create_repoyards
 
 remote_name, remote_rclone_path, config, config_path, data_path = create_repoyards()
 

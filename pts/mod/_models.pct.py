@@ -323,7 +323,7 @@ class RepoMeta(const.StrictModel):
         return self
 
 # %%
-from tests.utils import create_repoyards
+from tests.integration.conftest import create_repoyards
 from repoyard.config import get_config
 
 sl_name, _, _, config_path, data_path = create_repoyards()

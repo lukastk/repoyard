@@ -1,7 +1,7 @@
 # ---
 # jupyter:
 #   kernelspec:
-#     display_name: Python 3
+#     display_name: .venv
 #     language: python
 #     name: python3
 # ---
@@ -67,7 +67,7 @@ async def sync_repo(
 # Set up testing args
 
 # %%
-from tests.utils import *
+from tests.integration.conftest import create_repoyards
 
 remote_name, remote_rclone_path, config, config_path, data_path = create_repoyards()
 
@@ -177,7 +177,7 @@ if _is_tombstoned:
         )
         for part in sync_choices
     }
-    return sync_results
+    sync_results #|func_return_line
 
 # %% [markdown]
 # Find the remote repo by ID (names may differ between local and remote)
