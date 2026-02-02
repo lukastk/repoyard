@@ -63,6 +63,35 @@ async def copy_from_remote(
     ...
 
 # %% [markdown]
+# Set up testing args
+
+# %%
+from tests.integration.conftest import create_repoyards
+
+remote_name, remote_rclone_path, config, config_path, data_path = create_repoyards()
+
+# %%
+# Args
+from repoyard.cmds import new_repo, sync_repo
+import tempfile
+
+config_path = config_path
+repo_index_name = new_repo(
+    config_path=config_path, repo_name="test_repo", storage_location="my_remote"
+)
+# Create a temp destination outside of repoyard paths
+dest_path = Path(tempfile.mkdtemp()) / "copy_dest"
+copy_meta = False
+copy_conf = False
+overwrite = False
+show_rclone_progress = False
+verbose = False
+
+# %%
+# Sync the repo first so there's something on remote to copy
+await sync_repo(config_path=config_path, repo_index_name=repo_index_name)
+
+# %% [markdown]
 # # Function body
 
 # %%

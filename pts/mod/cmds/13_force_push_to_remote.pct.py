@@ -61,6 +61,37 @@ async def force_push_to_remote(
     ...
 
 # %% [markdown]
+# Set up testing args
+
+# %%
+from tests.integration.conftest import create_repoyards
+
+remote_name, remote_rclone_path, config, config_path, data_path = create_repoyards()
+
+# %%
+# Args
+from repoyard.cmds import new_repo, sync_repo
+import tempfile
+
+config_path = config_path
+repo_index_name = new_repo(
+    config_path=config_path, repo_name="test_repo", storage_location="my_remote"
+)
+# Create a temp source directory with some test content
+source_path = Path(tempfile.mkdtemp()) / "force_push_source"
+source_path.mkdir(parents=True)
+(source_path / "test_file.txt").write_text("test content for force push")
+
+force = True  # Must be True for the operation to proceed
+show_rclone_progress = False
+soft_interruption_enabled = True
+verbose = False
+
+# %%
+# Sync the repo first so there's something on remote
+await sync_repo(config_path=config_path, repo_index_name=repo_index_name)
+
+# %% [markdown]
 # # Function body
 
 # %% [markdown]
