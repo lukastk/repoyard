@@ -11,7 +11,7 @@ def init_repoyard(
 ):
     """
     Initialize repoyard.
-    
+
     Will create the necessary folders and files to start using repoyard.
     """
     config_path = config_path or const.DEFAULT_CONFIG_PATH

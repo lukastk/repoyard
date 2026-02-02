@@ -29,7 +29,7 @@ async def sync_repo(
 ) -> dict[RepoPart, SyncStatus]:
     """
     Syncs a repo with its remote.
-    
+
     Args:
         config_path: Path to the repoyard config file.
         repo_index_name: Full name of the repository to sync.

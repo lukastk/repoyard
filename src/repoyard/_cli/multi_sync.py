@@ -10,6 +10,7 @@ from .._utils.sync_helper import SyncSetting, SyncDirection
 from .._models import RepoPart
 from .._cli.app import app, app_state
 
+@app.command(name="multi-sync")
 def cli_multi_sync(
     repo_index_names: list[str] | None = Option(
         None, "--repo", "-r", help="The index names of the repository, in the form."

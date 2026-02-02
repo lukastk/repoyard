@@ -23,17 +23,17 @@ async def rename_repo(
 ) -> str:
     """
     Rename a repository.
-    
+
     Args:
         config_path: Path to the repoyard config file.
         repo_index_name: Full index name of the repository to rename.
         new_name: New name for the repository.
         scope: Where to rename - local, remote, or both.
         verbose: Print verbose output.
-    
+
     Returns:
         The new index name of the repository.
-    
+
     Note:
         The repo ID (timestamp + subid) remains unchanged.
         Only the name portion of the index_name changes.

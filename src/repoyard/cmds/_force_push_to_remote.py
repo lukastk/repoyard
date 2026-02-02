@@ -21,10 +21,10 @@ async def force_push_to_remote(
 ) -> None:
     """
     Force push a local folder to a repo's remote DATA location.
-    
+
     This is a destructive operation that overwrites the remote DATA with the
     contents of source_path. It properly manages sync records for consistency.
-    
+
     Args:
         config_path: Path to the repoyard config file
         repo_index_name: The index name of the repository (local)
@@ -33,7 +33,7 @@ async def force_push_to_remote(
         show_rclone_progress: Show rclone progress output
         soft_interruption_enabled: Enable soft interruption handling
         verbose: Print verbose output
-    
+
     Raises:
         ValueError: If force is False or source_path doesn't exist
     """

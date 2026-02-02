@@ -47,7 +47,7 @@ def new_repo(
 ):
     """
     Create a new repoyard repository.
-    
+
     Args:
         config_path: The path to the repoyard config file.
         storage_location: The storage location to create the new repository in.
@@ -61,7 +61,7 @@ def new_repo(
         git_clone_url: Git URL (SSH or HTTPS) to clone as the new repository.
         sync_first: If True, sync all repometas before creating to check for ID collisions
                    on remote. If None, uses config.sync_before_new_repo setting.
-    
+
     Returns:
         The index name of the new repository.
     """

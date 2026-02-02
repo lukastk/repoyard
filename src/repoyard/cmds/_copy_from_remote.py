@@ -20,12 +20,12 @@ async def copy_from_remote(
 ) -> Path:
     """
     Copy a remote repo's data to a local path without including it in repoyard.
-    
+
     This command downloads the repo data to any local path without:
     - Adding it to repoyard tracking
     - Creating sync records
     - Making it an "included" repo
-    
+
     Args:
         config_path: Path to the repoyard config file
         repo_index_name: The index name of the repository (local)
@@ -35,7 +35,7 @@ async def copy_from_remote(
         overwrite: Overwrite if dest exists
         show_rclone_progress: Show rclone progress output
         verbose: Print verbose output
-    
+
     Returns:
         The destination path
     """

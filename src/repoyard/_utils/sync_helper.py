@@ -51,7 +51,7 @@ async def sync_helper(
 ) -> tuple[SyncStatus, bool]:
     """
     Helper to execute the standard routine for syncing a local and remote folder.
-    
+
     Returns a tuple of the sync status and a boolean indicating if the sync took place.
     """
     if not remote_path:

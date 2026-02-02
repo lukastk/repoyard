@@ -19,17 +19,17 @@ async def sync_name(
 ) -> str:
     """
     Sync the repo name between local and remote.
-    
+
     Args:
         config_path: Path to the repoyard config file.
         repo_index_name: Full index name of the local repository.
         direction: Direction to sync - to_local (remote name -> local) or
                   to_remote (local name -> remote).
         verbose: Print verbose output.
-    
+
     Returns:
         The resulting index name after sync.
-    
+
     Note:
         - TO_LOCAL: Renames the local repo to match the remote's name.
         - TO_REMOTE: Renames the remote repo to match the local's name.
