@@ -2,6 +2,7 @@
 nbs/
 
 tmp_tests/
+__scratch/
 
 envname
 _proc/
