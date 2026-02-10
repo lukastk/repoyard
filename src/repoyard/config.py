@@ -3,12 +3,14 @@
 __all__ = ['Config', 'RepoGroupConfig', 'RepoGroupTitleMode', 'RepoTimestampFormat', 'StorageConfig', 'StorageType', 'VirtualRepoGroupConfig', 'get_config']
 
 # %% pts/mod/config.pct.py 3
-from pydantic import model_validator
-from pathlib import Path
-import toml
 from enum import Enum
+from pathlib import Path
+
+import toml
+from pydantic import model_validator
 
 from . import const
+
 
 # %% pts/mod/config.pct.py 5
 class StorageType(Enum):

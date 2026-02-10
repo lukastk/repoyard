@@ -3,11 +3,12 @@
 __all__ = ['GLOBAL_LOCK_TIMEOUT', 'LOCK_POLL_INTERVAL', 'LockAcquisitionError', 'REPO_SYNC_LOCK_TIMEOUT', 'RepoyardLockManager', 'acquire_lock_async', 'async_global_lock', 'async_repo_sync_lock', 'auto_cleanup_stale_locks', 'cleanup_stale_locks']
 
 # %% pts/mod/_utils/04_locking.pct.py 3
-from pathlib import Path
-from contextlib import contextmanager, asynccontextmanager
-from filelock import FileLock, Timeout
 import asyncio
-from typing import Iterator
+from collections.abc import Iterator
+from contextlib import asynccontextmanager, contextmanager
+from pathlib import Path
+
+from filelock import FileLock, Timeout
 
 # %% pts/mod/_utils/04_locking.pct.py 5
 GLOBAL_LOCK_TIMEOUT = 30  # seconds

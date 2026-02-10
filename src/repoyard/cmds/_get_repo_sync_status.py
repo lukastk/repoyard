@@ -2,8 +2,9 @@
 
 from pathlib import Path
 
+from .._models import RepoPart, SyncStatus
 from ..config import get_config
-from .._models import SyncStatus, RepoPart
+
 
 async def get_repo_sync_status(
     config_path: Path,
@@ -12,16 +13,17 @@ async def get_repo_sync_status(
     """ """
     config = get_config(config_path)
     from repoyard._models import get_repoyard_meta
-    
+
     repoyard_meta = get_repoyard_meta(config)
-    
+
     if repo_index_name not in repoyard_meta.by_index_name:
         raise ValueError(f"Repo '{repo_index_name}' not found.")
-    
+
     repo_meta = repoyard_meta.by_index_name[repo_index_name]
-    from repoyard._models import get_sync_status, RepoPart
     import asyncio
-    
+
+    from repoyard._models import RepoPart, get_sync_status
+
     tasks = [
         get_sync_status(
             rclone_config_path=config.rclone_config_path,
@@ -35,7 +37,7 @@ async def get_repo_sync_status(
         )
         for repo_part in RepoPart
     ]
-    
+
     repo_sync_status = {
         repo_part: sync_status
         for repo_part, sync_status in zip(RepoPart, await asyncio.gather(*tasks))

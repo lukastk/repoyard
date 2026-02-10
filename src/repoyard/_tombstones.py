@@ -3,11 +3,12 @@
 __all__ = ['Tombstone', 'create_tombstone', 'get_tombstone', 'get_tombstone_path', 'is_tombstoned', 'list_tombstones', 'remove_tombstone']
 
 # %% pts/mod/_tombstones.pct.py 3
-from pathlib import Path
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+
+import repoyard.config
 
 from . import const
-import repoyard.config
+
 
 # %% pts/mod/_tombstones.pct.py 5
 class Tombstone(const.StrictModel):
@@ -50,7 +51,7 @@ async def create_tombstone(
 
     tombstone = Tombstone(
         repo_id=repo_id,
-        deleted_at_utc=datetime.now(timezone.utc),
+        deleted_at_utc=datetime.now(UTC),
         deleted_by_hostname=get_hostname(),
         last_known_name=last_known_name,
     )
@@ -144,7 +145,7 @@ async def list_tombstones(
     Returns:
         List of Tombstone objects
     """
-    from ._utils.rclone import rclone_lsjson, rclone_cat
+    from ._utils.rclone import rclone_cat, rclone_lsjson
 
     sl_config = config.storage_locations[storage_location]
     tombstones_dir = sl_config.store_path / "tombstones"

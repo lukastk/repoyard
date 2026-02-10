@@ -3,11 +3,13 @@
 __all__ = ['find_remote_repo_by_id', 'get_remote_index_cache_path', 'load_remote_index_cache', 'remove_from_remote_index_cache', 'save_remote_index_cache', 'scan_and_rebuild_remote_index_cache', 'update_remote_index_cache']
 
 # %% pts/mod/_remote_index.pct.py 3
-from pathlib import Path
 import json
+from pathlib import Path
 
 import repoyard.config
+
 from . import const
+
 
 # %% pts/mod/_remote_index.pct.py 5
 def get_remote_index_cache_path(config: repoyard.config.Config, storage_location: str) -> Path:
@@ -26,7 +28,7 @@ def load_remote_index_cache(config: repoyard.config.Config, storage_location: st
     if cache_path.exists():
         try:
             return json.loads(cache_path.read_text())
-        except (json.JSONDecodeError, IOError):
+        except (OSError, json.JSONDecodeError):
             return {}
     return {}
 
@@ -106,7 +108,7 @@ async def find_remote_repo_by_id(
     Returns:
         The remote index_name if found, None otherwise
     """
-    from ._utils.rclone import rclone_path_exists, rclone_lsjson
+    from ._utils.rclone import rclone_lsjson, rclone_path_exists
 
     sl_config = config.storage_locations[storage_location]
     repos_path = sl_config.store_path / const.REMOTE_REPOS_REL_PATH
@@ -166,8 +168,8 @@ async def scan_and_rebuild_remote_index_cache(
     Returns:
         The rebuilt cache (repo_id -> index_name)
     """
-    from ._utils.rclone import rclone_lsjson
     from ._models import RepoMeta
+    from ._utils.rclone import rclone_lsjson
 
     sl_config = config.storage_locations[storage_location]
     repos_path = sl_config.store_path / const.REMOTE_REPOS_REL_PATH
