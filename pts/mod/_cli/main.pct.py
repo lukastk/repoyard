@@ -113,7 +113,7 @@ assert not _is_subsequence_match("acbd", "abcd")
 
 # %%
 #|exporti
-class NameMatchMode(Enum):
+class NameMatchMode(str, Enum):
     EXACT = "exact"
     CONTAINS = "contains"
     SUBSEQUENCE = "subsequence"

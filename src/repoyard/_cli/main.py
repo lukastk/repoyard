@@ -98,7 +98,7 @@ def _is_subsequence_match(term: str, name: str) -> bool:
 
 
 # %% pts/mod/_cli/main.pct.py 12
-class NameMatchMode(Enum):
+class NameMatchMode(str, Enum):
     EXACT = "exact"
     CONTAINS = "contains"
     SUBSEQUENCE = "subsequence"

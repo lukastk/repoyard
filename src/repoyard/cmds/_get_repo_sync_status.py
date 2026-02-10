@@ -2,8 +2,8 @@
 
 from pathlib import Path
 
-from .._models import RepoPart, SyncStatus
 from ..config import get_config
+from .._models import SyncStatus, RepoPart
 
 
 async def get_repo_sync_status(
@@ -20,9 +20,8 @@ async def get_repo_sync_status(
         raise ValueError(f"Repo '{repo_index_name}' not found.")
 
     repo_meta = repoyard_meta.by_index_name[repo_index_name]
+    from repoyard._models import get_sync_status, RepoPart
     import asyncio
-
-    from repoyard._models import RepoPart, get_sync_status
 
     tasks = [
         get_sync_status(

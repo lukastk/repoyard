@@ -15,15 +15,13 @@ __all__ = [
 ]
 
 # %% pts/mod/_utils/00_base.pct.py 3
-import asyncio
 import subprocess
-from collections.abc import Coroutine
+import asyncio
+from .. import const
 from pathlib import Path
-from typing import Any
+from typing import Any, Coroutine
 
 import repoyard.config
-
-from .. import const
 
 
 # %% pts/mod/_utils/00_base.pct.py 5
@@ -53,7 +51,6 @@ def get_repo_index_name_from_sub_path(
 
 # %% pts/mod/_utils/00_base.pct.py 7
 import platform
-from datetime import UTC
 
 
 def get_hostname():
@@ -114,7 +111,7 @@ def run_fzf(terms: list[str], disp_terms: list[str] | None = None):
 # %% pts/mod/_utils/00_base.pct.py 11
 def check_last_time_modified(path: str | Path) -> float | None:
     import os
-    from datetime import datetime
+    from datetime import datetime, timezone
 
     path = Path(path).expanduser().resolve()
 
@@ -142,7 +139,7 @@ def check_last_time_modified(path: str | Path) -> float | None:
             except (OSError, PermissionError):
                 continue
 
-    return datetime.fromtimestamp(max_mtime, tz=UTC) if max_mtime is not None else None
+    return datetime.fromtimestamp(max_mtime, tz=timezone.utc) if max_mtime is not None else None
 
 
 # %% pts/mod/_utils/00_base.pct.py 13
@@ -190,7 +187,7 @@ async def async_throttler(
                     return await coro
                 else:
                     return await asyncio.wait_for(coro, timeout)
-            except TimeoutError as e:
+            except asyncio.TimeoutError as e:
                 return e
             except Exception as e:
                 return e

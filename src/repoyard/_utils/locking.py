@@ -14,12 +14,11 @@ __all__ = [
 ]
 
 # %% pts/mod/_utils/04_locking.pct.py 3
-import asyncio
-from collections.abc import Iterator
-from contextlib import asynccontextmanager, contextmanager
 from pathlib import Path
-
+from contextlib import contextmanager, asynccontextmanager
 from filelock import FileLock, Timeout
+import asyncio
+from typing import Iterator
 
 # %% pts/mod/_utils/04_locking.pct.py 5
 GLOBAL_LOCK_TIMEOUT = 30  # seconds

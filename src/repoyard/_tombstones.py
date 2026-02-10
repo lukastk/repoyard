@@ -11,11 +11,11 @@ __all__ = [
 ]
 
 # %% pts/mod/_tombstones.pct.py 3
-from datetime import UTC, datetime
-
-import repoyard.config
+from pathlib import Path
+from datetime import datetime, timezone
 
 from . import const
+import repoyard.config
 
 
 # %% pts/mod/_tombstones.pct.py 5
@@ -62,7 +62,7 @@ async def create_tombstone(
 
     tombstone = Tombstone(
         repo_id=repo_id,
-        deleted_at_utc=datetime.now(UTC),
+        deleted_at_utc=datetime.now(timezone.utc),
         deleted_by_hostname=get_hostname(),
         last_known_name=last_known_name,
     )
@@ -159,7 +159,7 @@ async def list_tombstones(
     Returns:
         List of Tombstone objects
     """
-    from ._utils.rclone import rclone_cat, rclone_lsjson
+    from ._utils.rclone import rclone_lsjson, rclone_cat
 
     sl_config = config.storage_locations[storage_location]
     tombstones_dir = sl_config.store_path / "tombstones"

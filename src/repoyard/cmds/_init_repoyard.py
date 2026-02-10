@@ -23,9 +23,8 @@ def init_repoyard(
             print(
                 f"Using a non-default config path. Please set the environment variable {const.ENV_VAR_REPOYARD_CONFIG_PATH} to the given config path for repoyard to use it. "
             )
+    from repoyard.config import get_config, _get_default_config_dict, Config
     import toml
-
-    from repoyard.config import _get_default_config_dict, get_config
 
     if not config_path.expanduser().exists():
         if verbose:

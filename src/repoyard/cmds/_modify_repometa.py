@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Any
 
 from ..config import get_config
+from .. import const
 
 
 class RepoNameConflict(Exception):
@@ -17,7 +18,7 @@ def modify_repometa(
 ):
     """ """
     config = get_config(config_path)
-    from repoyard._models import RepoMeta, get_repoyard_meta
+    from repoyard._models import get_repoyard_meta, RepoMeta
 
     repoyard_meta = get_repoyard_meta(config)
 

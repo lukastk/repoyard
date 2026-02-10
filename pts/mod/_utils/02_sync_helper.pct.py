@@ -41,13 +41,13 @@ from repoyard import const
 from repoyard._models import SyncStatus
 
 
-class SyncSetting(Enum):
+class SyncSetting(str, Enum):
     CAREFUL = "careful"
     REPLACE = "replace"
     FORCE = "force"
 
 
-class SyncDirection(Enum):
+class SyncDirection(str, Enum):
     PUSH = "push"  # local -> remote
     PULL = "pull"  # remote -> local
 

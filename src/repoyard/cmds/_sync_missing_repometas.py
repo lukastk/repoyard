@@ -2,21 +2,21 @@
 
 from pathlib import Path
 
-from .. import const
+from ..config import get_config, StorageType
+from .._utils.sync_helper import (
+    SyncFailed,
+    SyncUnsafe,
+    InvalidRemotePath,
+    SyncStatus,
+    SyncSetting,
+    SyncDirection,
+)
 from .._utils import (
-    SoftInterruption,
     check_interrupted,
     enable_soft_interruption,
+    SoftInterruption,
 )
-from .._utils.sync_helper import (
-    InvalidRemotePath,
-    SyncDirection,
-    SyncFailed,
-    SyncSetting,
-    SyncStatus,
-    SyncUnsafe,
-)
-from ..config import StorageType, get_config
+from .. import const
 
 
 async def sync_missing_repometas(
@@ -46,8 +46,8 @@ async def sync_missing_repometas(
     if check_interrupted():
         raise SoftInterruption()
 
-    from repoyard._models import RepoMeta, RepoPart, SyncRecord
-    from repoyard._utils import async_throttler, rclone_lsjson, rclone_sync
+    from repoyard._utils import rclone_lsjson, rclone_sync, async_throttler
+    from repoyard._models import RepoMeta, SyncRecord, RepoPart
 
     for sl_name, sl_config in config.storage_locations.items():
         if sl_config.storage_type == StorageType.LOCAL:

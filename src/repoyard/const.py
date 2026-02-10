@@ -25,12 +25,10 @@ __all__ = [
 ]
 
 # %% pts/mod/const.pct.py 3
+from pathlib import Path
 import inspect
 import string
-from pathlib import Path
-
 from pydantic import BaseModel, ConfigDict
-
 import repoyard as proj
 
 # %% pts/mod/const.pct.py 4

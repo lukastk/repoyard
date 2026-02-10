@@ -12,11 +12,10 @@ __all__ = [
 ]
 
 # %% pts/mod/config.pct.py 3
-from enum import Enum
-from pathlib import Path
-
-import toml
 from pydantic import model_validator
+from pathlib import Path
+import toml
+from enum import Enum
 
 from . import const
 

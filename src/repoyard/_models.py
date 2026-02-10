@@ -17,23 +17,20 @@ __all__ = [
 ]
 
 # %% pts/mod/_models.pct.py 3
-import random
-from datetime import UTC, datetime
-from enum import Enum
-from pathlib import Path
-
-import toml
 from pydantic import Field, model_validator
+from pathlib import Path
+import toml
+from datetime import datetime, timezone
+import random
 from ulid import ULID
-
+from enum import Enum
 import repoyard.config
-
 from . import const
 from .config import RepoGroupConfig, RepoTimestampFormat
 
 
 # %% pts/mod/_models.pct.py 5
-class RepoPart(Enum):
+class RepoPart(str, Enum):
     DATA = "data"
     META = "meta"
     CONF = "conf"
@@ -68,9 +65,9 @@ def generate_unique_repo_id(
 
     for _ in range(max_attempts):
         if config.repo_timestamp_format == RepoTimestampFormat.DATE_AND_TIME:
-            creation_timestamp = datetime.now(UTC).strftime(const.REPO_TIMESTAMP_FORMAT)
+            creation_timestamp = datetime.now(timezone.utc).strftime(const.REPO_TIMESTAMP_FORMAT)
         elif config.repo_timestamp_format == RepoTimestampFormat.DATE_ONLY:
-            creation_timestamp = datetime.now(UTC).strftime(const.REPO_TIMESTAMP_FORMAT_DATE_ONLY)
+            creation_timestamp = datetime.now(timezone.utc).strftime(const.REPO_TIMESTAMP_FORMAT_DATE_ONLY)
         else:
             raise Exception(f"Invalid repo timestamp format: {config.repo_timestamp_format}")
 
@@ -107,9 +104,9 @@ class RepoMeta(const.StrictModel):
     ) -> "RepoMeta":
         if creation_timestamp_utc is None:
             if config.repo_timestamp_format == RepoTimestampFormat.DATE_AND_TIME:
-                creation_timestamp_utc = datetime.now(UTC).strftime(const.REPO_TIMESTAMP_FORMAT)
+                creation_timestamp_utc = datetime.now(timezone.utc).strftime(const.REPO_TIMESTAMP_FORMAT)
             elif config.repo_timestamp_format == RepoTimestampFormat.DATE_ONLY:
-                creation_timestamp_utc = datetime.now(UTC).strftime(const.REPO_TIMESTAMP_FORMAT_DATE_ONLY)
+                creation_timestamp_utc = datetime.now(timezone.utc).strftime(const.REPO_TIMESTAMP_FORMAT_DATE_ONLY)
             else:
                 raise Exception(f"Invalid repo timestamp format: {config.repo_timestamp_format}")
         else:
@@ -322,9 +319,8 @@ def refresh_repoyard_meta(
     config: repoyard.config.Config,
     _skip_lock: bool = False,
 ) -> RepoyardMeta:
-    from contextlib import nullcontext
-
     from ._utils.locking import RepoyardLockManager
+    from contextlib import nullcontext
 
     lock_manager = RepoyardLockManager(config.repoyard_data_path)
     lock_context = nullcontext() if _skip_lock else lock_manager.global_lock()
@@ -366,7 +362,6 @@ def create_user_repo_group_symlinks(
     config: repoyard.config.Config,
 ):
     from collections import defaultdict
-
     from .config import RepoGroupTitleMode, VirtualRepoGroupConfig
 
     repo_metas = [repo_meta for repo_meta in get_repoyard_meta(config).repo_metas if repo_meta.check_included(config)]
@@ -486,9 +481,8 @@ class SyncRecord(const.StrictModel):
         )
 
     async def rclone_save(self, rclone_config_path: str, dest: str, dest_path: str) -> None:
-        import tempfile
-
         from ._utils import rclone_copyto
+        import tempfile
 
         temp_path = Path(tempfile.mkstemp(suffix=".json")[1])
         temp_path.write_text(self.model_dump_json())
@@ -560,7 +554,8 @@ async def get_sync_status(
     remote_path: str,
     remote_sync_record_path: str,
 ) -> SyncStatus:
-    from ._utils import check_last_time_modified, rclone_path_exists
+    from ._utils import check_last_time_modified
+    from ._utils import rclone_path_exists
 
     local_path_exists, local_path_is_dir = await rclone_path_exists(
         rclone_config_path=rclone_config_path,
