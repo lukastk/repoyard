@@ -77,10 +77,7 @@ async def copy_from_remote(
         # Good - dest_path is not within user_repos_path
         pass
     if dest_path.exists() and not overwrite:
-        raise ValueError(
-            f"Destination path '{dest_path}' already exists. "
-            f"Use --overwrite to overwrite existing files."
-        )
+        raise ValueError(f"Destination path '{dest_path}' already exists. Use --overwrite to overwrite existing files.")
     storage_location = repo_meta.storage_location
     sl_config = config.storage_locations[storage_location]
 

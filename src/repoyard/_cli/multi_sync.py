@@ -10,6 +10,7 @@ from .._utils.sync_helper import SyncSetting, SyncDirection
 from .._models import RepoPart
 from .._cli.app import app, app_state
 
+
 @app.command(name="multi-sync")
 def cli_multi_sync(
     repo_index_names: list[str] | None = Option(
@@ -29,9 +30,7 @@ def cli_multi_sync(
         "--sync-direction",
         help="The direction of the sync. If not provided, the appropriate direction will be automatically determined based on the sync status. This mode is only available for the 'CAREFUL' sync setting.",
     ),
-    sync_setting: SyncSetting = Option(
-        SyncSetting.CAREFUL, "--sync-setting", help="The sync setting to use."
-    ),
+    sync_setting: SyncSetting = Option(SyncSetting.CAREFUL, "--sync-setting", help="The sync setting to use."),
     sync_choices: list[RepoPart] | None = Option(
         None,
         "--sync-choices",
@@ -43,9 +42,7 @@ def cli_multi_sync(
     ),
     refresh_user_symlinks: bool = Option(True, help="Refresh the user symlinks."),
     show_progress: bool = Option(True, help="Show the progress of the sync."),
-    no_print_skipped: bool = Option(
-        True, help="Do not print repositories for which no syncs happened."
-    ),
+    no_print_skipped: bool = Option(True, help="Do not print repositories for which no syncs happened."),
     soft_interruption_enabled: bool = Option(True, help="Enable soft interruption."),
 ):
     """
@@ -58,6 +55,7 @@ def cli_multi_sync(
     from rich.console import Console
     from datetime import datetime
     import shutil
+
     if soft_interruption_enabled:
         enable_soft_interruption()
 
@@ -69,9 +67,7 @@ def cli_multi_sync(
 
     if storage_locations is None and repo_index_names is None:
         storage_locations = list(config.storage_locations.keys())
-    if storage_locations is not None and any(
-        sl not in config.storage_locations for sl in storage_locations
-    ):
+    if storage_locations is not None and any(sl not in config.storage_locations for sl in storage_locations):
         typer.echo(f"Invalid storage location: {storage_locations}")
         raise typer.Exit(code=1)
 
@@ -84,21 +80,14 @@ def cli_multi_sync(
     repoyard_meta = get_repoyard_meta(config)
     if repo_index_names is None:
         repo_metas = [
-            repo_meta
-            for repo_meta in repoyard_meta.repo_metas
-            if repo_meta.storage_location in storage_locations
+            repo_meta for repo_meta in repoyard_meta.repo_metas if repo_meta.storage_location in storage_locations
         ]
     else:
-        if any(
-            repo_index_name not in repoyard_meta.by_index_name
-            for repo_index_name in repo_index_names
-        ):
+        if any(repo_index_name not in repoyard_meta.by_index_name for repo_index_name in repo_index_names):
             typer.echo(f"Non-existent repository: {repo_index_names}")
             raise typer.Exit(code=1)
-        repo_metas = [
-            repoyard_meta.by_index_name[repo_index_name]
-            for repo_index_name in repo_index_names
-        ]
+        repo_metas = [repoyard_meta.by_index_name[repo_index_name] for repo_index_name in repo_index_names]
+
     async def _task(num, repo_meta):
         sync_stats[repo_meta.index_name] = (num, "Syncing...", None, datetime.now(), None)
         try:
@@ -135,7 +124,6 @@ def cli_multi_sync(
 
     finish_monitoring_event = asyncio.Event()
 
-
     def get_status_lines(repo_index_name):
         num, sync_stat, e, timestamp, sync_results = sync_stats[repo_index_name]
         lines = []
@@ -163,17 +151,12 @@ def cli_multi_sync(
         right_len = len(Text.from_markup(right).plain)
 
         # compute how many dots are needed
-        dots = (
-            console_width - left_len - right_len - 1 - 2
-        )  # -2 for the space between dots and the left and right text
+        dots = console_width - left_len - right_len - 1 - 2  # -2 for the space between dots and the left and right text
         if dots < 1:
             dots = 1
 
         line = f"{left} {'.' * dots} {right}"
-        syncs_happened = [
-            False if sync_results is None else sync_results[repo_part][1]
-            for repo_part in sync_choices
-        ]
+        syncs_happened = [False if sync_results is None else sync_results[repo_part][1] for repo_part in sync_choices]
         lines.append(line)
 
         indent = "    "
@@ -191,7 +174,6 @@ def cli_multi_sync(
 
         return lines
 
-
     def get_sync_stat_board(finished: bool):
         console_width = shutil.get_terminal_size((80, 20)).columns
         lines = []
@@ -207,21 +189,15 @@ def cli_multi_sync(
             lines.extend(get_status_lines(repo_index_name))
         return "\n".join(lines).strip()
 
-
     def print_finished(repo_index_name: str):
         num, sync_stat, e, timestamp, sync_results = sync_stats[repo_index_name]
-        syncs_happened = [
-            False if sync_results is None else sync_results[repo_part][1]
-            for repo_part in sync_choices
-        ]
+        syncs_happened = [False if sync_results is None else sync_results[repo_part][1] for repo_part in sync_choices]
         if no_print_skipped and sync_stat == "Success" and not any(syncs_happened):
             return
         lines = get_status_lines(repo_index_name)
         console.print(Text.from_markup("\n".join(lines).strip()))
 
-
     console = Console()
-
 
     async def _progress_monitor_task():
         with Live(console=console, refresh_per_second=4) as live:
@@ -234,6 +210,7 @@ def cli_multi_sync(
                 _update_live(False)
                 await asyncio.sleep(0.2)
             live.update(Text.from_markup("Finished. Final results:\n\n"))
+
     _repo_metas = repo_metas
     if sync_recently_modified_first:
         from repoyard._utils import check_last_time_modified
@@ -249,7 +226,6 @@ def cli_multi_sync(
         max_concurrency=max_concurrent_rclone_ops,
     )
 
-
     async def _runner():
         if show_progress:
             monitor_task = asyncio.create_task(_progress_monitor_task())
@@ -258,6 +234,7 @@ def cli_multi_sync(
             await monitor_task
         else:
             await sync_task
+
     from repoyard._utils import is_in_event_loop
 
     if not is_in_event_loop():

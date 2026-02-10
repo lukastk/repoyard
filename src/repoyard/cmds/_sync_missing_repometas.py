@@ -30,14 +30,9 @@ async def sync_missing_repometas(
     soft_interruption_enabled: bool = True,
 ) -> tuple[
     list[str],
-    list[
-        tuple[
-            bool, SyncFailed | SyncUnsafe | InvalidRemotePath | None, SyncStatus, bool
-        ]
-    ],
+    list[tuple[bool, SyncFailed | SyncUnsafe | InvalidRemotePath | None, SyncStatus, bool]],
 ]:
-    """
-    """
+    """ """
     config = get_config(config_path)
 
     if repo_index_names is not None and storage_locations is not None:
@@ -88,9 +83,7 @@ async def sync_missing_repometas(
 
         if repo_index_names is not None:
             missing_metas = [
-                missing_meta
-                for missing_meta in missing_metas
-                if Path(missing_meta).parts[0] in repo_index_names
+                missing_meta for missing_meta in missing_metas if Path(missing_meta).parts[0] in repo_index_names
             ]
 
         if check_interrupted():
@@ -116,9 +109,7 @@ async def sync_missing_repometas(
 
             # Create sync records
             async def _task(repo_index_name):
-                repo_meta = RepoMeta.load(
-                    config, sl_name, repo_index_name
-                )  # Used to get the paths consistently
+                repo_meta = RepoMeta.load(config, sl_name, repo_index_name)  # Used to get the paths consistently
                 rec = await SyncRecord.rclone_read(
                     config.rclone_config_path,
                     sl_name,

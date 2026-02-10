@@ -12,6 +12,7 @@ class SyncNameDirection(Enum):
     TO_LOCAL = "to_local"
     TO_REMOTE = "to_remote"
 
+
 async def sync_name(
     config_path: Path,
     repo_index_name: str,

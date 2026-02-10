@@ -68,17 +68,21 @@ async def sync_repo(
             _tombstone_msg += f" by {_tombstone.deleted_by_hostname} at {_tombstone.deleted_at_utc}"
         print(f"Warning: {_tombstone_msg}. Skipping sync.")
         from repoyard._models import SyncRecord
+
         _dummy_sync_record = SyncRecord.create(sync_complete=False)
         sync_results = {
-            part: (SyncStatus(
-                sync_condition=SyncCondition.TOMBSTONED,
-                local_path_exists=False,
-                remote_path_exists=False,
-                local_sync_record=_dummy_sync_record,
-                remote_sync_record=_dummy_sync_record,
-                is_dir=True,
-                error_message=_tombstone_msg,
-            ), False)
+            part: (
+                SyncStatus(
+                    sync_condition=SyncCondition.TOMBSTONED,
+                    local_path_exists=False,
+                    remote_path_exists=False,
+                    local_sync_record=_dummy_sync_record,
+                    remote_sync_record=_dummy_sync_record,
+                    is_dir=True,
+                    error_message=_tombstone_msg,
+                ),
+                False,
+            )
             for part in sync_choices
         }
         return sync_results
@@ -91,11 +95,7 @@ async def sync_repo(
 
     # Precompute remote paths using the remote_index_name (which may differ from local)
     def _get_remote_path_for_index(idx_name: str) -> Path:
-        return (
-            config.storage_locations[storage_location].store_path
-            / const.REMOTE_REPOS_REL_PATH
-            / idx_name
-        )
+        return config.storage_locations[storage_location].store_path / const.REMOTE_REPOS_REL_PATH / idx_name
 
     def _get_remote_part_path_for_index(idx_name: str, part: RepoPart) -> Path:
         base = _get_remote_path_for_index(idx_name)
@@ -109,18 +109,14 @@ async def sync_repo(
 
     def _get_remote_sync_record_path_for_index(idx_name: str, part: RepoPart) -> Path:
         sl_conf = config.storage_locations[storage_location]
-        return (
-            sl_conf.store_path
-            / const.SYNC_RECORDS_REL_PATH
-            / idx_name
-            / f"{part.value}.rec"
-        )
+        return sl_conf.store_path / const.SYNC_RECORDS_REL_PATH / idx_name / f"{part.value}.rec"
+
     _sync_lock = None
     if not _skip_lock:
         _lock_manager = RepoyardLockManager(config.repoyard_data_path)
         _lock_path = _lock_manager.repo_sync_lock_path(repo_index_name)
         _lock_manager._ensure_lock_dir(_lock_path)
-        _sync_lock = __import__('filelock').FileLock(_lock_path, timeout=0)
+        _sync_lock = __import__("filelock").FileLock(_lock_path, timeout=0)
         await acquire_lock_async(
             _sync_lock,
             f"repo sync ({repo_index_name})",
@@ -156,9 +152,7 @@ async def sync_repo(
                 local_sync_record_path=repo_meta.get_local_sync_record_path(config, sync_part),
                 remote=repo_meta.storage_location,
                 remote_path=_get_remote_part_path_for_index(remote_index_name, RepoPart.META),
-                remote_sync_record_path=_get_remote_sync_record_path_for_index(
-                    remote_index_name, sync_part
-                ),
+                remote_sync_record_path=_get_remote_sync_record_path_for_index(remote_index_name, sync_part),
                 local_sync_backups_path=local_sync_backups_path,
                 remote_sync_backups_path=remote_sync_backups_path,
                 verbose=verbose,
@@ -181,9 +175,7 @@ async def sync_repo(
                 local_sync_record_path=repo_meta.get_local_sync_record_path(config, sync_part),
                 remote=repo_meta.storage_location,
                 remote_path=_get_remote_part_path_for_index(remote_index_name, RepoPart.CONF),
-                remote_sync_record_path=_get_remote_sync_record_path_for_index(
-                    remote_index_name, sync_part
-                ),
+                remote_sync_record_path=_get_remote_sync_record_path_for_index(remote_index_name, sync_part),
                 local_sync_backups_path=local_sync_backups_path,
                 remote_sync_backups_path=remote_sync_backups_path,
                 verbose=verbose,
@@ -192,21 +184,13 @@ async def sync_repo(
             )
 
         # Get the now locally synced conf files for the sync of the repo data
-        _rclone_include_path = (
-            repo_meta.get_local_part_path(config, RepoPart.CONF) / ".rclone_include"
-        )
-        _rclone_exclude_path = (
-            repo_meta.get_local_part_path(config, RepoPart.CONF) / ".rclone_exclude"
-        )
-        _rclone_filters_path = (
-            repo_meta.get_local_part_path(config, RepoPart.CONF) / ".rclone_filters"
-        )
+        _rclone_include_path = repo_meta.get_local_part_path(config, RepoPart.CONF) / ".rclone_include"
+        _rclone_exclude_path = repo_meta.get_local_part_path(config, RepoPart.CONF) / ".rclone_exclude"
+        _rclone_filters_path = repo_meta.get_local_part_path(config, RepoPart.CONF) / ".rclone_filters"
 
         _rclone_include_path = _rclone_include_path if _rclone_include_path.exists() else None
         _rclone_exclude_path = (
-            _rclone_exclude_path
-            if _rclone_exclude_path.exists()
-            else config.default_rclone_exclude_path
+            _rclone_exclude_path if _rclone_exclude_path.exists() else config.default_rclone_exclude_path
         )
         _rclone_filters_path = _rclone_filters_path if _rclone_filters_path.exists() else None
 
@@ -226,9 +210,7 @@ async def sync_repo(
                 local_sync_record_path=repo_meta.get_local_sync_record_path(config, sync_part),
                 remote=repo_meta.storage_location,
                 remote_path=_get_remote_part_path_for_index(remote_index_name, RepoPart.DATA),
-                remote_sync_record_path=_get_remote_sync_record_path_for_index(
-                    remote_index_name, sync_part
-                ),
+                remote_sync_record_path=_get_remote_sync_record_path_for_index(remote_index_name, sync_part),
                 local_sync_backups_path=local_sync_backups_path,
                 remote_sync_backups_path=remote_sync_backups_path,
                 include_path=_rclone_include_path,

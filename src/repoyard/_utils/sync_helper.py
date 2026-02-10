@@ -13,18 +13,23 @@ class SyncSetting(Enum):
     REPLACE = "replace"
     FORCE = "force"
 
+
 class SyncDirection(Enum):
     PUSH = "push"  # local -> remote
     PULL = "pull"  # remote -> local
 
+
 class SyncFailed(Exception):
     pass
+
 
 class SyncUnsafe(Exception):
     pass
 
+
 class InvalidRemotePath(Exception):
     pass
+
 
 async def sync_helper(
     rclone_config_path: str,
@@ -82,13 +87,14 @@ async def sync_helper(
 
     if sync_condition == SyncCondition.ERROR and sync_setting != SyncSetting.FORCE:
         raise Exception(error_message)
+
     def _can_safely_retry_incomplete(sync_cond, sync_dir, local_rec, remote_rec):
         """Check if this machine can safely retry an incomplete sync.
-    
+
         For SYNC_FROM_REMOTE_INCOMPLETE (pull was interrupted):
             - Local is incomplete, this machine owns it
             - Safe to retry pull
-    
+
         For SYNC_TO_REMOTE_INCOMPLETE (push was interrupted):
             - Remote is incomplete
             - Only safe if this machine started it (matching incomplete ULIDs on both sides)
@@ -100,14 +106,17 @@ async def sync_helper(
 
         if sync_cond == SyncCondition.SYNC_TO_REMOTE_INCOMPLETE:
             # Remote is incomplete - only safe if this machine started it
-            if (local_rec and remote_rec and
-                not local_rec.sync_complete and not remote_rec.sync_complete and
-                local_rec.ulid == remote_rec.ulid):
+            if (
+                local_rec
+                and remote_rec
+                and not local_rec.sync_complete
+                and not remote_rec.sync_complete
+                and local_rec.ulid == remote_rec.ulid
+            ):
                 # Matching incomplete ULIDs = this machine started it
                 return sync_dir in (SyncDirection.PUSH, None)
 
         return False
-
 
     def _raise_unsafe(message=None):
         if message:
@@ -122,7 +131,6 @@ async def sync_helper(
                 Sync condition: {sync_condition.value}
         """)
         )
-
 
     if sync_setting != SyncSetting.FORCE and sync_condition == SyncCondition.SYNCED:
         if verbose:
@@ -163,7 +171,9 @@ async def sync_helper(
                 pass  # Safe to push
             elif sync_condition == SyncCondition.SYNC_TO_REMOTE_INCOMPLETE:
                 # Check if this machine can safely retry the interrupted push
-                if not _can_safely_retry_incomplete(sync_condition, sync_direction, local_sync_record, remote_sync_record):
+                if not _can_safely_retry_incomplete(
+                    sync_condition, sync_direction, local_sync_record, remote_sync_record
+                ):
                     _raise_unsafe(
                         "Remote has an incomplete sync from another machine. "
                         "Use --sync-setting force to override, or sync from the original machine."
@@ -175,7 +185,9 @@ async def sync_helper(
                 pass  # Safe to pull
             elif sync_condition == SyncCondition.SYNC_FROM_REMOTE_INCOMPLETE:
                 # Local is incomplete from interrupted pull - this machine can safely retry
-                if not _can_safely_retry_incomplete(sync_condition, sync_direction, local_sync_record, remote_sync_record):
+                if not _can_safely_retry_incomplete(
+                    sync_condition, sync_direction, local_sync_record, remote_sync_record
+                ):
                     _raise_unsafe()  # This shouldn't happen, but just in case
             else:
                 _raise_unsafe()
@@ -188,7 +200,6 @@ async def sync_helper(
             return sync_status, False
     from repoyard._utils import BisyncResult, rclone_mkdir, rclone_purge, rclone_sync
 
-
     async def _sync(
         dry_run: bool,
         source: str,
@@ -200,16 +211,14 @@ async def sync_helper(
         return_command: bool = False,
     ) -> BisyncResult:
         if not sync_path_is_dir:
-            dest_path = (
-                Path(dest_path).parent.as_posix()
-            )  # needed because rlcone sync doesn't seem to accept files on the dest path
+            dest_path = Path(
+                dest_path
+            ).parent.as_posix()  # needed because rlcone sync doesn't seem to accept files on the dest path
             if dest_path == ".":
                 dest_path = ""
 
         if verbose:
-            print(
-                f"Syncing {source}:{source_path} to {dest}:{dest_path}.  Backup path: {backup_remote}:{backup_path}"
-            )
+            print(f"Syncing {source}:{source_path} to {dest}:{dest_path}.  Backup path: {backup_remote}:{backup_path}")
 
         # Create backup store directory if it doesn't already exist
         await rclone_mkdir(
@@ -236,6 +245,7 @@ async def sync_helper(
             verbose=False,
             progress=show_rclone_progress,
         )
+
     from repoyard._models import SyncRecord
 
     if check_interrupted():
@@ -263,9 +273,7 @@ async def sync_helper(
 
         if res:
             # Retrieve the remote sync record and save it locally
-            rec = await SyncRecord.rclone_read(
-                rclone_config_path, remote, remote_sync_record_path
-            )
+            rec = await SyncRecord.rclone_read(rclone_config_path, remote, remote_sync_record_path)
             await rec.rclone_save(rclone_config_path, "", local_sync_record_path)
 
     elif sync_direction == SyncDirection.PUSH:

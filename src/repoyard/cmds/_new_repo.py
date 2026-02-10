@@ -34,6 +34,7 @@ def _extract_repo_name_from_git_url(url: str) -> str:
     # Fallback: just take the last path component
     return url.split("/")[-1]
 
+
 def new_repo(
     config_path: Path,
     storage_location: str | None = None,
@@ -107,21 +108,17 @@ def new_repo(
         sync_first = config.sync_before_new_repo
     if sync_first:
         from repoyard.cmds import sync_repometas
+
         if verbose:
             print("Syncing repometas before creating new repo...")
-        asyncio.get_event_loop().run_until_complete(
-            sync_repometas(config_path=config_path, verbose=verbose)
-        )
+        asyncio.get_event_loop().run_until_complete(sync_repometas(config_path=config_path, verbose=verbose))
     from repoyard._models import RepoPart, get_repoyard_meta
 
     repoyard_meta = get_repoyard_meta(config)
 
     if from_path is not None:
         from_path = Path(from_path).expanduser().resolve()
-        repo_paths = [
-            repo_meta.get_local_part_path(config, RepoPart.DATA)
-            for repo_meta in repoyard_meta.repo_metas
-        ]
+        repo_paths = [repo_meta.get_local_part_path(config, RepoPart.DATA) for repo_meta in repoyard_meta.repo_metas]
 
         if from_path in repo_paths and not copy_from_path:
             raise ValueError(
@@ -130,7 +127,7 @@ def new_repo(
     _lock_manager = RepoyardLockManager(config.repoyard_data_path)
     _lock_path = _lock_manager.global_lock_path
     _lock_manager._ensure_lock_dir(_lock_path)
-    _global_lock = __import__('filelock').FileLock(_lock_path, timeout=GLOBAL_LOCK_TIMEOUT)
+    _global_lock = __import__("filelock").FileLock(_lock_path, timeout=GLOBAL_LOCK_TIMEOUT)
     try:
         _global_lock.acquire()
     except Timeout:
@@ -141,7 +138,7 @@ def new_repo(
             message=(
                 f"Could not acquire global lock within {GLOBAL_LOCK_TIMEOUT}s. "
                 f"Another repoyard operation may be in progress."
-            )
+            ),
         )
     from repoyard._models import RepoMeta
 
@@ -155,6 +152,7 @@ def new_repo(
     if creation_timestamp_utc is not None:
         from repoyard import const
         from repoyard.config import RepoTimestampFormat
+
         if config.repo_timestamp_format == RepoTimestampFormat.DATE_AND_TIME:
             creation_timestamp = creation_timestamp_utc.strftime(const.REPO_TIMESTAMP_FORMAT)
         else:
@@ -193,9 +191,7 @@ def new_repo(
         if copy_from_path:
             import shutil
 
-            shutil.copytree(
-                from_path, repo_data_path
-            )  # TESTREF: test_new_repo_copy_from_path
+            shutil.copytree(from_path, repo_data_path)  # TESTREF: test_new_repo_copy_from_path
         else:
             from_path.rename(repo_data_path)
     else:

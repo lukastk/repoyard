@@ -31,15 +31,12 @@ async def get_repo_sync_status(
             local_sync_record_path=repo_meta.get_local_sync_record_path(config, repo_part),
             remote=repo_meta.storage_location,
             remote_path=repo_meta.get_remote_part_path(config, repo_part),
-            remote_sync_record_path=repo_meta.get_remote_sync_record_path(
-                config, repo_part
-            ),
+            remote_sync_record_path=repo_meta.get_remote_sync_record_path(config, repo_part),
         )
         for repo_part in RepoPart
     ]
 
     repo_sync_status = {
-        repo_part: sync_status
-        for repo_part, sync_status in zip(RepoPart, await asyncio.gather(*tasks))
+        repo_part: sync_status for repo_part, sync_status in zip(RepoPart, await asyncio.gather(*tasks))
     }
     return repo_sync_status

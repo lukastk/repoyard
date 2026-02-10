@@ -9,6 +9,7 @@ from ..config import get_config
 class RepoNameConflict(Exception):
     pass
 
+
 def modify_repometa(
     config_path: Path,
     repo_index_name: str,
@@ -37,9 +38,7 @@ def modify_repometa(
     repo_group_configs, virtual_repo_groups = get_repo_group_configs(config, _repo_metas)
     for g in modified_repo_meta.groups:
         if g in virtual_repo_groups:
-            raise Exception(
-                f"Cannot add a repository to a virtual repo group (virtual repo group: '{g}')"
-            )
+            raise Exception(f"Cannot add a repository to a virtual repo group (virtual repo group: '{g}')")
 
         repo_group_config = repo_group_configs[g]
         repo_metas_in_group = [rm for rm in _repo_metas if g in rm.groups]
@@ -48,13 +47,9 @@ def modify_repometa(
             name_counts = {repo_meta.name: 0 for repo_meta in repo_metas_in_group}
             for repo_meta in repo_metas_in_group:
                 name_counts[repo_meta.name] += 1
-            duplicate_names = [
-                (name, count) for name, count in name_counts.items() if count > 1
-            ]
+            duplicate_names = [(name, count) for name, count in name_counts.items() if count > 1]
             if duplicate_names:
-                names_str = ", ".join(
-                    f"'{name}' (count: {count})" for name, count in duplicate_names
-                )
+                names_str = ", ".join(f"'{name}' (count: {count})" for name, count in duplicate_names)
                 raise RepoNameConflict(
                     f"Error modifying repo meta for '{repo_index_name}':\n"
                     f"Repo is in group '{g}' which requires unique names. After the modification, the following name(s) appear multiple times in this group: {names_str}."

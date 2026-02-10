@@ -14,6 +14,7 @@ class RenameScope(Enum):
     REMOTE = "remote"
     BOTH = "both"
 
+
 async def rename_repo(
     config_path: Path,
     repo_index_name: str,
@@ -60,7 +61,7 @@ async def rename_repo(
     _lock_manager = RepoyardLockManager(config.repoyard_data_path)
     _lock_path = _lock_manager.repo_sync_lock_path(repo_index_name)
     _lock_manager._ensure_lock_dir(_lock_path)
-    _sync_lock = __import__('filelock').FileLock(_lock_path, timeout=0)
+    _sync_lock = __import__("filelock").FileLock(_lock_path, timeout=0)
     await acquire_lock_async(
         _sync_lock,
         f"repo sync ({repo_index_name})",

@@ -18,10 +18,7 @@ def init_repoyard(
     config_path = config_path or const.DEFAULT_CONFIG_PATH
     data_path = data_path or const.DEFAULT_DATA_PATH
 
-    if (
-        config_path.expanduser().as_posix()
-        != const.DEFAULT_CONFIG_PATH.expanduser().as_posix()
-    ):
+    if config_path.expanduser().as_posix() != const.DEFAULT_CONFIG_PATH.expanduser().as_posix():
         if verbose:
             print(
                 f"Using a non-default config path. Please set the environment variable {const.ENV_VAR_REPOYARD_CONFIG_PATH} to the given config path for repoyard to use it. "
@@ -34,12 +31,8 @@ def init_repoyard(
         if verbose:
             print("Creating config file at:", config_path)
         Path(config_path).expanduser().parent.mkdir(parents=True, exist_ok=True)
-        default_config_dict = _get_default_config_dict(
-            config_path=config_path, data_path=data_path
-        )
-        del default_config_dict[
-            "config_path"
-        ]  # Don't save the config path to the config file
+        default_config_dict = _get_default_config_dict(config_path=config_path, data_path=data_path)
+        del default_config_dict["config_path"]  # Don't save the config path to the config file
         config_toml = toml.dumps(default_config_dict)
 
         Path(config_path).expanduser().write_text(config_toml)
@@ -64,9 +57,7 @@ def init_repoyard(
         storage_location.store_path.mkdir(parents=True, exist_ok=True)
         if (config.local_store_path / storage_location_name).exists():
             (config.local_store_path / storage_location_name).unlink()
-        (config.local_store_path / storage_location_name).symlink_to(
-            storage_location.store_path
-        )
+        (config.local_store_path / storage_location_name).symlink_to(storage_location.store_path)
     from repoyard.config import _default_rclone_config
 
     if not config.rclone_config_path.exists():
