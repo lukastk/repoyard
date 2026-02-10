@@ -25,10 +25,10 @@ async def get_repo_sync_status(
     tasks = [
         get_sync_status(
             rclone_config_path=config.rclone_config_path,
-            local_path=repo_meta.get_local_part_path(config, RepoPart.META),
+            local_path=repo_meta.get_local_part_path(config, repo_part),
             local_sync_record_path=repo_meta.get_local_sync_record_path(config, repo_part),
             remote=repo_meta.storage_location,
-            remote_path=repo_meta.get_remote_part_path(config, RepoPart.META),
+            remote_path=repo_meta.get_remote_part_path(config, repo_part),
             remote_sync_record_path=repo_meta.get_remote_sync_record_path(
                 config, repo_part
             ),

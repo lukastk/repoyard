@@ -83,20 +83,19 @@ async def sync_missing_repometas(
         )
         _ls_local = {f["Path"] for f in _ls_local} if _ls_local else set()
     
-        missing_metas = _ls_remote - _ls_local
-        missing_repo_index_names = [Path(p).parts[0] for p in missing_metas]
+        missing_metas = sorted(_ls_remote - _ls_local)
     
         if repo_index_names is not None:
             missing_metas = [
                 missing_meta
-                for repo_index_name, missing_meta in zip(
-                    missing_repo_index_names, missing_metas
-                )
-                if repo_index_name in repo_index_names
+                for missing_meta in missing_metas
+                if Path(missing_meta).parts[0] in repo_index_names
             ]
     
         if check_interrupted():
             raise SoftInterruption()
+    
+        missing_repo_index_names = [Path(p).parts[0] for p in missing_metas]
     
         if len(missing_metas) > 0:
             if verbose:

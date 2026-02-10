@@ -139,21 +139,21 @@ def _get_repo_index_name(
                 if name_match_mode == NameMatchMode.EXACT:
                     cmp = (
                         lambda x: x.name == repo_name
-                        if not name_match_case
+                        if name_match_case
                         else x.name.lower() == repo_name.lower()
                     )
                     repos_with_name = [x for x in repoyard_meta.repo_metas if cmp(x)]
                 elif name_match_mode == NameMatchMode.CONTAINS:
                     cmp = (
                         lambda x: repo_name in x.name
-                        if not name_match_case
+                        if name_match_case
                         else repo_name.lower() in x.name.lower()
                     )
                     repos_with_name = [x for x in repoyard_meta.repo_metas if cmp(x)]
                 elif name_match_mode == NameMatchMode.SUBSEQUENCE:
                     cmp = (
                         lambda x: _is_subsequence_match(repo_name, x.name)
-                        if not name_match_case
+                        if name_match_case
                         else _is_subsequence_match(repo_name.lower(), x.name.lower())
                     )
                     repos_with_name = [x for x in repoyard_meta.repo_metas if cmp(x)]
