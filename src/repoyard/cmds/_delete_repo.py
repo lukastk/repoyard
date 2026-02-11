@@ -59,7 +59,7 @@ async def delete_repo(
         # Delete local repo
         local_repo_path = repo_meta.get_local_part_path(config, RepoPart.DATA)
         if local_repo_path.exists():
-            shutil.rmtree(local_repo_path)  
+            shutil.rmtree(local_repo_path)
         shutil.rmtree(repo_meta.get_local_path(config))
     
         # Delete remote repo

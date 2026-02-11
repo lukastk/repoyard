@@ -167,4 +167,4 @@ async def copy_from_remote(
                 print(f"Warning: Failed to copy CONF: {stderr}")
         elif verbose:
             print("CONF copied successfully.")
-    return dest_path;
+    return dest_path
