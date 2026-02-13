@@ -36,9 +36,20 @@ boxyard list
 Boxyard manages folders (called "boxes") that you want to keep synced between your local machine and remote storage (S3, SFTP, or any rclone-supported backend).
 
 Each box has:
-- **Data** - the actual folder contents
+- **Data** (`data/`) - the actual folder contents
 - **Metadata** (`boxmeta.toml`) - name, groups, storage location, creation info
+- **Config** (`conf/`) - optional per-box configuration that controls how data is synced
 - **Sync records** - track what's been synced and when, enabling conflict detection
+
+### The `conf/` folder
+
+Each box can optionally have a `conf/` folder containing rclone filter files that customize which files are included or excluded when syncing the box's data:
+
+- `.rclone_include` - only sync files matching these patterns
+- `.rclone_exclude` - skip files matching these patterns (if absent, the global default exclude list is used)
+- `.rclone_filters` - combined include/exclude filter rules
+
+During sync, the `conf/` folder is synced *before* the data, ensuring filter rules are up-to-date before they're applied. This means filter rules travel with the box across remotes -- if you want a box to always exclude `.venv/` or only include `*.csv`, put that in its `conf/` folder and it will apply everywhere the box is synced.
 
 Boxes are identified by a unique ID (`{timestamp}_{subid}`, e.g. `20251122_143022_a7kx9`) and organized into groups via symlinks.
 
