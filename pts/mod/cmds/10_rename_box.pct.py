@@ -25,7 +25,7 @@ from pathlib import Path
 import shutil
 
 from boxyard.config import get_config, StorageType
-from boxyard._utils.locking import BoxyardLockManager, LockAcquisitionError, REPO_SYNC_LOCK_TIMEOUT, acquire_lock_async
+from boxyard._utils.locking import BoxyardLockManager, LockAcquisitionError, BOX_SYNC_LOCK_TIMEOUT, acquire_lock_async
 from boxyard._remote_index import update_remote_index_cache, find_remote_box_by_id
 from boxyard._enums import RenameScope
 from boxyard import const
@@ -120,7 +120,7 @@ await acquire_lock_async(
     _sync_lock,
     f"box sync ({box_index_name})",
     _lock_path,
-    REPO_SYNC_LOCK_TIMEOUT,
+    BOX_SYNC_LOCK_TIMEOUT,
 )
 
 try:

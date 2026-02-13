@@ -24,7 +24,7 @@ import asyncio
 
 from boxyard.config import get_config
 from boxyard._utils import enable_soft_interruption
-from boxyard._utils.locking import BoxyardLockManager, LockAcquisitionError, REPO_SYNC_LOCK_TIMEOUT, acquire_lock_async
+from boxyard._utils.locking import BoxyardLockManager, LockAcquisitionError, BOX_SYNC_LOCK_TIMEOUT, acquire_lock_async
 from boxyard._tombstones import create_tombstone
 from boxyard._remote_index import remove_from_remote_index_cache
 
@@ -110,7 +110,7 @@ await acquire_lock_async(
     _sync_lock,
     f"box sync ({box_index_name})",
     _lock_path,
-    REPO_SYNC_LOCK_TIMEOUT,
+    BOX_SYNC_LOCK_TIMEOUT,
 )
 try:
     # Extract box_id for tombstone and cache operations

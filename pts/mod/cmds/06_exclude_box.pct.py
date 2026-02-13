@@ -24,7 +24,7 @@ import asyncio
 
 from boxyard._utils.sync_helper import SyncSetting
 from boxyard.config import get_config
-from boxyard._utils.locking import BoxyardLockManager, LockAcquisitionError, REPO_SYNC_LOCK_TIMEOUT, acquire_lock_async
+from boxyard._utils.locking import BoxyardLockManager, LockAcquisitionError, BOX_SYNC_LOCK_TIMEOUT, acquire_lock_async
 
 # %%
 #|set_func_signature
@@ -121,7 +121,7 @@ await acquire_lock_async(
     _sync_lock,
     f"box sync ({box_index_name})",
     _lock_path,
-    REPO_SYNC_LOCK_TIMEOUT,
+    BOX_SYNC_LOCK_TIMEOUT,
 )
 try:
     # Sync any changes before removing locally

@@ -99,7 +99,7 @@ class TestByStorageLocation:
     """Tests for the by_storage_location cached property."""
 
     def test_by_storage_location_groups_correctly(self, sample_box_metas):
-        """Repos are grouped by storage location."""
+        """Boxes are grouped by storage location."""
         meta = BoxyardMeta(box_metas=sample_box_metas)
         by_sl = meta.by_storage_location
 
@@ -123,7 +123,7 @@ class TestByStorageLocation:
         assert "20251123_jkl78__project-delta" in by_sl["backup"]
 
     def test_by_storage_location_indexed_by_index_name(self, sample_box_metas):
-        """Repos are indexed by index_name within storage location."""
+        """Boxes are indexed by index_name within storage location."""
         meta = BoxyardMeta(box_metas=sample_box_metas)
         by_sl = meta.by_storage_location
 

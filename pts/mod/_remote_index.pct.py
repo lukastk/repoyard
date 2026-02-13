@@ -115,7 +115,7 @@ def remove_from_remote_index_cache(
         save_remote_index_cache(config, storage_location, cache)
 
 # %% [markdown]
-# # Finding Remote Repos by ID
+# # Finding Remote Boxes by ID
 
 # %%
 #|export

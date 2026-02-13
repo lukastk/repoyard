@@ -26,7 +26,7 @@ from boxyard.config import get_config
 from boxyard._models import get_boxyard_meta, BoxPart, SyncRecord
 from boxyard._remote_index import find_remote_box_by_id
 from boxyard._utils.rclone import rclone_sync, rclone_mkdir, rclone_purge
-from boxyard._utils.locking import BoxyardLockManager, REPO_SYNC_LOCK_TIMEOUT, acquire_lock_async
+from boxyard._utils.locking import BoxyardLockManager, BOX_SYNC_LOCK_TIMEOUT, acquire_lock_async
 from boxyard._utils import check_interrupted, SoftInterruption
 
 # %%
@@ -193,7 +193,7 @@ await acquire_lock_async(
     _sync_lock,
     f"box sync ({box_index_name})",
     _lock_path,
-    REPO_SYNC_LOCK_TIMEOUT,
+    BOX_SYNC_LOCK_TIMEOUT,
 )
 
 # %% [markdown]

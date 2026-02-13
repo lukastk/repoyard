@@ -30,7 +30,7 @@ from boxyard._utils import (
     enable_soft_interruption,
     SoftInterruption,
 )
-from boxyard._utils.locking import BoxyardLockManager, LockAcquisitionError, REPO_SYNC_LOCK_TIMEOUT, acquire_lock_async
+from boxyard._utils.locking import BoxyardLockManager, LockAcquisitionError, BOX_SYNC_LOCK_TIMEOUT, acquire_lock_async
 from boxyard import const
 from boxyard._tombstones import is_tombstoned, get_tombstone
 from boxyard._remote_index import find_remote_box_by_id, update_remote_index_cache
@@ -233,7 +233,7 @@ if not _skip_lock:
         _sync_lock,
         f"box sync ({box_index_name})",
         _lock_path,
-        REPO_SYNC_LOCK_TIMEOUT,
+        BOX_SYNC_LOCK_TIMEOUT,
     )
 
 try:
