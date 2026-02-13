@@ -7,7 +7,7 @@ from ..config import get_config
 from .._models import get_boxyard_meta, BoxPart, SyncRecord
 from .._remote_index import find_remote_box_by_id
 from .._utils.rclone import rclone_sync, rclone_mkdir, rclone_purge
-from .._utils.locking import BoxyardLockManager, REPO_SYNC_LOCK_TIMEOUT, acquire_lock_async
+from .._utils.locking import BoxyardLockManager, BOX_SYNC_LOCK_TIMEOUT, acquire_lock_async
 from .._utils import check_interrupted, SoftInterruption
 
 
@@ -104,7 +104,7 @@ async def force_push_to_remote(
         _sync_lock,
         f"box sync ({box_index_name})",
         _lock_path,
-        REPO_SYNC_LOCK_TIMEOUT,
+        BOX_SYNC_LOCK_TIMEOUT,
     )
     try:
         if soft_interruption_enabled and check_interrupted():

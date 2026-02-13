@@ -30,7 +30,7 @@ from typing import Iterator
 # %%
 #|export
 GLOBAL_LOCK_TIMEOUT = 30  # seconds
-REPO_SYNC_LOCK_TIMEOUT = 600  # 10 minutes
+BOX_SYNC_LOCK_TIMEOUT = 600  # 10 minutes
 
 # %% [markdown]
 # # Exceptions
@@ -113,7 +113,7 @@ class BoxyardLockManager:
     def box_sync_lock(
         self,
         index_name: str,
-        timeout: float = REPO_SYNC_LOCK_TIMEOUT
+        timeout: float = BOX_SYNC_LOCK_TIMEOUT
     ) -> Iterator[None]:
         """
         Context manager for acquiring a per-box sync lock.
@@ -151,7 +151,7 @@ class BoxyardLockManager:
     def multiple_box_sync_locks(
         self,
         index_names: list[str],
-        timeout: float = REPO_SYNC_LOCK_TIMEOUT
+        timeout: float = BOX_SYNC_LOCK_TIMEOUT
     ) -> Iterator[None]:
         """
         Context manager for acquiring locks on multiple boxes.
@@ -225,7 +225,7 @@ async def async_global_lock(
 async def async_box_sync_lock(
     lock_manager: BoxyardLockManager,
     index_name: str,
-    timeout: float = REPO_SYNC_LOCK_TIMEOUT
+    timeout: float = BOX_SYNC_LOCK_TIMEOUT
 ):
     """
     Async context manager for acquiring a per-box sync lock.

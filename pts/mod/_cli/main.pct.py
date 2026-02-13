@@ -484,7 +484,7 @@ def cli_sync_missing_meta(
         None,
         "--box",
         "-r",
-        help="The index name of the box, in the form '{ULID}__{REPO_NAME}'.",
+        help="The index name of the box, in the form '{ULID}__{BOX_NAME}'.",
     ),
     storage_locations: list[str] | None = Option(
         None,
@@ -548,7 +548,7 @@ def cli_add_to_group(
         None,
         "--box",
         "-r",
-        help="The index name of the box, in the form '{ULID}__{REPO_NAME}'.",
+        help="The index name of the box, in the form '{ULID}__{BOX_NAME}'.",
     ),
     box_id: str | None = Option(
         None, "--box-id", "-i", help="The id of the box to sync."
@@ -638,7 +638,7 @@ def cli_add_to_group(
                     box_index_name=box_index_name,
                     sync_setting=sync_setting,
                     sync_direction=SyncDirection.PUSH,
-                    sync_choices=[BoxPart.REPO_META],
+                    sync_choices=[BoxPart.META],
                     verbose=True,
                     soft_interruption_enabled=soft_interruption_enabled,
                 )
@@ -663,7 +663,7 @@ def cli_remove_from_group(
         None,
         "--box",
         "-r",
-        help="The index name of the box, in the form '{ULID}__{REPO_NAME}'.",
+        help="The index name of the box, in the form '{ULID}__{BOX_NAME}'.",
     ),
     box_id: str | None = Option(
         None, "--box-id", "-i", help="The id of the box to sync."
@@ -751,7 +751,7 @@ def cli_remove_from_group(
                     box_index_name=box_index_name,
                     sync_setting=sync_setting,
                     sync_direction=SyncDirection.PUSH,
-                    sync_choices=[BoxPart.REPO_META],
+                    sync_choices=[BoxPart.META],
                     verbose=True,
                     soft_interruption_enabled=soft_interruption_enabled,
                 )
@@ -773,7 +773,7 @@ def cli_include(
         None,
         "--box",
         "-r",
-        help="The index name of the box, in the form '{ULID}__{REPO_NAME}'.",
+        help="The index name of the box, in the form '{ULID}__{BOX_NAME}'.",
     ),
     box_id: str | None = Option(
         None, "--box-id", "-i", help="The id of the box to sync."
@@ -840,7 +840,7 @@ def cli_exclude(
         None,
         "--box",
         "-r",
-        help="The index name of the box, in the form '{ULID}__{REPO_NAME}'.",
+        help="The index name of the box, in the form '{ULID}__{BOX_NAME}'.",
     ),
     box_id: str | None = Option(
         None, "--box-id", "-i", help="The id of the box to sync."
@@ -914,7 +914,7 @@ def cli_delete(
         None,
         "--box",
         "-r",
-        help="The index name of the box, in the form '{ULID}__{REPO_NAME}'.",
+        help="The index name of the box, in the form '{ULID}__{BOX_NAME}'.",
     ),
     box_id: str | None = Option(
         None, "--box-id", "-i", help="The id of the box to sync."
@@ -1028,7 +1028,7 @@ def cli_box_status(
         None,
         "--box",
         "-r",
-        help="The index name of the box, in the form '{ULID}__{REPO_NAME}'.",
+        help="The index name of the box, in the form '{ULID}__{BOX_NAME}'.",
     ),
     box_id: str | None = Option(
         None, "--box-id", "-i", help="The id of the box to sync."
@@ -1361,7 +1361,7 @@ def cli_path(
         None,
         "--box",
         "-r",
-        help="The index name of the box, in the form '{ULID}__{REPO_NAME}'.",
+        help="The index name of the box, in the form '{ULID}__{BOX_NAME}'.",
     ),
     box_id: str | None = Option(
         None, "--box-id", "-i", help="The id of the box to sync."
