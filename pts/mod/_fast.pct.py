@@ -241,3 +241,28 @@ class BoxyardFast:
         for bm in self._boxes:
             groups.update(bm.get("groups", []))
         return sorted(groups)
+
+    # ── path-based queries ──
+
+    def which(self, path: str, user_boxes_path: str = "~/boxes") -> dict | None:
+        """Resolve a filesystem path to the box it belongs to.
+
+        Mirrors the CLI ``which`` command: checks whether *path* falls under
+        *user_boxes_path* and, if so, extracts the first directory component
+        as the index_name and returns the matching box result dict.
+
+        Returns ``None`` when the path is outside the boxes directory or when
+        no matching box is found in the metadata.
+        """
+        resolved = Path(path).expanduser().resolve()
+        boxes_root = Path(user_boxes_path).expanduser().resolve()
+
+        if not resolved.is_relative_to(boxes_root) or resolved == boxes_root:
+            return None
+
+        index_name = resolved.relative_to(boxes_root).parts[0]
+
+        for bm in self._boxes:
+            if bm["_index_name"] == index_name:
+                return self._to_result(bm)
+        return None
