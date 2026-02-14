@@ -59,7 +59,7 @@ async def delete_box(
         # Delete local box
         local_box_path = box_meta.get_local_part_path(config, BoxPart.DATA)
         if local_box_path.exists():
-            shutil.rmtree(local_box_path)  
+            shutil.rmtree(local_box_path)
         shutil.rmtree(box_meta.get_local_path(config))
     
         # Delete remote box
