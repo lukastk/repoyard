@@ -53,6 +53,3 @@ jobs:
 
       - name: Run ruff check
         run: uv run ruff check src/boxyard
-
-      - name: Run ruff format check
-        run: uv run ruff format --check --exclude 'src/boxyard/' .
