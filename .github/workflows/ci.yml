@@ -55,4 +55,4 @@ jobs:
         run: uv run ruff check src/boxyard
 
       - name: Run ruff format check
-        run: uv run ruff format --check src/boxyard
+        run: uv run ruff format --check --exclude 'src/boxyard/' .
