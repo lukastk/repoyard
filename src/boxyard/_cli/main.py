@@ -88,6 +88,7 @@ def _get_box_index_name(
     box_metas=None,
     pick_first: bool = False,
     allow_no_args: bool = True,
+    label: str = "box",
 ) -> str:
     if not allow_no_args and (
         box_name is None
@@ -95,7 +96,7 @@ def _get_box_index_name(
         and box_id is None
         and box_metas is None
     ):
-        typer.echo("No box name, id or index name provided.", err=True)
+        typer.echo(f"No {label} name, id or index name provided.", err=True)
         raise typer.Exit(code=1)
 
     from .._models import BoxyardMeta
@@ -820,7 +821,7 @@ def cli_add_parent(
     parent_index_name = _get_box_index_name(
         box_name=parent_name, box_id=parent_id, box_index_name=parent_index_name,
         name_match_mode=name_match_mode, name_match_case=name_match_case,
-        allow_no_args=False,
+        allow_no_args=False, label="parent",
     )
 
     config = get_config(app_state["config_path"])
@@ -931,7 +932,7 @@ def cli_remove_parent(
     parent_index_name = _get_box_index_name(
         box_name=parent_name, box_id=parent_id, box_index_name=parent_index_name,
         name_match_mode=name_match_mode, name_match_case=name_match_case,
-        allow_no_args=False,
+        allow_no_args=False, label="parent",
     )
 
     config = get_config(app_state["config_path"])
