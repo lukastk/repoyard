@@ -21,6 +21,7 @@ from nblite import nbl_export, show_doc; nbl_export();
 from pydantic import model_validator
 from pathlib import Path
 import toml
+import os
 from enum import Enum
 
 from boxyard import const
@@ -165,7 +166,16 @@ def get_config(path: Path | None = None) -> Config:
     if path is None:
         path = const.DEFAULT_CONFIG_PATH
     path = Path(path).expanduser()
-    return Config(**{"config_path": path, **toml.load(path)})
+    config_dict = {"config_path": path, **toml.load(path)}
+
+    # Additively merge default_box_groups from env var (TOML list string, e.g. '["ctx/mac", "ctx/linux"]')
+    env_groups = os.environ.get(const.ENV_VAR_DEFAULT_BOX_GROUPS)
+    if env_groups:
+        extra = toml.loads(f"v = {env_groups}")["v"]
+        existing = config_dict.get("default_box_groups", [])
+        config_dict["default_box_groups"] = list(dict.fromkeys(existing + extra))
+
+    return Config(**config_dict)
 
 # %%
 #|export
