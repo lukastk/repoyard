@@ -1950,8 +1950,8 @@ def cli_path(
     exclude_groups: list[str] | None = Option(
         None, "--exclude-group", "-e", help="The group to exclude from the output."
     ),
-    only_included: bool = Option(
-        True, "--only-included", "-o", help="Only show included boxes."
+    all_boxes: bool = Option(
+        False, "--all", "-a", help="Show all boxes, including non-included ones."
     ),
     group_filter: str | None = Option(
         None,
@@ -1981,7 +1981,7 @@ def cli_path(
         group_filter=group_filter,
     )
 
-    if only_included:
+    if not all_boxes:
         box_metas = [rm for rm in box_metas if rm.check_included(config)]
 
     if interactive:
