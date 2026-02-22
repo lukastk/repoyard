@@ -49,13 +49,16 @@ class BoxPathSelector(App):
     }
     """
 
-    def __init__(self, box_metas, config, mode="groups", path_option="data", expanded=False):
+    def __init__(self, box_metas, config, mode="groups", path_option="data", expanded=False,
+                 show_status=True, show_groups=True):
         super().__init__()
         self._box_metas = box_metas
         self._config = config
         self._mode = mode
         self._path_option = path_option
         self._expanded = expanded
+        self._show_status = show_status
+        self._show_groups = show_groups
         self._selected_path = None
         self._filter_text = ""
 
@@ -89,6 +92,19 @@ class BoxPathSelector(App):
         else:
             return box_meta.get_local_part_path(self._config, BoxPart.DATA).as_posix()
 
+    def _format_box_label(self, bm, exclude_group=None) -> str:
+        parts = []
+        if self._show_status:
+            icon = "●" if bm.check_included(self._config) else "○"
+            parts.append(icon)
+        parts.append(f"{bm.name} ({bm.box_id})")
+        if self._show_groups and bm.groups:
+            display_groups = sorted(g for g in bm.groups if g != exclude_group)
+            if display_groups:
+                groups_str = ", ".join(display_groups)
+                parts.append(f"[dim]\\[{groups_str}][/dim]")
+        return " ".join(parts)
+
     def _build_tree(self, filter_text: str = "") -> None:
         tree = self.query_one(Tree)
         tree.clear()
@@ -117,18 +133,12 @@ class BoxPathSelector(App):
         for group_name in sorted(groups.keys()):
             group_node = tree.root.add(f"[bold]{group_name}[/bold]", expand=self._expanded)
             for bm in sorted(groups[group_name], key=lambda x: x.name):
-                group_node.add_leaf(
-                    f"{bm.name} ({bm.box_id})",
-                    data=bm,
-                )
+                group_node.add_leaf(self._format_box_label(bm, exclude_group=group_name), data=bm)
 
         if ungrouped:
             ungrouped_node = tree.root.add("[dim](ungrouped)[/dim]", expand=self._expanded)
             for bm in sorted(ungrouped, key=lambda x: x.name):
-                ungrouped_node.add_leaf(
-                    f"{bm.name} ({bm.box_id})",
-                    data=bm,
-                )
+                ungrouped_node.add_leaf(self._format_box_label(bm), data=bm)
 
     def _build_hierarchy_tree(self, tree, metas) -> None:
         meta_ids = {bm.box_id for bm in metas}
@@ -141,7 +151,7 @@ class BoxPathSelector(App):
                 if child.box_id not in visited:
                     visited.add(child.box_id)
                     child_node = parent_node.add(
-                        f"{child.name} ({child.box_id})",
+                        self._format_box_label(child),
                         data=child,
                     )
                     if self._expanded:
@@ -155,7 +165,7 @@ class BoxPathSelector(App):
         for root in roots:
             visited.add(root.box_id)
             root_node = tree.root.add(
-                f"{root.name} ({root.box_id})",
+                self._format_box_label(root),
                 data=root,
             )
             if self._expanded:

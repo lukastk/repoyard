@@ -1859,6 +1859,12 @@ def cli_path(
     expanded: bool = Option(
         False, "--expanded", help="Start the interactive TUI with all groups expanded.",
     ),
+    hide_status: bool = Option(
+        False, "--hide-status", help="Hide the included/excluded status icon in the interactive TUI.",
+    ),
+    hide_groups: bool = Option(
+        False, "--hide-groups", help="Hide group tags in the interactive TUI.",
+    ),
 ):
     """
     Get the path of a box.
@@ -1892,6 +1898,8 @@ def cli_path(
             mode=browse_mode,
             path_option=path_option,
             expanded=tui_expanded,
+            show_status=not hide_status,
+            show_groups=not hide_groups,
         )
         result = tui_app.run()
         if result:
