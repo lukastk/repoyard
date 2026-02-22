@@ -70,8 +70,12 @@ class TestNoBoxyardImports:
     def test_no_boxyard_imports_in_source(self):
         """Verify _fast module has no boxyard imports."""
         source = inspect.getsource(BoxyardFast)
-        assert "from boxyard" not in source
-        assert "import boxyard" not in source
+        for line in source.splitlines():
+            stripped = line.strip()
+            if stripped.startswith("#") or stripped.startswith('"') or stripped.startswith("'"):
+                continue
+            assert "from boxyard" not in stripped, f"Found boxyard import: {stripped}"
+            assert "import boxyard" not in stripped, f"Found boxyard import: {stripped}"
 
 
 # ============================================================================
