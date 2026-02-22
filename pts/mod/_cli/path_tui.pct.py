@@ -49,12 +49,13 @@ class BoxPathSelector(App):
     }
     """
 
-    def __init__(self, box_metas, config, mode="groups", path_option="data"):
+    def __init__(self, box_metas, config, mode="groups", path_option="data", expanded=False):
         super().__init__()
         self._box_metas = box_metas
         self._config = config
         self._mode = mode
         self._path_option = path_option
+        self._expanded = expanded
         self._selected_path = None
         self._filter_text = ""
 
@@ -114,7 +115,7 @@ class BoxPathSelector(App):
                 ungrouped.append(bm)
 
         for group_name in sorted(groups.keys()):
-            group_node = tree.root.add(f"[bold]{group_name}[/bold]", expand=True)
+            group_node = tree.root.add(f"[bold]{group_name}[/bold]", expand=self._expanded)
             for bm in sorted(groups[group_name], key=lambda x: x.name):
                 group_node.add_leaf(
                     f"{bm.name} ({bm.box_id})",
@@ -122,7 +123,7 @@ class BoxPathSelector(App):
                 )
 
         if ungrouped:
-            ungrouped_node = tree.root.add("[dim](ungrouped)[/dim]", expand=True)
+            ungrouped_node = tree.root.add("[dim](ungrouped)[/dim]", expand=self._expanded)
             for bm in sorted(ungrouped, key=lambda x: x.name):
                 ungrouped_node.add_leaf(
                     f"{bm.name} ({bm.box_id})",
@@ -143,7 +144,8 @@ class BoxPathSelector(App):
                         f"{child.name} ({child.box_id})",
                         data=child,
                     )
-                    child_node.expand()
+                    if self._expanded:
+                        child_node.expand()
                     _add_children(child_node, child.box_id, visited)
 
         roots = [bm for bm in metas if not bm.parents or not any(p in meta_ids for p in bm.parents)]
@@ -156,7 +158,8 @@ class BoxPathSelector(App):
                 f"{root.name} ({root.box_id})",
                 data=root,
             )
-            root_node.expand()
+            if self._expanded:
+                root_node.expand()
             _add_children(root_node, root.box_id, visited)
 
     def on_tree_node_selected(self, event: Tree.NodeSelected) -> None:

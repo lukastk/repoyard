@@ -1965,6 +1965,12 @@ def cli_path(
     browse_mode: Literal["groups", "tree"] = Option(
         "groups", "--browse-mode", help="Browse mode for the interactive TUI: 'groups' or 'tree'.",
     ),
+    collapsed: bool = Option(
+        False, "--collapsed", help="Start the interactive TUI with all groups collapsed.",
+    ),
+    expanded: bool = Option(
+        False, "--expanded", help="Start the interactive TUI with all groups expanded.",
+    ),
 ):
     """
     Get the path of a box.
@@ -1987,11 +1993,17 @@ def cli_path(
     if interactive:
         from boxyard._cli.path_tui import BoxPathSelector
 
+        if collapsed and expanded:
+            typer.echo("Cannot use both --collapsed and --expanded.")
+            raise typer.Exit(code=1)
+        tui_expanded = expanded and not collapsed
+
         tui_app = BoxPathSelector(
             box_metas=box_metas,
             config=config,
             mode=browse_mode,
             path_option=path_option,
+            expanded=tui_expanded,
         )
         result = tui_app.run()
         if result:
