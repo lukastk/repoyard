@@ -1680,8 +1680,11 @@ def cli_list(
     leaves_only: bool = Option(
         False, "--leaves", help="Only show leaf boxes (no children).",
     ),
-    tree_view: bool = Option(
-        False, "--tree", help="Display as a tree instead of flat list.",
+    view: Literal["flat", "tree", "groups"] = Option(
+        "flat", "--view", "-v", help="Display mode: flat list, parent-child tree, or grouped by group.",
+    ),
+    hide_groups: list[str] | None = Option(
+        None, "--hide-group", help="Hide a group branch in --view groups. Boxes still appear under their other groups.",
     ),
 ):
     """
@@ -1765,7 +1768,37 @@ def cli_list(
             all_parent_ids.update(bm.parents)
         box_metas = [bm for bm in box_metas if bm.box_id not in all_parent_ids]
 
-    if tree_view:
+    if view == "groups":
+        from rich.tree import Tree as RichTree
+        from rich.console import Console
+
+        hidden = set(hide_groups or [])
+        groups_map: dict[str, list] = {}
+        ungrouped = []
+        for bm in box_metas:
+            visible_groups = [g for g in bm.groups if g not in hidden]
+            if visible_groups:
+                for g in visible_groups:
+                    groups_map.setdefault(g, []).append(bm)
+            else:
+                ungrouped.append(bm)
+
+        tree = RichTree("boxyard")
+        for group_name in sorted(groups_map.keys()):
+            group_node = tree.add(f"[bold]{group_name}[/bold]")
+            for bm in sorted(groups_map[group_name], key=lambda x: x.name):
+                other_groups = sorted(g for g in bm.groups if g != group_name)
+                suffix = f" [dim]\\[{', '.join(other_groups)}][/dim]" if other_groups else ""
+                group_node.add(f"{bm.name} ({bm.box_id}){suffix}")
+        if ungrouped:
+            ug_node = tree.add("[dim](ungrouped)[/dim]")
+            for bm in sorted(ungrouped, key=lambda x: x.name):
+                ug_node.add(f"{bm.name} ({bm.box_id})")
+
+        Console().print(tree)
+        return
+
+    if view == "tree":
         from rich.tree import Tree as RichTree
         from rich.console import Console
 
