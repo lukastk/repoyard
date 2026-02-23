@@ -1689,7 +1689,8 @@ def cli_list(
         if ungrouped:
             ug_node = tree.add("[dim](ungrouped)[/dim]")
             for bm in sorted(ungrouped, key=lambda x: x.name):
-                ug_node.add(f"{bm.name} ({bm.box_id})")
+                suffix = f" [dim]\\[{', '.join(sorted(bm.groups))}][/dim]" if bm.groups else ""
+                ug_node.add(f"{bm.name} ({bm.box_id}){suffix}")
 
         Console().print(tree)
         return
