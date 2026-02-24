@@ -2194,8 +2194,8 @@ def cli_copy(
         "--name-match-case",
         help="Whether to match the box name case-sensitively.",
     ),
-    dest_path: Path = Option(
-        ..., "--dest", "-d", help="Destination path for the copy."
+    dest_path: Path | None = Option(
+        None, "--dest", "-d", help="Destination path for the copy. Defaults to ./BOX_NAME."
     ),
     copy_meta: bool = Option(
         False, "--meta", help="Also copy boxmeta.toml."
@@ -2234,6 +2234,13 @@ def cli_copy(
     if box_index_name not in boxyard_meta.by_index_name:
         typer.echo(f"Box with index name `{box_index_name}` not found.")
         raise typer.Exit(code=1)
+
+    if dest_path is None:
+        box_meta = boxyard_meta.by_index_name[box_index_name]
+        dest_path = Path(box_meta.name)
+        if dest_path.exists():
+            typer.echo(f"Destination path `{dest_path}` already exists. Use --overwrite to overwrite.")
+            raise typer.Exit(code=1)
 
     result_path = asyncio.run(
         copy_from_remote(
